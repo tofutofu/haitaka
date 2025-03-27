@@ -1,0 +1,145 @@
+use crate::*;
+
+crate::helpers::simple_enum! {
+    /// A file (column) on a shogi board.
+    /// 
+    /// Shogi files are indicated by arabic numerals.
+    /// In diagrams File 1 is the right-most column, at the lefthand-side of the Gote 
+    /// (White) player.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    pub enum File {
+        /// File 1
+        One,
+        /// File 2
+        Two,
+        /// File 3
+        Three,
+        /// File 4
+        Four,
+        /// File 5
+        Five,
+        /// File 6
+        Six,
+        /// File 7
+        Seven,
+        /// File 8
+        Eight,
+        /// File 9
+        Nine
+    }
+}
+
+crate::helpers::enum_char_conv! {
+    File, FileParseError {
+        One = '1',
+        Two = '2',
+        Three = '3',
+        Four = '4',
+        Five = '5',
+        Six = '6',
+        Seven = '7',
+        Eight = '8',
+        Nine ='9'
+    }
+}
+
+impl File {
+    /// Flip the file.
+    /// 
+    /// This mirrors the file in the central file (file 5).
+    /// # Examples
+    /// ```
+    /// # use sparrow::*;
+    /// assert_eq!(File::Five.flip(), File::Five);
+    /// assert_eq!(File::One.flip(), File::Nine);
+    /// ```
+    #[inline(always)]
+    pub const fn flip(self) -> Self {
+        Self::index_const(Self::Nine as usize - self as usize)
+    }
+
+    /// Get a bitboard with all squares on this file set.
+    /// 
+    /// File 1 is the right-most file board diagrams.
+    ///
+    /// # Examples
+    /// ```
+    /// # use sparrow::*;
+    /// assert_eq!(File::Eight.bitboard(), bitboard! {
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    /// });
+    /// ```
+    #[inline(always)]
+    pub const fn bitboard(self) -> BitBoard {
+        BitBoard(0x1FF << 9 * (self as usize))
+    }
+
+    /* 
+    /// Get a bitboard with all squares on adjacent files set.
+    /// # Examples
+    /// ```
+    /// # use sparrow::*;
+    /// assert_eq!(File::Seven.adjacent(), bitboard! {
+    ///     . X . X . . . . .
+    ///     . X . X . . . . .
+    ///     . X . X . . . . .
+    ///     . X . X . . . . .
+    ///     . X . X . . . . .
+    ///     . X . X . . . . .
+    ///     . X . X . . . . .
+    ///     . X . X . . . . .
+    ///     . X . X . . . . .
+    /// });
+    /// assert_eq!(File::Nine.adjacent(), bitboard! {
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    ///     . X . . . . . . .
+    /// });
+    /// assert_eq!(File::One.adjacent(), bitboard! {
+    ///     . . . . . . . X .
+    ///     . . . . . . . X .
+    ///     . . . . . . . X .
+    ///     . . . . . . . X .
+    ///     . . . . . . . X .
+    ///     . . . . . . . X .
+    ///     . . . . . . . X .
+    ///     . . . . . . . X .    
+    ///     . . . . . . . X .
+    /// });
+    /// ```
+    #[inline(always)]
+    pub const fn adjacent(self) -> BitBoard {
+        const TABLE: [BitBoard; File::NUM] = {
+            let mut table = [BitBoard::EMPTY; File::NUM];
+            let mut i = 0;
+            while i < table.len() {
+                if i > 0 {
+                    table[i].0 |= File::index_const(i - 1)
+                        .bitboard().0;
+                }
+                if i < (table.len() - 1) {
+                    table[i].0 |= File::index_const(i + 1)
+                        .bitboard().0;
+                }
+                i += 1;
+            }
+            table
+        };
+        TABLE[self as usize]
+    }
+    */
+}
