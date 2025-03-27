@@ -1,5 +1,10 @@
-use crate::*;
+//! This module defines the Rank enum which represents the ranks (rows) on a Shogi board.
+//! 
+//! Shogi ranks are indicated by the letters abdefghi or by Kanji numerals 一二三四五六七八九.
+//! Here we use capital letters to indicate the ranks: Rank::A .. Rank::I.
+//!  
 
+use crate::*;
 
 crate::helpers::simple_enum! {
     /// A rank (row) on a shogi board.

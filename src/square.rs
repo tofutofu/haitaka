@@ -1,3 +1,14 @@
+//! This module defines the Square enum to represent squares on a Shogi board.
+//! 
+//! By Japanese convention squares are written as {file}{rank}. For instance, the topmost
+//! rightmost square in board diagrams is written as "1a", "11", or "1一"; the center
+//! square is written as "5e", "55", or "5五". Internally we represent square "1a" as
+//! Square::A1, and square "5e" as Square::E5.
+//! 
+//! Squares are ordered internally in file-major order: A1, B1, C1, ... I8, I9. This
+//! means that the squares on the rightmost file (File::One) corresponds to the LSB
+//! (least significant) bits of the bitboards.
+//!    
 use core::convert::TryInto;
 use core::str::FromStr;
 
@@ -6,15 +17,7 @@ use crate::*;
 macro_rules! define_square_with_docs {
     ($($square:ident),*) => {
         crate::helpers::simple_enum! {
-            /// A square on a chessboard.
-            /// Squares are ordered in file-major order (A1, B1, C1, ... I9).
-            /// 
-            /// Note that by Japanese convention square are indicated as {file}{rank}.
-            /// The top-rightmost square (A1) is indicated as "1a" rather than as "a1".
-            /// 
-            /// Files are indicated by arabic numerals; ranks by letters.
-            /// Internally, we write Square::A1 for square '1a' (File::One, Rank::A).
-            /// 
+            /// A square on a Shogi board.
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
             pub enum Square {
                 $(

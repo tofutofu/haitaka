@@ -25,7 +25,7 @@ crate::helpers::simple_enum! {
         King,
         /// Tokin (promoted pawn)
         Tokin,
-        /// Promoted lance
+        /// Promoted lance.
         PLance,
         /// Promoted knight.
         PKnight,

@@ -55,7 +55,7 @@ fn main() {
     println!("{:#?}", bb1 << 1);
     */
 
-    let bb = moves::knight(Color::Black, Square::C2);
+    let bb = attacks::knight(Color::Black, Square::C2);
     println!("{:#?}", bb);
 
 

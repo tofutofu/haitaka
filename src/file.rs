@@ -1,30 +1,32 @@
+//! This module defines the File enum which represents the files (columns) on a Shogi board.
+//! 
+//! Shogi files are indicated by arabic numerals. In diagrams file 1 (File::One) is the right-most column, at the lefthand-side of the Gote 
+//! (White) player. File 9 (File::Nine) is the left-most column, at the lefthand side of the Sente (Black) player.
+//! 
+//! 
 use crate::*;
 
 crate::helpers::simple_enum! {
     /// A file (column) on a shogi board.
-    /// 
-    /// Shogi files are indicated by arabic numerals.
-    /// In diagrams File 1 is the right-most column, at the lefthand-side of the Gote 
-    /// (White) player.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub enum File {
-        /// File 1
+        /// File One
         One,
-        /// File 2
+        /// File Two
         Two,
-        /// File 3
+        /// File Three
         Three,
-        /// File 4
+        /// File Four
         Four,
-        /// File 5
+        /// File Five
         Five,
-        /// File 6
+        /// File Six
         Six,
-        /// File 7
+        /// File Seven
         Seven,
-        /// File 8
+        /// File Eight
         Eight,
-        /// File 9
+        /// File Nine
         Nine
     }
 }
