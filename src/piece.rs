@@ -13,8 +13,8 @@ crate::helpers::simple_enum! {
         Lance,
         /// A knight.
         Knight,
-        /// A silver general.      
-        Silver,  
+        /// A silver general.
+        Silver,
         /// A bishop.
         Bishop,
         /// A rook.
@@ -50,12 +50,12 @@ crate::helpers::simple_error! {
     pub struct PieceParseError = "The value is not a valid Piece.";
 }
 
-/* 
+/*
 impl core::str::FromStr for Piece {
     type Err = PieceParseError;
 
     /// Convert a string slice into a Piece.
-    /// 
+    ///
     /// This function ignores the color of the piece, so its perhaps not terribly useful.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use core::convert::TryInto;
@@ -66,7 +66,7 @@ impl core::str::FromStr for Piece {
 
         match (first, sec) {
             ('+', Some(c)) => {
-                let mut cc = c.to_lowercase();                
+                let mut cc = c.to_lowercase();
                 match cc {
                     'p' => Ok(Piece::Tokin),
                     'l' => Ok(Piece::PLance),
@@ -194,7 +194,6 @@ impl fmt::Display for (Color, Piece) {
 */
 
 impl Piece {
-
     /// Is this piece a promoted piece?
     pub const fn is_promoted(self) -> bool {
         return (self as usize) > Self::King as usize;
@@ -215,7 +214,7 @@ impl Piece {
         if self.is_promotable() {
             match color {
                 Color::White => return (square as usize) < 3 * 9,
-                Color::Black => return (square as usize) >= 6 * 9
+                Color::Black => return (square as usize) >= 6 * 9,
             }
         }
         false
@@ -228,29 +227,25 @@ impl Piece {
             return false;
         }
         match color {
-            Color::White => {
-                match self {
-                    Self::Pawn | Self::Lance => rank == 8,
-                    Self::Knight => rank >= 7,
-                    _ => false
-                }
+            Color::White => match self {
+                Self::Pawn | Self::Lance => rank == 8,
+                Self::Knight => rank >= 7,
+                _ => false,
             },
-            Color::Black => {
-                match self {
-                    Self::Pawn | Self::Lance => rank == 0,
-                    Self::Knight => rank <= 1,
-                    _ => false
-                }
-            }
+            Color::Black => match self {
+                Self::Pawn | Self::Lance => rank == 0,
+                Self::Knight => rank <= 1,
+                _ => false,
+            },
         }
     }
 
     /// Can this piece with given color be dropped on the given square?
     /// If the piece must promote on the square, it can not be dropped there.
-    /// 
+    ///
     /// This function does not perform any occupancy check.
     /// It assumes the given square is empty.
-    /// 
+    ///
     pub const fn can_drop(self, color: Color, square: Square) -> bool {
         !self.must_promote(color, square)
     }
@@ -269,12 +264,12 @@ impl Piece {
             Self::Silver => Self::PSilver,
             Self::Bishop => Self::PBishop,
             Self::Rook => Self::PRook,
-            _ => panic!("Piece can not promote.")
+            _ => panic!("Piece can not promote."),
         }
     }
 
     /// Unpromote this piece.
-    /// 
+    ///
     /// Note: This function does not panic. If called on
     /// an unpromoted piece, that piece will simply be returned.
     pub const fn unpromote(self) -> Self {
@@ -284,9 +279,7 @@ impl Piece {
             Self::PKnight => Self::Knight,
             Self::PBishop => Self::Bishop,
             Self::PRook => Self::Rook,
-            _ => self
+            _ => self,
         }
     }
-
 }
-

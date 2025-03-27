@@ -22,7 +22,7 @@ impl Color {
     pub const fn not(self) -> Self {
         match self {
             Self::White => Self::Black,
-            Self::Black => Self::White
+            Self::Black => Self::White,
         }
     }
 }
@@ -31,7 +31,7 @@ impl core::ops::Not for Color {
     type Output = Self;
 
     #[inline(always)]
-    fn not(self) -> Self::Output { 
-        self.not() 
-    }    
+    fn not(self) -> Self::Output {
+        self.not()
+    }
 }

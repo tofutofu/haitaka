@@ -3,7 +3,7 @@
 use crate::*;
 
 /// This module defines the pseudo-attacks for non-sliding pieces.
-/// 
+///
 /// Pseudo-attacks for [`king`] for `color` on `square`.
 ///
 /// # Examples
@@ -26,10 +26,10 @@ use crate::*;
 ///     . . . . . . . . .
 ///     . . . . . . . . .
 /// });
-/// 
+///
 /// black_attacks = gold(Color::Black, square);
 /// white_attacks = gold(Color::White, square);
-/// 
+///
 /// assert_ne!(black_attacks, white_attacks);
 /// assert_eq!(black_attacks, bitboard! {
 ///     . . . . . . . . .
@@ -53,11 +53,11 @@ use crate::*;
 ///     . . . . . . . . .
 ///     . . . . . . . . .
 /// });
-/// 
+///
 /// square = Square::I1;
 /// black_attacks = king(Color::Black, square);
 /// white_attacks = king(Color::White, square);
-/// 
+///
 /// assert_eq!(black_attacks, white_attacks);
 /// assert_eq!(black_attacks, bitboard!{
 ///     . X . . . . . . .
@@ -81,8 +81,10 @@ macro_rules! define_pseudo_attack {
                 let mut table = [[BitBoard::EMPTY; Square::NUM]; Color::NUM];
                 let mut sq: usize = 0;
                 while sq < Square::NUM {
-                    table[Color::White as usize][sq] = $white_pattern.shift($src, Square::index_const(sq));
-                    table[Color::Black as usize][sq] = $black_pattern.shift($src, Square::index_const(sq));
+                    table[Color::White as usize][sq] =
+                        $white_pattern.shift($src, Square::index_const(sq));
+                    table[Color::Black as usize][sq] =
+                        $black_pattern.shift($src, Square::index_const(sq));
                     sq += 1;
                 }
                 table
@@ -228,4 +230,3 @@ define_pseudo_attack!(
         . . . . . . . . .
     }
 );
-

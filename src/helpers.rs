@@ -1,4 +1,4 @@
-// Note: This module is not exported in lib.rs. 
+// Note: This module is not exported in lib.rs.
 // All imports need to be explicit.
 
 #![allow(missing_docs)]
@@ -9,7 +9,7 @@
 // This makes it possible to use the unsafe function 'core::mem::transmute'
 // in function `try_index`.
 //
-// In principle transmute should not be used in 'const' functions, 
+// In principle transmute should not be used in 'const' functions,
 // but the compiler allows it even in the stable toolchain (aarch64 at least).
 // So I don't see any reason to _not_ use it. It does improve performance
 // (GenerateMoves bench improves by 16% in the cozy-chess code).
@@ -17,7 +17,7 @@
 // The panicky functions are intended "for internal use only". A panic
 // is never a "normal" exception, always a bug.
 //
-// The `index_const`` function is a version of `index` that can be used in 
+// The `index_const`` function is a version of `index` that can be used in
 // const functions.
 
 macro_rules! simple_enum {
@@ -49,7 +49,7 @@ macro_rules! simple_enum {
             #[doc = concat!("Checked version of [`", stringify!($name), "::index`].")]
             #[inline(always)]
             pub const fn try_index(index: usize) -> Option<Self> {
-                /* 
+                /*
                 mod variant_indexes {
                     #![allow(non_upper_case_globals, unused)]
                     $(pub const $variant: usize = super::$name::$variant as usize;)*
@@ -60,9 +60,9 @@ macro_rules! simple_enum {
                     _ => None
                 }
                 */
-                /* Using transmute improves the Generate Moves bench by 16%! 
+                /* Using transmute improves the Generate Moves bench by 16%!
                    It slightly regresses Play Moves by 4%. It improves get_pawn_quiets by almsto 4%.
-                   And improves legality queens by about 1.6%. 
+                   And improves legality queens by about 1.6%.
                 */
                 if index < Self::NUM {
                     Some(unsafe { core::mem::transmute(index) })
@@ -90,7 +90,7 @@ macro_rules! simple_enum {
             pub const fn index_const(index: usize) -> Self {
                 if let Some(value) = Self::try_index(index) {
                     value
-                } 
+                }
                 else {
                     panic!("Index is out of range")
                 }

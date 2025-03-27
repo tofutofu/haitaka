@@ -1,9 +1,9 @@
+use crate::{File, Rank, Square};
 use core::ops::*;
-use crate::{Square, File, Rank};
 
 /// A [bitboard](https://www.chessprogramming.org/Bitboards).
 /// A bitboard is an ordered set of squares.
-/// 
+///
 /// Operators are overloaded to work as set operations:
 /// ```
 /// # use sparrow::*;
@@ -25,9 +25,9 @@ use crate::{Square, File, Rank};
 /// ```
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 pub struct BitBoard(
-    /// The backing [`u128`]. 
+    /// The backing [`u128`].
     /// A square is present in the set if the bit at `1 << square as usize` is set.
-    pub u128
+    pub u128,
 );
 
 impl BitBoard {
@@ -62,9 +62,9 @@ impl BitBoard {
     }
 
     /// Decrement. Substracts 1 from the internal u128.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// # use sparrow::*;
     /// assert_eq!(BitBoard::EMPTY.dec(), BitBoard::FULL);
@@ -77,7 +77,7 @@ impl BitBoard {
     }
 
     /// Shift left along files ("down" the board towards rank I)
-    /// 
+    ///
     /// # Example
     /// ```
     /// # use sparrow::*;
@@ -112,14 +112,12 @@ impl BitBoard {
         } else if rhs >= 9 {
             BitBoard::EMPTY
         } else {
-            BitBoard::new(
-                (self.0 << rhs) & Rank::SOUTH[rhs - 1].0
-            )
+            BitBoard::new((self.0 << rhs) & Rank::SOUTH[rhs - 1].0)
         }
     }
 
     /// Shift right along files ("up" the board towards rank A)
-    /// 
+    ///
     /// # Example
     /// ```
     /// # use sparrow::*;
@@ -160,7 +158,7 @@ impl BitBoard {
     }
 
     /// Shift the bit set pattern North.
-    /// 
+    ///
     /// This assumes the usual rendering of the Shogi board;
     /// the position as seen from the point of view of Sente.
     #[inline(always)]
@@ -169,7 +167,7 @@ impl BitBoard {
     }
 
     /// Shift the bit set pattern South.
-    /// 
+    ///
     /// # Panics
     #[inline(always)]
     pub const fn shift_south(self, dy: usize) -> Self {
@@ -177,11 +175,12 @@ impl BitBoard {
     }
 
     /// Shift bit set pattern along file (vertically).
-    /// 
+    ///
     /// # Panics
     #[inline(always)]
     pub const fn shift_along_file(self, dy: i32) -> Self {
-        if dy <= 0 { // north
+        if dy <= 0 {
+            // north
             self.shr(-dy as usize)
         } else {
             self.shl(dy as usize)
@@ -189,7 +188,7 @@ impl BitBoard {
     }
 
     /// Shift bit set pattern along rank (horizontally).
-    /// 
+    ///
     /// # Panics
     #[inline(always)]
     pub const fn shift_along_rank(self, dx: i32) -> Self {
@@ -201,10 +200,10 @@ impl BitBoard {
     }
 
     /// Shift the bit set pattern East (->).
-    /// 
+    ///
     /// # Panics
     /// Panics if the shift amount is too large.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -238,10 +237,10 @@ impl BitBoard {
     }
 
     /// Shift the bit set pattern West (<-).
-    /// 
+    ///
     /// # Panics
     /// Panics if the shift amount is too large.
-    /// 
+    ///
     /// # Example
     /// ```
     /// # use sparrow::*;
@@ -257,10 +256,10 @@ impl BitBoard {
     ///     X X X . . . . . .
     /// };
     /// let bb2 = bitboard! {
-    ///     . . . . . X X X . 
+    ///     . . . . . X X X .
     ///     . . . . . X . X .
     ///     . . . . . X X X .
-    ///     . . . . . . . . . 
+    ///     . . . . . . . . .
     ///     . . . . . . . . .
     ///     . . . . . . . . .
     ///     X X . . . . . . .
@@ -274,20 +273,17 @@ impl BitBoard {
         BitBoard((self.0 << 9 * dx) & BitBoard::BOARD_MASK)
     }
 
-    /// Shift bit set pattern so that square 'from' is mapped to square 'to'. 
+    /// Shift bit set pattern so that square 'from' is mapped to square 'to'.
     pub const fn shift(self, from: Square, to: Square) -> Self {
         let dy = to.file() as i32 - from.file() as i32; // -8 .. =8
         let dx = to.rank() as i32 - from.rank() as i32; // -8 .. =8
 
         self.shift_along_file(dy).shift_along_rank(dx)
     }
-
-
 }
 
-
 // Traits don't allow const functions, so I defined them myself.
-// And then use them for the Trait support. 
+// And then use them for the Trait support.
 // Unfortunately this will still not allow the syntactic sugar of
 // "a & b" (etc) inside other const function definitions.
 
@@ -355,7 +351,7 @@ impl Sub<u8> for BitBoard {
     type Output = BitBoard;
 
     /// Substract an integer.
-    /// 
+    ///
     /// # Examples
     /// # use sparrow::*;
     /// let bb1 = bitboard! {
@@ -368,10 +364,10 @@ impl Sub<u8> for BitBoard {
     ///     . . . . X . . . .
     ///     . . . . X . . . .
     ///     . . . . . . . . .
-    /// }; 
+    /// };
     /// let bb2 = bitboard! {
     ///     . . . . X X X X X
-    ///     . . . . X X X X X 
+    ///     . . . . X X X X X
     ///     . . . . X X X X X
     ///     . . . . X X X X X
     ///     . . . . . X X X X
@@ -456,19 +452,18 @@ impl_convert!(File, Rank, Square);
 // This would make it possible to get rid of BitBoard::new.
 
 impl BitBoard {
-
     /// Mask to select only the first 81 bits used in a the board position.
     pub const BOARD_MASK: u128 = (1 << Square::NUM) - 1;
 
     /// Create a new `BitBoard`.
-    /// 
+    ///
     /// Note that BitBoard(value) and BitBoard::new(value) behave differently.
     /// BitBoard(value) does not mask out the unused high bits, while
     /// BitBoard::new(value) does make sure the high bits are set to zero.
-     #[inline(always)]
-     pub const fn new(value: u128) -> Self {
-         Self(value & Self::BOARD_MASK)
-    }   
+    #[inline(always)]
+    pub const fn new(value: u128) -> Self {
+        Self(value & Self::BOARD_MASK)
+    }
 
     /// An empty bitboard.
     /// # Examples
@@ -577,13 +572,13 @@ impl BitBoard {
         . . . . . . . . .
         X . . . . . . . X
     };
-    
-    // The 9x9 board makes it quite a bit more complicated to flip files and ranks. 
+
+    // The 9x9 board makes it quite a bit more complicated to flip files and ranks.
     // The usual bag of bit hacks doesn't always apply:
     // https://www.chessprogramming.org/Flipping_Mirroring_and_Rotating#Horizontal
 
     /// Flip the bitboard's files.
-    /// 
+    ///
     /// This mirrors the bitboard vertically in file 5.
     ///
     /// # Examples
@@ -623,26 +618,26 @@ impl BitBoard {
             0x1FF << 45, // File 6
             0x1FF << 54, // File 7
             0x1FF << 63, // File 8
-            0x1FF << 72  // File 9
+            0x1FF << 72, // File 9
         ];
 
         Self::new(
-            ((self.0 & FILE_MASKS[0]) << 72) |
-            ((self.0 & FILE_MASKS[1]) << 54) |
-            ((self.0 & FILE_MASKS[2]) << 36) |
-            ((self.0 & FILE_MASKS[3]) << 18) |
-            (self.0 & FILE_MASKS[4]) |
-            ((self.0 & FILE_MASKS[5]) >> 18) |
-            ((self.0 & FILE_MASKS[6]) >> 36) |
-            ((self.0 & FILE_MASKS[7]) >> 54) |
-            ((self.0 & FILE_MASKS[8]) >> 72))
-
+            ((self.0 & FILE_MASKS[0]) << 72)
+                | ((self.0 & FILE_MASKS[1]) << 54)
+                | ((self.0 & FILE_MASKS[2]) << 36)
+                | ((self.0 & FILE_MASKS[3]) << 18)
+                | (self.0 & FILE_MASKS[4])
+                | ((self.0 & FILE_MASKS[5]) >> 18)
+                | ((self.0 & FILE_MASKS[6]) >> 36)
+                | ((self.0 & FILE_MASKS[7]) >> 54)
+                | ((self.0 & FILE_MASKS[8]) >> 72),
+        )
     }
 
     /// Flip the bitboard's ranks.
-    /// 
+    ///
     /// This mirrors the bitboard horizontally in Rank E.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -672,7 +667,7 @@ impl BitBoard {
     #[inline(always)]
     pub const fn flip_ranks(self) -> Self {
         const RANK_ONE: u128 = 0x1008040201008040201;
-        
+
         const RANK_MASKS: [u128; 9] = [
             RANK_ONE << 0,
             RANK_ONE << 1,
@@ -682,26 +677,26 @@ impl BitBoard {
             RANK_ONE << 5,
             RANK_ONE << 6,
             RANK_ONE << 7,
-            RANK_ONE << 8
+            RANK_ONE << 8,
         ];
 
         Self::new(
-            ((self.0 & RANK_MASKS[0]) << 8) |
-            ((self.0 & RANK_MASKS[1]) << 6) |
-            ((self.0 & RANK_MASKS[2]) << 4) |
-            ((self.0 & RANK_MASKS[3]) << 2) |
-            ((self.0 & RANK_MASKS[4]) << 0) |
-            ((self.0 & RANK_MASKS[5]) >> 2) |
-            ((self.0 & RANK_MASKS[6]) >> 4) |
-            ((self.0 & RANK_MASKS[7]) >> 6) |
-            ((self.0 & RANK_MASKS[8]) >> 8)
+            ((self.0 & RANK_MASKS[0]) << 8)
+                | ((self.0 & RANK_MASKS[1]) << 6)
+                | ((self.0 & RANK_MASKS[2]) << 4)
+                | ((self.0 & RANK_MASKS[3]) << 2)
+                | ((self.0 & RANK_MASKS[4]) << 0)
+                | ((self.0 & RANK_MASKS[5]) >> 2)
+                | ((self.0 & RANK_MASKS[6]) >> 4)
+                | ((self.0 & RANK_MASKS[7]) >> 6)
+                | ((self.0 & RANK_MASKS[8]) >> 8),
         )
     }
 
     /// Rotate this Bitboard 180 degrees.
-    /// 
+    ///
     /// This maps bits 0..81 to bits 81..0, reversing the bits and effectively rotating the board.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -738,15 +733,15 @@ impl BitBoard {
     }
 
     /// Reverse the bits of this bitboard.
-    /// 
-    /// Note: This function does not shift the board. Bit 0 becomes bit 127 and vice-versa. 
+    ///
+    /// Note: This function does not shift the board. Bit 0 becomes bit 127 and vice-versa.
     #[inline(always)]
     pub const fn rev(self) -> Self {
         Self(self.0.reverse_bits())
     }
 
     /// Count the number of bits set to 1 in the bitboard.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -796,9 +791,9 @@ impl BitBoard {
     }
 
     /// Check if a bitboard contains no squares in common with another.
-    /// 
+    ///
     /// Returns true iff the intersection of the two BitBoards is empty.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -832,7 +827,7 @@ impl BitBoard {
     }
 
     /// Check if a bitboard is a subset of another.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -868,7 +863,7 @@ impl BitBoard {
     }
 
     /// Check if a bitboard is a superset of another.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -902,7 +897,7 @@ impl BitBoard {
     }
 
     /// Checks if the [`BitBoard`] is empty.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -927,9 +922,9 @@ impl BitBoard {
     }
 
     /// Grabs the first square if the bitboard is not empty.
-    /// 
+    ///
     /// "First" means the first square when scanning from A1 to I9.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -957,10 +952,10 @@ impl BitBoard {
     }
 
     /// Iterate the squares in the bitboard, ordered by square.
-    /// 
+    ///
     /// The order proceeds in rank-major order, from A1, A2, A3 ... to I9.
     /// This is the same ordering as the default enumeration of Square::ALL.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -976,9 +971,9 @@ impl BitBoard {
     }
 
     /// Iterate all subsets of a bitboard.
-    /// 
+    ///
     /// Subsets are produced in lexicographic order. Each subset is greater than the last.
-    /// 
+    ///
     /// ```
     /// # use sparrow::*;
     /// let bb = bitboard! {
@@ -1001,7 +996,7 @@ impl BitBoard {
         BitBoardSubsetIter {
             set: self,
             subset: Self::EMPTY,
-            finished: false
+            finished: false,
         }
     }
 }
@@ -1019,12 +1014,13 @@ impl IntoIterator for BitBoard {
 
 impl FromIterator<Square> for BitBoard {
     fn from_iter<T: IntoIterator<Item = Square>>(iter: T) -> Self {
-        iter.into_iter().fold(Self::EMPTY, |bb, sq| bb | sq.bitboard())
+        iter.into_iter()
+            .fold(Self::EMPTY, |bb, sq| bb | sq.bitboard())
     }
 }
 
 /// An iterator over the squares of a bitboard.
-/// 
+///
 /// This `struct` is created by [`BitBoard::iter`]. See its documentation for more.
 pub struct BitBoardIter(BitBoard);
 
@@ -1054,12 +1050,12 @@ impl ExactSizeIterator for BitBoardIter {
 }
 
 /// An iterator over the subsets of a bitboard.
-/// 
+///
 /// This `struct` is created by [`BitBoard::iter_subsets`]. See its documentation for more.
 pub struct BitBoardSubsetIter {
     set: BitBoard,
     subset: BitBoard,
-    finished: bool
+    finished: bool,
 }
 
 impl Iterator for BitBoardSubsetIter {
@@ -1080,20 +1076,20 @@ impl Iterator for BitBoardSubsetIter {
 }
 
 /// [`BitBoard`] literal macro.
-/// 
+///
 /// The macro takes as input a visual rendering of the Shogi board from the
 /// perspective of the Sente player. This is the way Shogi diagrams are usually
 /// displayed with square i9 in the left bottom (south-west) corner and square 1a
-/// in the right top (north east) corner. 
-/// 
+/// in the right top (north east) corner.
+///
 /// The macro reads dot (.) or star (*) as empty squares and X as occupied.
 /// Other characters will lead to a compilation error. The '*' is used to indicate
 /// special empty squares (for instance, the piece position in an attack pattern).
-/// 
-/// Internally we layout the board by files: file 1 (squares 1a, 1b, 1c ... 1i) 
-/// corresponds to the least significant bits in the underlying u128 value, followed 
+///
+/// Internally we layout the board by files: file 1 (squares 1a, 1b, 1c ... 1i)
+/// corresponds to the least significant bits in the underlying u128 value, followed
 /// by file 2 (2a, 2b, ... 2i), up to file 9.
-/// 
+///
 /// # Example
 /// ```
 /// # use sparrow::*;
@@ -1165,7 +1161,7 @@ macro_rules! bitboard {
         compile_error!("Expected 81 squares")
     };
 }
-pub use bitboard as bitboard;
+pub use bitboard;
 
 impl core::fmt::Debug for BitBoard {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {

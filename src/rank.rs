@@ -1,5 +1,5 @@
 //! This module defines the Rank enum which represents the ranks (rows) on a Shogi board.
-//! 
+//!
 //! Shogi ranks are indicated by the letters abdefghi or by Kanji numerals 一二三四五六七八九.
 //! Here we use capital letters to indicate the ranks: Rank::A .. Rank::I.
 //!  
@@ -8,7 +8,7 @@ use crate::*;
 
 crate::helpers::simple_enum! {
     /// A rank (row) on a shogi board.
-    /// 
+    ///
     /// Ranks are indicated by letters or by Kanji numerals.
     /// Rank 'a' ("一") is the top-most rank board diagrams which are
     /// always shown from the perspective of the Sente player.
@@ -88,26 +88,17 @@ const SOUTH_B: BitBoard = SOUTH_C.bitor(RANK_C);
 const SOUTH_A: BitBoard = SOUTH_B.bitor(RANK_B);
 
 impl Rank {
-
     // TODO: Should these array be lifted out of the impl
     // to avoid code bloat?!
 
     /// Bitboards for the 9 ranks.
     pub const RANK: [BitBoard; Self::NUM] = [
-        RANK_A,
-        RANK_B,
-        RANK_C,
-        RANK_D,
-        RANK_E,
-        RANK_F,
-        RANK_G,
-        RANK_H,
-        RANK_I
+        RANK_A, RANK_B, RANK_C, RANK_D, RANK_E, RANK_F, RANK_G, RANK_H, RANK_I,
     ];
 
-    /// Cover all ranks "SOUTH" a given rank. 
+    /// Cover all ranks "SOUTH" a given rank.
     /// "SOUTH" given the usual board diagrams.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -124,20 +115,12 @@ impl Rank {
     /// });
     /// ```
     pub const SOUTH: [BitBoard; Self::NUM] = [
-        SOUTH_A,
-        SOUTH_B,
-        SOUTH_C,
-        SOUTH_D,
-        SOUTH_E,
-        SOUTH_F,
-        SOUTH_G,
-        SOUTH_H,
-        SOUTH_I,        
+        SOUTH_A, SOUTH_B, SOUTH_C, SOUTH_D, SOUTH_E, SOUTH_F, SOUTH_G, SOUTH_H, SOUTH_I,
     ];
 
     /// Cover all ranks "NORTH" a given rank.
     /// "NORTH" from the point of view of Gote.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -154,15 +137,7 @@ impl Rank {
     /// });
     /// ```
     pub const NORTH: [BitBoard; Self::NUM] = [
-        NORTH_A,
-        NORTH_B,
-        NORTH_C,
-        NORTH_D,
-        NORTH_E,
-        NORTH_F,
-        NORTH_G,
-        NORTH_H,
-        NORTH_I,
+        NORTH_A, NORTH_B, NORTH_C, NORTH_D, NORTH_E, NORTH_F, NORTH_G, NORTH_H, NORTH_I,
     ];
 
     /// Get a bitboard with all squares on this rank set.
@@ -188,7 +163,7 @@ impl Rank {
     }
 
     /// Flip the rank.
-    /// 
+    ///
     /// This mirrors the rank in the fifth E rank.
     /// # Examples
     /// ```
@@ -201,7 +176,7 @@ impl Rank {
     }
 
     /// Return the BitBoard for all ranks "north" of this rank.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -230,11 +205,11 @@ impl Rank {
     /// # use sparrow::*;
     /// assert_eq!(Rank::I.south(), BitBoard::EMPTY);
     /// assert_eq!(Rank::G.south(), bitboard!{
-    ///     . . . . . . . . . 
-    ///     . . . . . . . . . 
-    ///     . . . . . . . . . 
-    ///     . . . . . . . . . 
-    ///     . . . . . . . . . 
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
     ///     . . . . . . . . .
     ///     . . . . . . . . .  
     ///     X X X X X X X X X
@@ -248,7 +223,7 @@ impl Rank {
 
     /// Get a rank relative to some color.
     /// This flips the rank if viewing from Black's perspective.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -259,7 +234,7 @@ impl Rank {
     pub const fn relative_to(self, color: Color) -> Self {
         match color {
             Color::White => self,
-            Color::Black => self.flip()
+            Color::Black => self.flip(),
         }
     }
 }

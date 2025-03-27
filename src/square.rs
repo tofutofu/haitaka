@@ -1,10 +1,10 @@
 //! This module defines the Square enum to represent squares on a Shogi board.
-//! 
+//!
 //! By Japanese convention squares are written as {file}{rank}. For instance, the topmost
 //! rightmost square in board diagrams is written as "1a", "11", or "1一"; the center
 //! square is written as "5e", "55", or "5五". Internally we represent square "1a" as
 //! Square::A1, and square "5e" as Square::E5.
-//! 
+//!
 //! Squares are ordered internally in file-major order: A1, B1, C1, ... I8, I9. This
 //! means that the squares on the rightmost file (File::One) corresponds to the LSB
 //! (least significant) bits of the bitboards.
@@ -29,7 +29,7 @@ macro_rules! define_square_with_docs {
     }
 }
 
-define_square_with_docs! {    
+define_square_with_docs! {
     A1, B1, C1, D1, E1, F1, G1, H1, I1,
     A2, B2, C2, D2, E2, F2, G2, H2, I2,
     A3, B3, C3, D3, E3, F3, G3, H3, I3,
@@ -40,7 +40,6 @@ define_square_with_docs! {
     A8, B8, C8, D8, E8, F8, G8, H8, I8,
     A9, B9, C9, D9, E9, F9, G9, H9, I9
 }
-
 
 crate::helpers::simple_error! {
     /// The value was not a valid [`Square`].
@@ -53,10 +52,12 @@ impl FromStr for Square {
     // "1a" => File::One, Rank::A => Square::A1
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut chars = s.chars();
-        let file = chars.next()
+        let file = chars
+            .next()
             .and_then(|c| c.try_into().ok())
             .ok_or(SquareParseError)?;
-        let rank = chars.next()
+        let rank = chars
+            .next()
             .and_then(|c| c.try_into().ok())
             .ok_or(SquareParseError)?;
         if chars.next().is_some() {
@@ -88,7 +89,7 @@ const NEGD: BitBoard = BitBoard::new(NEG_MASK);
 const POSD: BitBoard = BitBoard::new(POS_MASK);
 
 /// Down-slanting diagonals.
-/// 
+///
 /// A square (file, rank) is on down-slanting diagonal `POS_DIA[file + rank]`.
 /// The down-slanting diagonals are indexed as
 /// ```text
@@ -97,13 +98,13 @@ const POSD: BitBoard = BitBoard::new(POS_MASK);
 ///   10  9  8  7  6  5  4  3  2
 ///   11 10  9  8  7  6  5  4  3
 ///   12 11 10  9  8  7  6  5  4
-///   13 12 11 10  9  8  7  6  5 
-///   13 12 11 10  9  8  7  6  5 
+///   13 12 11 10  9  8  7  6  5
+///   13 12 11 10  9  8  7  6  5
 ///   14 13 12 11 10  9  8  7  6
 ///   15 14 13 12 11 10  9  8  7
 ///   16 15 14 13 12 11 10  9  8
 /// ```
-/// 
+///
 /// # Examples
 /// ```
 /// use sparrow::*;
@@ -141,7 +142,7 @@ const POSD: BitBoard = BitBoard::new(POS_MASK);
 ///     X . . . . . . . .
 /// });
 /// ```
-pub const POS_DIA: [BitBoard;17] = [
+pub const POS_DIA: [BitBoard; 17] = [
     POSD.shr(8),
     POSD.shr(7),
     POSD.shr(6),
@@ -150,7 +151,7 @@ pub const POS_DIA: [BitBoard;17] = [
     POSD.shr(3),
     POSD.shr(2),
     POSD.shr(1),
-    POSD,       
+    POSD,
     POSD.shl(1),
     POSD.shl(2),
     POSD.shl(3),
@@ -162,7 +163,7 @@ pub const POS_DIA: [BitBoard;17] = [
 ];
 
 /// Up-slanting diagonals.
-/// 
+///
 /// A square (file, rank) is on up-slanting diagonal NEG_DIA[8 + rank - file].
 /// The upslanting diagonals are indexed as
 /// ```text
@@ -176,7 +177,7 @@ pub const POS_DIA: [BitBoard;17] = [
 ///     7  8  9 10 11 12 13 14 15
 ///     8  9 10 11 12 13 14 15 16
 /// ```
-/// 
+///
 /// # Examples
 /// ```
 /// use sparrow::*;
@@ -211,7 +212,7 @@ pub const POS_DIA: [BitBoard;17] = [
 ///     . . . . . . . . .
 ///     . . . . . . . . .
 ///     . . . . . . . . .
-///     . . . . . . . . . 
+///     . . . . . . . . .
 /// });
 /// ```
 pub const NEG_DIA: [BitBoard; 17] = [
@@ -223,7 +224,7 @@ pub const NEG_DIA: [BitBoard; 17] = [
     NEGD.shr(3),
     NEGD.shr(2),
     NEGD.shr(1),
-    NEGD,       
+    NEGD,
     NEGD.shl(1),
     NEGD.shl(2),
     NEGD.shl(3),
@@ -234,9 +235,7 @@ pub const NEG_DIA: [BitBoard; 17] = [
     NEGD.shl(8),
 ];
 
-
 impl Square {
-
     /// Make a square from a file and a rank.
     /// # Examples
     /// ```
@@ -294,7 +293,7 @@ impl Square {
     }
 
     /// Get the bitboard with the "up" (forward-slanting) diagonal for this square.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use sparrow::*;
@@ -319,7 +318,7 @@ impl Square {
     }
 
     /// Get the bitboard with the "down" (backwards-slanting) diagonal for this square.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use sparrow::*;
@@ -344,15 +343,15 @@ impl Square {
     }
 
     /// Add a file and rank offset to the given square.
-    /// 
+    ///
     /// Since square A1 is the topmost-rightmost square,
     /// positive offsets correspond to a down- and leftwards
     /// direction. Note that A1 means file 1 and rank A.
-    /// 
+    ///
     /// # Panics
     /// Panic if the offset would put the square out of bounds.
     /// See [`Square::try_offset`] for a non-panicking variant.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -380,14 +379,14 @@ impl Square {
         }
         Some(Square::new(
             File::index_const(file_index as usize),
-            Rank::index_const(rank_index as usize)
+            Rank::index_const(rank_index as usize),
         ))
     }
 
     /// Flip the file of this square.
-    /// 
+    ///
     /// Mirrors square in the central File::Five.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -399,9 +398,9 @@ impl Square {
     }
 
     /// Flip the rank of this square.
-    /// 
+    ///
     /// Mirrors square in the central Rank::E.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -413,9 +412,9 @@ impl Square {
     }
 
     /// Flip both rank and file of this square.
-    /// 
+    ///
     /// This rotates the square around the center square E5.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -427,12 +426,11 @@ impl Square {
         Self::new(self.file().flip(), self.rank().flip())
     }
 
-
     /// Get a square relative to some color.
-    /// 
+    ///
     /// This effectively _rotates_ the board if viewed from Gote's/White's
     /// perspective. It flips both the rank and the file of the square.
-    /// 
+    ///
     /// Note that the initial Shogi position has rotational symmetry.
     /// This differs from the initial position in International Chess which has
     /// mirror symmetry (flipping the ranks).
@@ -449,13 +447,7 @@ impl Square {
         if let Color::Black = color {
             self
         } else {
-            Self::new(
-                self.file().flip(), 
-                self.rank().flip()
-            )
+            Self::new(self.file().flip(), self.rank().flip())
         }
     }
 }
-
-
-

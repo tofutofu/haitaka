@@ -3,7 +3,7 @@
 use crate::*;
 
 /// Returns the Rook blocker mask for the given square.
-/// 
+///
 /// The Rook blocker mask is the bitboard in which all bits corresponding
 /// to Rook rays are set, excluding bits for the edges and excluding the square.
 pub const fn get_rook_relevant_blockers(square: Square) -> BitBoard {
@@ -20,7 +20,8 @@ pub const fn get_lance_relevant_blockers(square: Square, color: Color) -> BitBoa
         Color::White => 1,
         Color::Black => -1,
     };
-    loop { // this could be optimized, but it's not on the critical hot path
+    loop {
+        // this could be optimized, but it's not on the critical hot path
         match sq.try_offset(0, dy) {
             Some(next_sq) => {
                 ray |= next_sq.bitboard().0;
@@ -29,7 +30,7 @@ pub const fn get_lance_relevant_blockers(square: Square, color: Color) -> BitBoa
             None => break,
         }
     }
-    BitBoard(ray & BitBoard::INNER.0)   
+    BitBoard(ray & BitBoard::INNER.0)
 }
 
 /// Get Bishop blocker mask.
@@ -49,7 +50,11 @@ pub const fn get_bishop_relevant_blockers(square: Square) -> BitBoard {
 }
 
 /// Returns a BitBoard with the slider moves, given an array of deltas.
-const fn get_slider_moves(square: Square, mut blockers: BitBoard, deltas: &[(i8, i8); 4]) -> BitBoard {
+const fn get_slider_moves(
+    square: Square,
+    mut blockers: BitBoard,
+    deltas: &[(i8, i8); 4],
+) -> BitBoard {
     blockers.0 &= !square.bitboard().0;
     let mut moves = BitBoard::EMPTY;
     let mut i = 0;
@@ -83,16 +88,15 @@ pub const fn get_bishop_moves_slow(square: Square, blockers: BitBoard) -> BitBoa
 pub const fn get_lance_moves_slow(square: Square, blockers: BitBoard, color: Color) -> BitBoard {
     let dy = match color {
         Color::White => 1,
-        Color::Black => -1
+        Color::Black => -1,
     };
     get_slider_moves(square, blockers, &[(0, dy), (0, 0), (0, 0), (0, 0)])
 }
 
-
 // TODO: Should the TABLE arrays be lifted out of the function defs to avoid code bloat?
 
 /// Rook pseudo-attacks from square.
-/// 
+///
 /// # Examples
 /// ```
 /// use sparrow::*;
@@ -139,7 +143,7 @@ pub const fn rook_pseudo_attacks(square: Square) -> BitBoard {
 }
 
 /// Bishop pseudo-attacks.
-/// 
+///
 /// # Examples
 /// ```
 /// use sparrow::*;
@@ -184,9 +188,9 @@ pub const fn bishop_pseudo_attacks(square: Square) -> BitBoard {
 }
 
 /// Lance pseudo-attacks.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use sparrow::*;
 /// assert_eq!(lance_pseudo_attacks(Color::Black, Square::A1), BitBoard::EMPTY);
@@ -231,11 +235,11 @@ pub const fn lance_pseudo_attacks(color: Color, square: Square) -> BitBoard {
         let mut table = [[BitBoard::EMPTY; Square::NUM]; Color::NUM];
         let mut index: usize = 0;
         let white = Color::White as usize;
-        let black =  Color::Black as usize;
+        let black = Color::Black as usize;
         while index < Square::NUM {
             let sq = Square::index_const(index);
-            let bb_file = sq.file().bitboard();            
-            let dy: i32 = (index % 9) as i32; 
+            let bb_file = sq.file().bitboard();
+            let dy: i32 = (index % 9) as i32;
             table[white][index] = bb_file.shift_along_file(dy + 1);
             table[black][index] = bb_file.shift_along_file(-(9 - dy));
             index += 1;
@@ -246,4 +250,3 @@ pub const fn lance_pseudo_attacks(color: Color, square: Square) -> BitBoard {
 
     TABLE[color as usize][square as usize]
 }
-

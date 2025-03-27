@@ -1,9 +1,9 @@
 //! This module defines the File enum which represents the files (columns) on a Shogi board.
-//! 
-//! Shogi files are indicated by arabic numerals. In diagrams file 1 (File::One) is the right-most column, at the lefthand-side of the Gote 
+//!
+//! Shogi files are indicated by arabic numerals. In diagrams file 1 (File::One) is the right-most column, at the lefthand-side of the Gote
 //! (White) player. File 9 (File::Nine) is the left-most column, at the lefthand side of the Sente (Black) player.
-//! 
-//! 
+//!
+//!
 use crate::*;
 
 crate::helpers::simple_enum! {
@@ -47,7 +47,7 @@ crate::helpers::enum_char_conv! {
 
 impl File {
     /// Flip the file.
-    /// 
+    ///
     /// This mirrors the file in the central file (file 5).
     /// # Examples
     /// ```
@@ -61,7 +61,7 @@ impl File {
     }
 
     /// Get a bitboard with all squares on this file set.
-    /// 
+    ///
     /// File 1 is the right-most file board diagrams.
     ///
     /// # Examples
@@ -85,7 +85,7 @@ impl File {
     }
 
     /// Get a bitboard with all squares to the left of this file set.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use sparrow::*;
@@ -104,15 +104,15 @@ impl File {
     /// });
     /// ```
     #[inline(always)]
-    pub const fn left(self) -> BitBoard {    
+    pub const fn left(self) -> BitBoard {
         let v: u128 = (1 << Square::NUM) - 1;
         BitBoard::new(v << (9 * (self as usize + 1)))
     }
 
     /// Get a bitboard with all squares to the right of this file set.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use sparrow::*;
     /// assert_eq!(File::One.right(), BitBoard::EMPTY);
@@ -135,7 +135,7 @@ impl File {
         BitBoard::new(v >> (9 * (9 - self as usize)))
     }
 
-    /* 
+    /*
     /// Get a bitboard with all squares on adjacent files set.
     /// # Examples
     /// ```
@@ -170,7 +170,7 @@ impl File {
     ///     . . . . . . . X .
     ///     . . . . . . . X .
     ///     . . . . . . . X .
-    ///     . . . . . . . X .    
+    ///     . . . . . . . X .
     ///     . . . . . . . X .
     /// });
     /// ```
