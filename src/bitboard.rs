@@ -4,7 +4,7 @@ use crate::{Square, File, Rank};
 /// A [bitboard](https://www.chessprogramming.org/Bitboards).
 /// A bitboard is an ordered set of squares.
 /// 
-/// Operators are overloaded to work as set operations accordingly:
+/// Operators are overloaded to work as set operations:
 /// ```
 /// # use sparrow::*;
 /// let a1 = Square::A1.bitboard();
@@ -113,7 +113,7 @@ impl BitBoard {
             BitBoard::EMPTY
         } else {
             BitBoard::new(
-                (self.0 << rhs) & Rank::ABOVE[rhs - 1].0
+                (self.0 << rhs) & Rank::SOUTH[rhs - 1].0
             )
         }
     }
@@ -155,7 +155,7 @@ impl BitBoard {
         } else if rhs >= 9 {
             BitBoard::EMPTY
         } else {
-            BitBoard::new((self.0 >> rhs) & Rank::BELOW[9 - rhs].0)
+            BitBoard::new((self.0 >> rhs) & Rank::NORTH[9 - rhs].0)
         }
     }
 
@@ -1087,7 +1087,8 @@ impl Iterator for BitBoardSubsetIter {
 /// in the right top (north east) corner. 
 /// 
 /// The macro reads dot (.) or star (*) as empty squares and X as occupied.
-/// Other characters will lead to a compilation error.
+/// Other characters will lead to a compilation error. The '*' is used to indicate
+/// special empty squares (for instance, the piece position in an attack pattern).
 /// 
 /// Internally we layout the board by files: file 1 (squares 1a, 1b, 1c ... 1i) 
 /// corresponds to the least significant bits in the underlying u128 value, followed 

@@ -55,8 +55,27 @@ fn main() {
     println!("{:#?}", bb1 << 1);
     */
 
-    let bb = attacks::knight(Color::Black, Square::C2);
+    /* 
+    let bb = attacks::knight(Color::Black, Square::C3);
     println!("{:#?}", bb);
+    */
 
+    // println!("{:#?}\n", bishop_pseudo_attacks(Square::C3));
+
+    /* 
+    println!("{:?}\n", bitboard! {
+        X . . . . . . . .
+        . X . . . . . . .
+        . . X . . . . . .
+        . . . X . . . . .
+        . . . . X . . . .
+        . . . . . X . . .
+        . . . . . . X . .
+        . . . . . . . X .
+        . . . . . . . . X
+    }.0);
+    */
+
+    println!("{:#?}", lance_pseudo_attacks(Color::White, Square::G8));
 
 }

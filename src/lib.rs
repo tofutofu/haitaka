@@ -15,5 +15,4 @@ pub use bitboard::*;
 pub use color::*;
 pub use piece::*;
 pub use attacks::*;
-//pub use sliders::*;
-//pub use helpers::*;
+pub use sliders::*;

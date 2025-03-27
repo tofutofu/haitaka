@@ -89,3 +89,161 @@ pub const fn get_lance_moves_slow(square: Square, blockers: BitBoard, color: Col
 }
 
 
+// TODO: Should the TABLE arrays be lifted out of the function defs to avoid code bloat?
+
+/// Rook pseudo-attacks from square.
+/// 
+/// # Examples
+/// ```
+/// use sparrow::*;
+/// assert_eq!(rook_pseudo_attacks(Square::E5), bitboard! {
+///     . . . . X . . . .
+///     . . . . X . . . .
+///     . . . . X . . . .
+///     . . . . X . . . .
+///     X X X X . X X X X
+///     . . . . X . . . .
+///     . . . . X . . . .
+///     . . . . X . . . .
+///     . . . . X . . . .
+/// });
+/// assert_eq!(rook_pseudo_attacks(Square::A9), bitboard! {
+///     . X X X X X X X X
+///     X . . . . . . . .
+///     X . . . . . . . .
+///     X . . . . . . . .
+///     X . . . . . . . .
+///     X . . . . . . . .
+///     X . . . . . . . .
+///     X . . . . . . . .
+///     X . . . . . . . .
+/// });
+/// ```
+#[inline]
+pub const fn rook_pseudo_attacks(square: Square) -> BitBoard {
+    const TABLE: [BitBoard; Square::NUM] = {
+        let mut table = [BitBoard::EMPTY; Square::NUM];
+        let mut index: usize = 0;
+        while index < Square::NUM {
+            let sq = Square::index_const(index);
+            let rank_moves = sq.rank().bitboard().0;
+            let file_moves = sq.file().bitboard().0;
+            table[index] = BitBoard(rank_moves ^ file_moves);
+            index += 1;
+        }
+
+        table
+    };
+
+    TABLE[square as usize]
+}
+
+/// Bishop pseudo-attacks.
+/// 
+/// # Examples
+/// ```
+/// use sparrow::*;
+/// assert_eq!(bishop_pseudo_attacks(Square::E5), bitboard! {
+///     X . . . . . . . X
+///     . X . . . . . X .
+///     . . X . . . X . .
+///     . . . X . X . . .
+///     . . . . * . . . .
+///     . . . X . X . . .
+///     . . X . . . X . .
+///     . X . . . . . X .
+///     X . . . . . . . X
+/// });
+/// assert_eq!(bishop_pseudo_attacks(Square::C3), bitboard! {
+///     . . . . X . . . X
+///     . . . . . X . X .
+///     . . . . . . * . .
+///     . . . . . X . X .
+///     . . . . X . . . X
+///     . . . X . . . . .
+///     . . X . . . . . .
+///     . X . . . . . . .
+///     X . . . . . . . .
+/// });
+/// ```
+#[inline]
+pub const fn bishop_pseudo_attacks(square: Square) -> BitBoard {
+    const TABLE: [BitBoard; Square::NUM] = {
+        let mut table = [BitBoard::EMPTY; Square::NUM];
+        let mut index: usize = 0;
+        while index < Square::NUM {
+            let sq = Square::index_const(index);
+            table[index] = BitBoard(sq.up_diagonal().0 ^ sq.down_diagonal().0);
+            index += 1;
+        }
+
+        table
+    };
+
+    TABLE[square as usize]
+}
+
+/// Lance pseudo-attacks.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use sparrow::*;
+/// assert_eq!(lance_pseudo_attacks(Color::Black, Square::A1), BitBoard::EMPTY);
+/// assert_eq!(lance_pseudo_attacks(Color::White, Square::I9), BitBoard::EMPTY);
+/// assert_eq!(lance_pseudo_attacks(Color::White, Square::A1), bitboard! {
+///     . . . . . . . . *
+///     . . . . . . . . X
+///     . . . . . . . . X
+///     . . . . . . . . X
+///     . . . . . . . . X
+///     . . . . . . . . X
+///     . . . . . . . . X
+///     . . . . . . . . X
+///     . . . . . . . . X
+/// });
+/// assert_eq!(lance_pseudo_attacks(Color::White, Square::C9), bitboard! {
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     * . . . . . . . .
+///     X . . . . . . . .
+///     X . . . . . . . .
+///     X . . . . . . . .
+///     X . . . . . . . .
+///     X . . . . . . . .
+///     X . . . . . . . .
+/// });
+/// assert_eq!(lance_pseudo_attacks(Color::Black, Square::C9), bitboard! {
+///     X . . . . . . . .
+///     X . . . . . . . .
+///     * . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+/// });
+/// ```
+#[inline]
+pub const fn lance_pseudo_attacks(color: Color, square: Square) -> BitBoard {
+    const TABLE: [[BitBoard; Square::NUM]; Color::NUM] = {
+        let mut table = [[BitBoard::EMPTY; Square::NUM]; Color::NUM];
+        let mut index: usize = 0;
+        let white = Color::White as usize;
+        let black =  Color::Black as usize;
+        while index < Square::NUM {
+            let sq = Square::index_const(index);
+            let bb_file = sq.file().bitboard();            
+            let dy: i32 = (index % 9) as i32; 
+            table[white][index] = bb_file.shift_along_file(dy + 1);
+            table[black][index] = bb_file.shift_along_file(-(9 - dy));
+            index += 1;
+        }
+
+        table
+    };
+
+    TABLE[color as usize][square as usize]
+}
+

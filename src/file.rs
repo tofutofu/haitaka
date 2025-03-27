@@ -84,6 +84,57 @@ impl File {
         BitBoard(0x1FF << 9 * (self as usize))
     }
 
+    /// Get a bitboard with all squares to the left of this file set.
+    /// 
+    /// # Examples
+    /// ```
+    /// use sparrow::*;
+    /// assert_eq!(File::Nine.left(), BitBoard::EMPTY);
+    /// assert_eq!(File::Eight.left(), File::Nine.bitboard());
+    /// assert_eq!(File::Two.left(), bitboard!{
+    ///     X X X X X X X . .
+    ///     X X X X X X X . .
+    ///     X X X X X X X . .
+    ///     X X X X X X X . .
+    ///     X X X X X X X . .
+    ///     X X X X X X X . .
+    ///     X X X X X X X . .
+    ///     X X X X X X X . .
+    ///     X X X X X X X . .
+    /// });
+    /// ```
+    #[inline(always)]
+    pub const fn left(self) -> BitBoard {    
+        let v: u128 = (1 << Square::NUM) - 1;
+        BitBoard::new(v << (9 * (self as usize + 1)))
+    }
+
+    /// Get a bitboard with all squares to the right of this file set.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use sparrow::*;
+    /// assert_eq!(File::One.right(), BitBoard::EMPTY);
+    /// assert_eq!(File::Two.right(), File::One.bitboard());
+    /// assert_eq!(File::Seven.right(), bitboard!{
+    ///     . . . X X X X X X
+    ///     . . . X X X X X X
+    ///     . . . X X X X X X
+    ///     . . . X X X X X X
+    ///     . . . X X X X X X
+    ///     . . . X X X X X X
+    ///     . . . X X X X X X
+    ///     . . . X X X X X X
+    ///     . . . X X X X X X
+    /// });
+    /// ```
+    #[inline(always)]
+    pub const fn right(self) -> BitBoard {
+        let v: u128 = (1 << Square::NUM) - 1;
+        BitBoard::new(v >> (9 * (9 - self as usize)))
+    }
+
     /* 
     /// Get a bitboard with all squares on adjacent files set.
     /// # Examples

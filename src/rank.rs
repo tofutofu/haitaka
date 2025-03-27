@@ -65,32 +65,35 @@ const RANK_G: BitBoard = BitBoard(MASK << 6);
 const RANK_H: BitBoard = BitBoard(MASK << 7);
 const RANK_I: BitBoard = BitBoard(MASK << 8);
 
-// below from the point of view of Gote
-const BELOW_A: BitBoard = BitBoard::EMPTY;
-const BELOW_B: BitBoard = RANK_A;
-const BELOW_C: BitBoard = BELOW_B.bitor(RANK_B);
-const BELOW_D: BitBoard = BELOW_C.bitor(RANK_C);
-const BELOW_E: BitBoard = BELOW_D.bitor(RANK_D);
-const BELOW_F: BitBoard = BELOW_E.bitor(RANK_E);
-const BELOW_G: BitBoard = BELOW_F.bitor(RANK_F);
-const BELOW_H: BitBoard = BELOW_G.bitor(RANK_G);
-const BELOW_I: BitBoard = BELOW_H.bitor(RANK_H);
+// north and south, given the usual board diagrams
 
-// above from the point of view of Gote
-const ABOVE_I: BitBoard = BitBoard::EMPTY;
-const ABOVE_H: BitBoard = RANK_I;
-const ABOVE_G: BitBoard = ABOVE_H.bitor(RANK_H);
-const ABOVE_F: BitBoard = ABOVE_G.bitor(RANK_G);
-const ABOVE_E: BitBoard = ABOVE_F.bitor(RANK_F);
-const ABOVE_D: BitBoard = ABOVE_E.bitor(RANK_E);
-const ABOVE_C: BitBoard = ABOVE_D.bitor(RANK_D);
-const ABOVE_B: BitBoard = ABOVE_C.bitor(RANK_C);
-const ABOVE_A: BitBoard = ABOVE_B.bitor(RANK_B);
+const NORTH_A: BitBoard = BitBoard::EMPTY;
+const NORTH_B: BitBoard = RANK_A;
+const NORTH_C: BitBoard = NORTH_B.bitor(RANK_B);
+const NORTH_D: BitBoard = NORTH_C.bitor(RANK_C);
+const NORTH_E: BitBoard = NORTH_D.bitor(RANK_D);
+const NORTH_F: BitBoard = NORTH_E.bitor(RANK_E);
+const NORTH_G: BitBoard = NORTH_F.bitor(RANK_F);
+const NORTH_H: BitBoard = NORTH_G.bitor(RANK_G);
+const NORTH_I: BitBoard = NORTH_H.bitor(RANK_H);
+
+const SOUTH_I: BitBoard = BitBoard::EMPTY;
+const SOUTH_H: BitBoard = RANK_I;
+const SOUTH_G: BitBoard = SOUTH_H.bitor(RANK_H);
+const SOUTH_F: BitBoard = SOUTH_G.bitor(RANK_G);
+const SOUTH_E: BitBoard = SOUTH_F.bitor(RANK_F);
+const SOUTH_D: BitBoard = SOUTH_E.bitor(RANK_E);
+const SOUTH_C: BitBoard = SOUTH_D.bitor(RANK_D);
+const SOUTH_B: BitBoard = SOUTH_C.bitor(RANK_C);
+const SOUTH_A: BitBoard = SOUTH_B.bitor(RANK_B);
 
 impl Rank {
 
+    // TODO: Should these array be lifted out of the impl
+    // to avoid code bloat?!
+
     /// Bitboards for the 9 ranks.
-    pub const BB: [BitBoard; Self::NUM] = [
+    pub const RANK: [BitBoard; Self::NUM] = [
         RANK_A,
         RANK_B,
         RANK_C,
@@ -102,13 +105,13 @@ impl Rank {
         RANK_I
     ];
 
-    /// Cover all ranks "above" a given rank. 
-    /// "Above" from the point of view of Gote.
+    /// Cover all ranks "SOUTH" a given rank. 
+    /// "SOUTH" given the usual board diagrams.
     /// 
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// assert_eq!(Rank::ABOVE[2], bitboard! {
+    /// assert_eq!(Rank::SOUTH[2], bitboard! {
     ///     . . . . . . . . .
     ///     . . . . . . . . .
     ///     . . . . . . . . .
@@ -120,25 +123,25 @@ impl Rank {
     ///     X X X X X X X X X
     /// });
     /// ```
-    pub const ABOVE: [BitBoard; Self::NUM] = [
-        ABOVE_A,
-        ABOVE_B,
-        ABOVE_C,
-        ABOVE_D,
-        ABOVE_E,
-        ABOVE_F,
-        ABOVE_G,
-        ABOVE_H,
-        ABOVE_I,        
+    pub const SOUTH: [BitBoard; Self::NUM] = [
+        SOUTH_A,
+        SOUTH_B,
+        SOUTH_C,
+        SOUTH_D,
+        SOUTH_E,
+        SOUTH_F,
+        SOUTH_G,
+        SOUTH_H,
+        SOUTH_I,        
     ];
 
-    /// Cover all ranks "below" a given rank.
-    /// "Below" from the point of view of Gote.
+    /// Cover all ranks "NORTH" a given rank.
+    /// "NORTH" from the point of view of Gote.
     /// 
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// assert_eq!(Rank::BELOW[2], bitboard! {
+    /// assert_eq!(Rank::NORTH[2], bitboard! {
     ///     X X X X X X X X X
     ///     X X X X X X X X X
     ///     . . . . . . . . .
@@ -150,16 +153,16 @@ impl Rank {
     ///     . . . . . . . . .
     /// });
     /// ```
-    pub const BELOW: [BitBoard; Self::NUM] = [
-        BELOW_A,
-        BELOW_B,
-        BELOW_C,
-        BELOW_D,
-        BELOW_E,
-        BELOW_F,
-        BELOW_G,
-        BELOW_H,
-        BELOW_I,
+    pub const NORTH: [BitBoard; Self::NUM] = [
+        NORTH_A,
+        NORTH_B,
+        NORTH_C,
+        NORTH_D,
+        NORTH_E,
+        NORTH_F,
+        NORTH_G,
+        NORTH_H,
+        NORTH_I,
     ];
 
     /// Get a bitboard with all squares on this rank set.
@@ -181,7 +184,7 @@ impl Rank {
     /// ```
     #[inline(always)]
     pub const fn bitboard(self) -> BitBoard {
-        Self::BB[self as usize]
+        Self::RANK[self as usize]
     }
 
     /// Flip the rank.
@@ -197,14 +200,13 @@ impl Rank {
         Self::index_const(Self::I as usize - self as usize)
     }
 
-    /// Ranks "below" this rank as seen from the perspective of color.
+    /// Return the BitBoard for all ranks "north" of this rank.
     /// 
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// assert_eq!(Rank::A.below(Color::White), BitBoard::EMPTY);
-    /// assert_eq!(Rank::I.below(Color::Black), BitBoard::EMPTY);
-    /// assert_eq!(Rank::C.below(Color::White), bitboard!{
+    /// assert_eq!(Rank::A.north(), BitBoard::EMPTY);
+    /// assert_eq!(Rank::C.north(), bitboard!{
     ///     X X X X X X X X X
     ///     X X X X X X X X X
     ///     . . . . . . . . .
@@ -215,46 +217,19 @@ impl Rank {
     ///     . . . . . . . . .
     ///     . . . . . . . . .
     /// });
-    /// assert_eq!(Rank::C.below(Color::Black), bitboard!{
-    ///     . . . . . . . . .
-    ///     . . . . . . . . .
-    ///     . . . . . . . . .
-    ///     X X X X X X X X X
-    ///     X X X X X X X X X
-    ///     X X X X X X X X X
-    ///     X X X X X X X X X
-    ///     X X X X X X X X X
-    ///     X X X X X X X X X
-    /// });
-    /// 
-    /// ``````
+    /// ```
     #[inline(always)]
-    pub const fn below(self, color: Color) -> BitBoard {
-        match color {
-            Color::White => Self::BELOW[self as usize],
-            Color::Black => Self::ABOVE[self as usize]
-        }
+    pub const fn north(self) -> BitBoard {
+        Self::NORTH[self as usize]
     }
 
-    /// Ranks "above" this rank as seen from the perspective of color.
-    /// 
+    /// Return the BitBoard for all ranks "south" of this rank.
+    ///  
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// //assert_eq!(Rank::A.above(Color::Black), BitBoard::EMPTY);
-    /// //assert_eq!(Rank::I.above(Color::White), BitBoard::EMPTY);
-    /// assert_eq!(Rank::G.above(Color::Black), bitboard!{
-    ///     X X X X X X X X X
-    ///     X X X X X X X X X
-    ///     X X X X X X X X X
-    ///     X X X X X X X X X
-    ///     X X X X X X X X X
-    ///     X X X X X X X X X
-    ///     . . . . . . . . .
-    ///     . . . . . . . . .
-    ///     . . . . . . . . . 
-    /// });
-    /// assert_eq!(Rank::G.above(Color::White), bitboard!{
+    /// assert_eq!(Rank::I.south(), BitBoard::EMPTY);
+    /// assert_eq!(Rank::G.south(), bitboard!{
     ///     . . . . . . . . . 
     ///     . . . . . . . . . 
     ///     . . . . . . . . . 
@@ -267,14 +242,9 @@ impl Rank {
     /// });
     /// ```
     #[inline(always)]
-    pub const fn above(self, color: Color) -> BitBoard {
-        match color {
-            Color::White => Self::ABOVE[self as usize],
-            Color::Black => Self::BELOW[self as usize]
-        }
+    pub const fn south(self) -> BitBoard {
+        Self::SOUTH[self as usize]
     }
-
-    // TODO: Check how this is used.
 
     /// Get a rank relative to some color.
     /// This flips the rank if viewing from Black's perspective.
@@ -287,10 +257,9 @@ impl Rank {
     /// ```
     #[inline(always)]
     pub const fn relative_to(self, color: Color) -> Self {
-        if let Color::White = color {
-            self
-        } else {
-            self.flip()
+        match color {
+            Color::White => self,
+            Color::Black => self.flip()
         }
     }
 }

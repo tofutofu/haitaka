@@ -72,6 +72,169 @@ impl core::fmt::Display for Square {
     }
 }
 
+// Directions  Diagrams     Square indices
+// NW N NE     A9 ... A1    72 ...  0
+//  W . E         ...          ...
+// SW S SE     I9 ... I1    80 ...  9
+
+// Diagonal mask for forward ("up") slashing diagonals (/).
+const NEG_MASK: u128 = 0x100401004010040100401;
+
+// Diagonal mask for backward ("down") slashing diagonals (\).
+const POS_MASK: u128 = 0x1010101010101010100;
+
+// BitBoards for the two main diagonals.
+const NEGD: BitBoard = BitBoard::new(NEG_MASK);
+const POSD: BitBoard = BitBoard::new(POS_MASK);
+
+/// Down-slanting diagonals.
+/// 
+/// A square (file, rank) is on down-slanting diagonal `POS_DIA[file + rank]`.
+/// The down-slanting diagonals are indexed as
+/// ```text
+///    8  7  6  5  4  3  2  1  0
+///    9  8  7  6  5  4  3  2  1
+///   10  9  8  7  6  5  4  3  2
+///   11 10  9  8  7  6  5  4  3
+///   12 11 10  9  8  7  6  5  4
+///   13 12 11 10  9  8  7  6  5 
+///   13 12 11 10  9  8  7  6  5 
+///   14 13 12 11 10  9  8  7  6
+///   15 14 13 12 11 10  9  8  7
+///   16 15 14 13 12 11 10  9  8
+/// ```
+/// 
+/// # Examples
+/// ```
+/// use sparrow::*;
+/// assert_eq!(POS_DIA[8], bitboard! {
+///     X . . . . . . . .
+///     . X . . . . . . .
+///     . . X . . . . . .
+///     . . . X . . . . .
+///     . . . . X . . . .
+///     . . . . . X . . .
+///     . . . . . . X . .
+///     . . . . . . . X .
+///     . . . . . . . . X
+/// });
+/// assert_eq!(POS_DIA[2], bitboard! {
+///     . . . . . . X . .
+///     . . . . . . . X .
+///     . . . . . . . . X
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+/// });
+/// assert_eq!(POS_DIA[16], bitboard! {
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     X . . . . . . . .
+/// });
+/// ```
+pub const POS_DIA: [BitBoard;17] = [
+    POSD.shr(8),
+    POSD.shr(7),
+    POSD.shr(6),
+    POSD.shr(5),
+    POSD.shr(4),
+    POSD.shr(3),
+    POSD.shr(2),
+    POSD.shr(1),
+    POSD,       
+    POSD.shl(1),
+    POSD.shl(2),
+    POSD.shl(3),
+    POSD.shl(4),
+    POSD.shl(5),
+    POSD.shl(6),
+    POSD.shl(7),
+    POSD.shl(8),
+];
+
+/// Up-slanting diagonals.
+/// 
+/// A square (file, rank) is on up-slanting diagonal NEG_DIA[8 + rank - file].
+/// The upslanting diagonals are indexed as
+/// ```text
+///     0  1  2  3  4  5  6  7  8
+///     1  2  3  4  5  6  7  8  9
+///     2  3  4  5  6  7  8  9 10
+///     3  4  5  6  7  8  9 10 11
+///     4  5  6  7  8  9 10 11 12
+///     5  6  7  8  9 10 11 12 13
+///     6  7  8  9 10 11 12 13 14
+///     7  8  9 10 11 12 13 14 15
+///     8  9 10 11 12 13 14 15 16
+/// ```
+/// 
+/// # Examples
+/// ```
+/// use sparrow::*;
+/// assert_eq!(NEG_DIA[8], bitboard! {
+///     . . . . . . . . X
+///     . . . . . . . X .
+///     . . . . . . X . .
+///     . . . . . X . . .
+///     . . . . X . . . .
+///     . . . X . . . . .
+///     . . X . . . . . .
+///     . X . . . . . . .
+///     X . . . . . . . .
+/// });
+/// assert_eq!(NEG_DIA[14], bitboard! {
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . X
+///     . . . . . . . X .
+///     . . . . . . X . .
+/// });
+/// assert_eq!(NEG_DIA[0], bitboard! {
+///     X . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .     
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . . 
+/// });
+/// ```
+pub const NEG_DIA: [BitBoard; 17] = [
+    NEGD.shr(8),
+    NEGD.shr(7),
+    NEGD.shr(6),
+    NEGD.shr(5),
+    NEGD.shr(4),
+    NEGD.shr(3),
+    NEGD.shr(2),
+    NEGD.shr(1),
+    NEGD,       
+    NEGD.shl(1),
+    NEGD.shl(2),
+    NEGD.shl(3),
+    NEGD.shr(4),
+    NEGD.shl(5),
+    NEGD.shl(6),
+    NEGD.shl(7),
+    NEGD.shl(8),
+];
+
+
 impl Square {
 
     /// Make a square from a file and a rank.
@@ -128,6 +291,56 @@ impl Square {
     #[inline(always)]
     pub const fn bitboard(self) -> BitBoard {
         BitBoard(1 << self as usize)
+    }
+
+    /// Get the bitboard with the "up" (forward-slanting) diagonal for this square.
+    /// 
+    /// # Examples
+    /// ```
+    /// use sparrow::*;
+    /// assert_eq!(Square::E5.up_diagonal(), bitboard! {
+    ///     . . . . . . . . X
+    ///     . . . . . . . X .
+    ///     . . . . . . X . .
+    ///     . . . . . X . . .
+    ///     . . . . X . . . .
+    ///     . . . X . . . . .
+    ///     . . X . . . . . .
+    ///     . X . . . . . . .
+    ///     X . . . . . . . .
+    /// });
+    /// assert_eq!(Square::A1.up_diagonal(), Square::I9.up_diagonal());
+    /// ```
+    #[inline(always)]
+    pub const fn up_diagonal(self) -> BitBoard {
+        let rank = self as usize % 9;
+        let file = self as usize / 9;
+        NEG_DIA[8 + rank - file]
+    }
+
+    /// Get the bitboard with the "down" (backwards-slanting) diagonal for this square.
+    /// 
+    /// # Examples
+    /// ```
+    /// use sparrow::*;
+    /// assert_eq!(Square::E5.down_diagonal(), bitboard! {
+    ///     X . . . . . . . .
+    ///     . X . . . . . . .
+    ///     . . X . . . . . .
+    ///     . . . X . . . . .
+    ///     . . . . X . . . .
+    ///     . . . . . X . . .
+    ///     . . . . . . X . .
+    ///     . . . . . . . X .
+    ///     . . . . . . . . X
+    /// });
+    /// assert_eq!(Square::A9.down_diagonal(), Square::I1.down_diagonal());
+    /// ```
+    #[inline(always)]
+    pub const fn down_diagonal(self) -> BitBoard {
+        let rank = self as usize % 9;
+        let file = self as usize / 9;
+        POS_DIA[file + rank]
     }
 
     /// Add a file and rank offset to the given square.
@@ -243,3 +456,6 @@ impl Square {
         }
     }
 }
+
+
+
