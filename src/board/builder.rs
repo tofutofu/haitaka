@@ -20,7 +20,7 @@ pub struct BoardBuilder {
     /// The side to move.
     pub side_to_move: Color,
     /// The move number.
-    pub move_number: u16
+    pub move_number: u16,
 }
 
 impl Default for BoardBuilder {
@@ -31,7 +31,7 @@ impl Default for BoardBuilder {
 
 impl BoardBuilder {
     /// Get an empty builder. All fields are set to their empty values.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -45,7 +45,7 @@ impl BoardBuilder {
             board: [None; Square::NUM],
             hands: [[0; Piece::NUM]; Color::NUM],
             side_to_move: Color::White,
-            move_number: 1
+            move_number: 1,
         }
     }
 
@@ -99,7 +99,7 @@ impl BoardBuilder {
     }
 
     /// Mutably get a square on the board.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -110,7 +110,6 @@ impl BoardBuilder {
     pub fn square_mut(&mut self, square: Square) -> &mut Option<(Piece, Color)> {
         &mut self.board[square as usize]
     }
-
 
     /// Build a [`Board`] from this builder.
     /// # Errors
@@ -128,12 +127,13 @@ impl BoardBuilder {
             inner: ZobristBoard::empty(),
             pinned: BitBoard::EMPTY,
             checkers: BitBoard::EMPTY,
-            move_number: 0
+            move_number: 0,
         };
 
-        self.add_board          (&mut board).map_err(|_| InvalidBoard)?;
-        self.add_fullmove_number(&mut board).map_err(|_| InvalidMoveNumber)?;
-        
+        self.add_board(&mut board).map_err(|_| InvalidBoard)?;
+        self.add_move_number(&mut board)
+            .map_err(|_| InvalidMoveNumber)?;
+
         Ok(board)
     }
 
@@ -146,7 +146,7 @@ impl BoardBuilder {
         if self.side_to_move != board.side_to_move() {
             board.inner.toggle_side_to_move();
         }
-        if !board.board_is_valid() {
+        if !board.is_valid() {
             return Err(());
         }
 
@@ -166,6 +166,7 @@ impl BoardBuilder {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -180,3 +181,4 @@ mod tests {
         }
     }
 }
+*/

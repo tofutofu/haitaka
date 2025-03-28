@@ -128,11 +128,7 @@ impl Piece {
     // TODO: we need a try_prom function
 
     pub const fn do_promote(self, yes: bool) -> Self {
-        if yes {
-            self.promote()
-        } else {
-            self
-        }
+        if yes { self.promote() } else { self }
     }
 
     /// Unpromote this piece.
@@ -168,7 +164,7 @@ impl Piece {
             'R' => Some((Self::Rook, Color::Black)),
             'B' => Some((Self::Bishop, Color::Black)),
             'K' => Some((Self::King, Color::Black)),
-            _ => None
+            _ => None,
         }
     }
 
@@ -230,7 +226,7 @@ impl Piece {
             Self::Gold => "g",
             Self::King => "k",
             Self::Tokin => "+p",
-            Self::PLance =>  "+l",
+            Self::PLance => "+l",
             Self::PKnight => "+n",
             Self::PSilver => "+s",
             Self::PBishop => "+b",
@@ -243,9 +239,7 @@ impl Piece {
             s.to_string()
         }
     }
-
 }
-
 
 impl core::str::FromStr for Piece {
     type Err = PieceParseError;
@@ -267,9 +261,9 @@ impl core::str::FromStr for ColoredPiece {
     type Err = PieceParseError;
 
     fn from_str(s: &str) -> core::result::Result<Self, Self::Err> {
-       Piece::try_from_str(s)
-           .map(|(piece, color)| ColoredPiece { piece, color }) 
-           .ok_or(PieceParseError)
+        Piece::try_from_str(s)
+            .map(|(piece, color)| ColoredPiece { piece, color })
+            .ok_or(PieceParseError)
     }
 }
 
@@ -279,7 +273,7 @@ impl core::fmt::Display for ColoredPiece {
     }
 }
 
-/* 
+/*
     // Parse a ColoredPiece from a string
     let cp: ColoredPiece = "+p".parse().unwrap();
     println!("{:?}", cp); // Output: ColoredPiece { piece: Tokin, color: White }

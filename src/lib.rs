@@ -22,4 +22,3 @@ pub use sliders::*;
 pub use square::*;
 
 pub use board::*;
-

@@ -7,8 +7,8 @@ struct ColorZobristConstants {
 
 #[derive(Debug)]
 struct ZobristConstants {
-    color: [ColorZobristConstants; Color::NUM],  
-    black_to_move: u64
+    color: [ColorZobristConstants; Color::NUM],
+    black_to_move: u64,
 }
 
 const ZOBRIST: ZobristConstants = {
@@ -47,7 +47,7 @@ const ZOBRIST: ZobristConstants = {
                 fill_array!(squares: rand!());
                 squares
             });
-            
+
             ColorZobristConstants {
                 pieces,
             }
@@ -60,16 +60,16 @@ const ZOBRIST: ZobristConstants = {
 
     ZobristConstants {
         color: [white, black],
-        black_to_move
+        black_to_move,
     }
 };
 
 // This is Copy for performance reasons, since Copy guarantees a bit-for-bit copy.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ZobristBoard {
-    pieces: [BitBoard; Piece::NUM],  // piece type => bit map of board locations
-    colors: [BitBoard; Color::NUM],  // color => bit map of board locations
-    hands: [[u8; Piece::NUM]; Color::NUM], // color => [number of pieces in hand, indexed by piece type]  
+    pieces: [BitBoard; Piece::NUM], // piece type => bit map of board locations
+    colors: [BitBoard; Color::NUM], // color => bit map of board locations
+    hands: [[u8; Piece::NUM]; Color::NUM], // color => [number of pieces in hand, indexed by piece type]
     side_to_move: Color,
     hash: u64,
 }
@@ -82,7 +82,7 @@ impl ZobristBoard {
             colors: [BitBoard::EMPTY; Color::NUM],
             hands: [[0; Piece::NUM]; Color::NUM],
             side_to_move: Color::White,
-            hash: 0
+            hash: 0,
         }
     }
 
@@ -130,12 +130,9 @@ impl ZobristBoard {
     #[inline(always)]
     pub fn xor_square(&mut self, piece: Piece, color: Color, square: Square) {
         let square_bb = square.bitboard();
-        self.pieces[piece as usize] ^= square_bb;  // toggles
-        self.colors[color as usize] ^= square_bb;  // toggles
-        self.hash ^= ZOBRIST
-            .color[color as usize]
-            .pieces[piece as usize]
-            [square as usize];
+        self.pieces[piece as usize] ^= square_bb; // toggles
+        self.colors[color as usize] ^= square_bb; // toggles
+        self.hash ^= ZOBRIST.color[color as usize].pieces[piece as usize][square as usize];
     }
 
     // TODO: Update pieces in hand!
@@ -147,7 +144,7 @@ impl ZobristBoard {
     }
 }
 
-/* 
+/*
 #[cfg(test)]
 mod tests {
     use crate::Board;

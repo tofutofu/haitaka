@@ -1,14 +1,14 @@
 use crate::*;
 
-mod zobrist;
 mod builder;
 mod parse;
+mod zobrist;
 
-use zobrist::*;
 use builder::*;
+use zobrist::*;
 // use parse::*;
 
-/* 
+/*
 mod movegen;
 mod parse;
 mod zobrist;
@@ -30,7 +30,7 @@ pub enum GameStatus {
     /// The game ended in a draw.
     Drawn,
     /// The game is still ongoing.
-    Ongoing
+    Ongoing,
 }
 
 helpers::simple_error! {
@@ -39,19 +39,19 @@ helpers::simple_error! {
 }
 
 /// A Shogi board.
-/// 
+///
 /// This keeps about as much state as a SFEN string. It does not keep track of history.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Board {
     inner: ZobristBoard,
     pinned: BitBoard,
-    checkers: BitBoard,    
-    move_number: u16
+    checkers: BitBoard,
+    move_number: u16,
 }
 
 impl Board {
     /// Get a board with the default start position.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -96,7 +96,10 @@ impl Board {
     }
 
     pub fn colored_piece_on(&self, square: Square) -> Option<ColoredPiece> {
-        Some( ColoredPiece { piece: Piece::King, color: Color::White } )
+        Some(ColoredPiece {
+            piece: Piece::King,
+            color: Color::White,
+        })
     }
 
     pub fn hand(&self, color: Color) -> &[u8; Piece::NUM] {
@@ -113,15 +116,12 @@ impl Board {
     }
 
     #[inline(always)]
-    pub fn pieces(&self, color: Color) -> BitBoard {
-        self.inner.pieces(color)
+    pub fn pieces(&self, piece: Piece) -> BitBoard {
+        self.inner.pieces(piece)
     }
 
     #[inline(always)]
     pub fn hands(&self) -> &[[u8; Piece::NUM]; Color::NUM] {
         self.inner.hands()
     }
-
 }
-
-

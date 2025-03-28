@@ -1,9 +1,9 @@
-use core::convert::TryInto;
-use core::str::FromStr;
+// use core::convert::TryInto;
 use core::fmt::{Display, Formatter};
+use core::str::FromStr;
 
-use crate::*;
 use super::ZobristBoard;
+use crate::*;
 
 helpers::simple_error! {
     /// An error while parsing the SFEN string.
@@ -19,7 +19,7 @@ helpers::simple_error! {
 
 impl Board {
     /// Parse a SFEN string. You can also parse the board with [`FromStr`].
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -34,23 +34,19 @@ impl Board {
             inner: ZobristBoard::empty(),
             pinned: BitBoard::EMPTY,
             checkers: BitBoard::EMPTY,
-            move_number: 0
+            move_number: 0,
         };
 
         let mut parts = sfen.split(' ');
         let mut next = || parts.next().ok_or(MissingField);
-        
-        Self::parse_board(&mut board, next()?)
-            .map_err(|_| InvalidBoard)?;
 
-        Self::parse_hands(&mut board, next()?)
-            .map_err(|_| InvalidHands)?;
+        Self::parse_board(&mut board, next()?).map_err(|_| InvalidBoard)?;
 
-        Self::parse_side_to_move(&mut board, next()?)
-            .map_err(|_| InvalidSideToMove)?;
+        Self::parse_hands(&mut board, next()?).map_err(|_| InvalidHands)?;
 
-        Self::parse_move_number(&mut board, next()?)
-            .map_err(|_| InvalidMoveNumber)?;
+        Self::parse_side_to_move(&mut board, next()?).map_err(|_| InvalidSideToMove)?;
+
+        Self::parse_move_number(&mut board, next()?).map_err(|_| InvalidMoveNumber)?;
         if !board.move_number_is_valid() {
             return Err(InvalidMoveNumber);
         }
@@ -87,20 +83,17 @@ impl Board {
                     };
                     file -= offset as usize;
                 } else if c == '+' {
-                    if prom { 
+                    if prom {
                         return Err(());
                     };
-                    prom = true;                    
+                    prom = true;
                 } else if let Some((piece, color)) = Piece::try_from_char(c) {
                     let piece = piece.do_promote(prom);
-                    let square = Square::new(
-                        File::try_index(file).ok_or(())?,
-                        rank
-                    );
+                    let square = Square::new(File::try_index(file).ok_or(())?, rank);
                     board.inner.xor_square(piece, color, square);
 
                     file -= 1;
-                    prom = false;                   
+                    prom = false;
                 } else {
                     return Err(());
                 }
@@ -114,7 +107,7 @@ impl Board {
 
     fn parse_hands(board: &mut Board, s: &str) -> Result<(), ()> {
         let mut empty = false;
-        let mut count: u16 = 0;
+        let mut count: u32 = 0;
 
         for c in s.chars() {
             if !empty {
@@ -123,11 +116,12 @@ impl Board {
                 } else if let Some(num) = c.to_digit(10) {
                     count = 10 * count + num;
                 } else if let Some((piece, color)) = Piece::try_from_char(c) {
-
                     // TODO: This needs to be done by function call
                     // since the hash also needs to be updated!
 
-                    board.inner.hands[color as usize][piece as usize] = max(count, 1);
+                    board.inner.hands[color as usize][piece as usize] =
+                        if count > 0 { count } else { 1 };
+
                     count = 0
                 } else {
                     return Err(());
@@ -136,11 +130,7 @@ impl Board {
                 return Err(());
             }
         }
-        if count > 0 {
-            Err(())
-        } else {
-            Ok(())
-        }
+        if count > 0 { Err(()) } else { Ok(()) }
     }
 
     fn parse_side_to_move(board: &mut Board, s: &str) -> Result<(), ()> {
@@ -163,9 +153,9 @@ impl FromStr for Board {
     type Err = SFENParseError;
 
     /// Parse a SFEN string.
-    /// 
+    ///
     /// See also: [`Board::from_sfen`].
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -176,14 +166,14 @@ impl FromStr for Board {
     fn from_str(sfen: &str) -> Result<Self, Self::Err> {
         match Self::from_sfen(sfen) {
             Ok(board) => Ok(board),
-            Err(error) => Err(error)
+            Err(error) => Err(error),
         }
     }
 }
 
 impl Display for Board {
-    /// Display the board. 
-    /// 
+    /// Display the board.
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -193,9 +183,11 @@ impl Display for Board {
     /// ```
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         // BOARD
-        for &file in File::ALL.iter().rev() { // 9 .. 1
+        for &file in File::ALL.iter().rev() {
+            // 9 .. 1
             let mut empty = 0;
-            for &rank in Rank::ALL.iter() { // a .. i
+            for &rank in Rank::ALL.iter() {
+                // a .. i
                 let square = Square::new(file, rank);
                 if let Some(piece) = self.colored_piece_on(square) {
                     if empty > 0 {
@@ -214,7 +206,7 @@ impl Display for Board {
                 write!(f, "/")?;
             }
         }
-        
+
         // HANDS
         if self.is_hand_empty(Color::White) && self.is_hand_empty(Color::Black) {
             write!(f, " -")?;
@@ -239,12 +231,12 @@ impl Display for Board {
 
         // MOVE_NUMBER
         write!(f, " {}", self.move_number)?;
-        
+
         Ok(())
     }
 }
 
-/* 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,5 +1,5 @@
 // Note: The macros in this module are not exported in lib.rs.
-// All imports need to explicitly `use helpers::{macro}`.` 
+// All imports need to explicitly `use helpers::{macro}`.`
 
 #![allow(missing_docs)]
 
@@ -10,12 +10,12 @@
 //
 // Use of `transmute` is actually safe, since it's guaranteed that the enum
 // variants and usize are transmutable. The compiler allows this, even in
-// const functions, even in the stable tool chain. Use of `transmute` generally 
+// const functions, even in the stable tool chain. Use of `transmute` generally
 // improves performance significantly: the GenerateMoves bench was made 16% faster
 // (in cozy-chess).
 //
 // The panics are justified since a panic always indicates a real code bug.
-// 
+//
 // Function `index_const`` is the version of `index` to be used in const functions
 // since those don't allow all the operations in `index`.
 //
