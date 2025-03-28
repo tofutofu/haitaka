@@ -7,6 +7,7 @@ pub mod piece;
 pub mod rank;
 pub mod sliders;
 pub mod square;
+pub mod shogi_move;
 
 pub use attacks::*;
 pub use bitboard::*;
@@ -16,3 +17,4 @@ pub use piece::*;
 pub use rank::*;
 pub use sliders::*;
 pub use square::*;
+pub use shogi_move::*;

@@ -394,24 +394,28 @@ pub const fn get_rook_file_moves(square: Square, occ: BitBoard) -> BitBoard {
     BitBoard(north | south)
 }
 
-// Rook attack masks - west- and east-bound rays along the board ranks.
+// Rook ray attack masks - along ranks.
+//
+// Directions: West sq East
+//
 // This array serves the same function as the QUGIY_ROOK_MASK table in YaneuraOu.
-
+//
 const ROOK_RANK_MASKS: [(u128, u128); Square::NUM] = {
     let mut masks = [(0u128, 0u128); Square::NUM];
     let mut index = 0;
     while index < Square::NUM {
         let square = Square::index_const(index);
         let file = square.file();
-        let rank_bb = square.rank().bitboard().0;
+        let rank = square.rank();
+        let rnk = rank.bitboard().0;
 
         // West mask: All bits to the west (higher bits) of the square
-        let west_mask = rank_bb & file.west().0;
+        let west = rnk & file.west().0;
 
         // East mask: All bits to the east (lower bits) of the square
-        let east_mask = rank_bb & file.east().0;
+        let east = rnk & file.east().0;
 
-        masks[index] = (west_mask, east_mask.reverse_bits());
+        masks[index] = (west, east.reverse_bits());
         index += 1;
     }
     masks
@@ -570,7 +574,7 @@ const BISHOP_RAY_MASKS: [(u128, u128, u128, u128); Square::NUM] = {
 /// BitBoard((((attacks & occ) - 1) ^ occ) & attacks)
 /// ```
 /// This algorithm can only apply to attack rays with bit indices greater than the square index.
-/// So, the east-wards (right-wards) rays have been reversed.
+/// So, the east-wards (right-wards) rays are reversed during the calculation.
 ///
 /// # Examples
 /// ```
