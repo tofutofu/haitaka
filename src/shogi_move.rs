@@ -12,7 +12,7 @@ pub struct Move {
     /// The square to move the piece to.
     pub to: Square,
     /// Flag to indicate if piece promotes or not.
-    pub promotion: bool
+    pub promotion: bool,
 }
 
 crate::helpers::simple_error! {
@@ -24,7 +24,7 @@ impl FromStr for Move {
     type Err = MoveParseError;
 
     /// Convert a string into a Move.
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -51,7 +51,7 @@ impl FromStr for Move {
             Some(Move {
                 from: s.get(0..2)?.parse().ok()?,
                 to: s.get(2..4)?.parse().ok()?,
-                promotion: s.get(4..5) == Some("+")
+                promotion: s.get(4..5) == Some("+"),
             })
         }
         parse(s).ok_or(MoveParseError)
