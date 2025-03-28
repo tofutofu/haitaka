@@ -1,25 +1,24 @@
-// Note: This module is not exported in lib.rs.
-// All imports need to be explicit.
+// Note: The macros in this module are not exported in lib.rs.
+// All imports need to explicitly `use helpers::{macro}`.` 
 
 #![allow(missing_docs)]
 
-// Macros are based on the cozy-chess-types macros.
+// Macros mostly based on the cozy-chess-types macros.
 //
-// I added attribute '#[repr(usize)]' to the simple enum definitions.
-// This makes it possible to use the unsafe function 'core::mem::transmute'
-// in function `try_index`.
+// I added attribute `#[repr(usize)]` to the `simple_enum!` definition.
+// This makes enables the unsafe function `core::mem::transmute` in `try_index`.
 //
-// In principle transmute should not be used in 'const' functions,
-// but the compiler allows it even in the stable toolchain (aarch64 at least).
-// So I don't see any reason to _not_ use it. It does improve performance
-// (GenerateMoves bench improves by 16% in the cozy-chess code).
+// Use of `transmute` is actually safe, since it's guaranteed that the enum
+// variants and usize are transmutable. The compiler allows this, even in
+// const functions, even in the stable tool chain. Use of `transmute` generally 
+// improves performance significantly: the GenerateMoves bench was made 16% faster
+// (in cozy-chess).
 //
-// The panicky functions are intended "for internal use only". A panic
-// is never a "normal" exception, always a bug.
+// The panics are justified since a panic always indicates a real code bug.
+// 
+// Function `index_const`` is the version of `index` to be used in const functions
+// since those don't allow all the operations in `index`.
 //
-// The `index_const`` function is a version of `index` that can be used in
-// const functions.
-
 macro_rules! simple_enum {
     (
         $(#[$attr:meta])*

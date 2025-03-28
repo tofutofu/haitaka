@@ -3,6 +3,9 @@ pub use sparrow::*;
 fn main() {
     println!("Hello, Shogi World!");
 
+    let gs = board::GameStatus::Drawn;
+
+    println!("{:#?}", gs);
     /*
     let a1 = Square::A1.bitboard();
     let b1 = Square::B1.bitboard();

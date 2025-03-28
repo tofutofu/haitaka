@@ -9,6 +9,8 @@ pub mod shogi_move;
 pub mod sliders;
 pub mod square;
 
+pub mod board;
+
 pub use attacks::*;
 pub use bitboard::*;
 pub use color::*;
@@ -18,3 +20,6 @@ pub use rank::*;
 pub use shogi_move::*;
 pub use sliders::*;
 pub use square::*;
+
+pub use board::*;
+

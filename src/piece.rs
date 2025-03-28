@@ -1,7 +1,7 @@
 use crate::*;
 
 //use std::str::*;
-//use core::fmt::*;
+use core::fmt::*;
 
 crate::helpers::simple_enum! {
     /// Shogi piece types.
@@ -39,8 +39,8 @@ crate::helpers::simple_enum! {
 }
 
 // The piece representation in SFEN strings requires either one or
-// two chars. Black/Sente pieces are indicated by uppercase letters;
-// White/Gote pieces by lowerase. Promoted pieces are indicated by
+// two chars. Black/Black pieces are indicated by uppercase letters;
+// White/White pieces by lowerase. Promoted pieces are indicated by
 // a '+' prefix.
 
 // TODO: Should there be a "None" or "Empty" piecetype?
@@ -49,149 +49,6 @@ crate::helpers::simple_error! {
     /// The value was not a valid [`Piece`].
     pub struct PieceParseError = "The value is not a valid Piece.";
 }
-
-/*
-impl core::str::FromStr for Piece {
-    type Err = PieceParseError;
-
-    /// Convert a string slice into a Piece.
-    ///
-    /// This function ignores the color of the piece, so its perhaps not terribly useful.
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use core::convert::TryInto;
-
-        let mut chars = s.chars();
-        let first = chars.next().ok_or(PieceParseError)?;
-        let sec = chars.next();
-
-        match (first, sec) {
-            ('+', Some(c)) => {
-                let mut cc = c.to_lowercase();
-                match cc {
-                    'p' => Ok(Piece::Tokin),
-                    'l' => Ok(Piece::PLance),
-                    'n' => Ok(Piece::PKnight),
-                    's' => Ok(Piece::PSilver),
-                    'b' => Ok(Piece::PBishop),
-                    'r' => Ok(Piece::PRook),
-                    _ => Err(PieceParseError),
-                }
-            }
-            (c, None) => {
-                let mut cc = c.to_lowercase();
-                match cc {
-                    'p' => Ok(Piece::Pawn),
-                    'l' => Ok(Piece::Lance),
-                    'n' => Ok(Piece::Knight),
-                    's' => Ok(Piece::Silver),
-                    'b' => Ok(Piece::Bishop),
-                    'r' => Ok(Piece::Rook),
-                    'g' => Ok(Piece::Gold),
-                    'k' => Ok(Piece::King),
-                    _ => Err(PieceParseError),
-                }
-            }
-            _ => Err(PieceParseError),
-        }
-    }
-}
-
-impl core::fmt::Display for Piece {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        let s = match self {
-            Piece::Pawn => "p",
-            Piece::Lance => "l",
-            Piece::Knight => "n",
-            Piece::Silver => "s",
-            Piece::Bishop => "b",
-            Piece::Rook => "r",
-            Piece::Gold => "g",
-            Piece::King => "k",
-            Piece::Tokin => "+p",
-            Piece::PLance => "+l",
-            Piece::PKnight => "+n",
-            Piece::PSilver => "+s",
-            Piece::PBishop => "+b",
-            Piece::PRook => "+r",
-        };
-        write!(f, "{}", s)
-    }
-}
-
-
-impl std::str::FromStr for (Color, Piece) {
-    type Err = PieceParseError;
-
-    /// Convert a string slice into a tuple (color, piecetype).
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sparrow::{Color, Piece};
-    /// use std::str::FromStr;
-    ///
-    /// let piece: (Color, Piece) = (Color, Piece)::from_str("p").unwrap();
-    /// assert_eq!(piece, (Color::White, Piece::Pawn));
-    ///
-    /// let piece: (Color, Piece) = (Color, Piece)::from_str("P").unwrap();
-    /// assert_eq!(piece, (Color::Black, Piece::Pawn));
-    ///
-    /// let piece: (Color, Piece) = (Color, Piece)::from_str("+p").unwrap();
-    /// assert_eq!(piece, (Color::White, Piece::Tokin));
-    ///
-    /// let piece: (Color, Piece) = (Color, Piece)::from_str("+P").unwrap();
-    /// assert_eq!(piece, (Color::Black, Piece::Tokin));
-    /// ```
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() == 1 {
-            let c = s.chars().next().unwrap();
-            let color = if c.is_uppercase() { Color::Black } else { Color::White };
-            let piece_char = c.to_lowercase().next().unwrap();
-            let piece = match piece_char {
-                'p' => Ok(Piece::Pawn),
-                'l' => Ok(Piece::Lance),
-                'n' => Ok(Piece::Knight),
-                's' => Ok(Piece::Silver),
-                'b' => Ok(Piece::Bishop),
-                'r' => Ok(Piece::Rook),
-                'g' => Ok(Piece::Gold),
-                'k' => Ok(Piece::King),
-                _ => Err(PieceParseError),
-            }?;
-            Ok((color, piece))
-        } else if s.len() == 2 && s.starts_with('+') {
-            let c = s.chars().nth(1).unwrap();
-            let color = if c.is_uppercase() { Color::Black } else { Color::White };
-            let piece_char = c.to_lowercase().next().unwrap();
-            let piece = match piece_char {
-                'p' => Ok(Piece::Tokin),
-                'l' => Ok(Piece::PLance),
-                'n' => Ok(Piece::PKnight),
-                's' => Ok(Piece::PSilver),
-                'b' => Ok(Piece::PBishop),
-                'r' => Ok(Piece::PRook),
-                _ => Err(PieceParseError),
-            }?;
-            Ok((color, piece))
-        } else {
-            Err(PieceParseError)
-        }
-    }
-}
-
-
-impl fmt::Display for (Color, Piece) {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let piece_str = format!("{}", self.1);
-        let formatted_str = match self.0 {
-            Color::White => piece_str,
-            Color::Black => piece_str.to_uppercase(),
-        };
-        write!(f, "{}", formatted_str)
-    }
-}
-
-*/
 
 impl Piece {
     /// Is this piece a promoted piece?
@@ -268,6 +125,16 @@ impl Piece {
         }
     }
 
+    // TODO: we need a try_prom function
+
+    pub const fn do_promote(self, yes: bool) -> Self {
+        if yes {
+            self.promote()
+        } else {
+            self
+        }
+    }
+
     /// Unpromote this piece.
     ///
     /// Note: This function does not panic. If called on
@@ -282,4 +149,190 @@ impl Piece {
             _ => self,
         }
     }
+
+    pub fn try_from_char(c: char) -> Option<(Self, Color)> {
+        match c {
+            'p' => Some((Self::Pawn, Color::White)),
+            'l' => Some((Self::Lance, Color::White)),
+            'n' => Some((Self::Knight, Color::White)),
+            's' => Some((Self::Silver, Color::White)),
+            'g' => Some((Self::Gold, Color::White)),
+            'r' => Some((Self::Rook, Color::White)),
+            'b' => Some((Self::Bishop, Color::White)),
+            'k' => Some((Self::King, Color::White)),
+            'P' => Some((Self::Pawn, Color::Black)),
+            'L' => Some((Self::Lance, Color::Black)),
+            'N' => Some((Self::Knight, Color::Black)),
+            'S' => Some((Self::Silver, Color::Black)),
+            'G' => Some((Self::Gold, Color::Black)),
+            'R' => Some((Self::Rook, Color::Black)),
+            'B' => Some((Self::Bishop, Color::Black)),
+            'K' => Some((Self::King, Color::Black)),
+            _ => None
+        }
+    }
+
+    pub fn try_from_str(s: &str) -> Option<(Self, Color)> {
+        let mut chars = s.chars();
+        let first = chars.next()?; // Get the first character
+        let second = chars.next(); // Get the second character, if any
+
+        match (first, second) {
+            // Promoted pieces (e.g., "+p", "+l")
+            ('+', Some(c)) => match c {
+                'p' => Some((Self::Tokin, Color::White)),
+                'l' => Some((Self::PLance, Color::White)),
+                'n' => Some((Self::PKnight, Color::White)),
+                's' => Some((Self::PSilver, Color::White)),
+                'b' => Some((Self::PBishop, Color::White)),
+                'r' => Some((Self::PRook, Color::White)),
+                'P' => Some((Self::Tokin, Color::Black)),
+                'L' => Some((Self::PLance, Color::Black)),
+                'N' => Some((Self::PKnight, Color::Black)),
+                'S' => Some((Self::PSilver, Color::Black)),
+                'B' => Some((Self::PBishop, Color::Black)),
+                'R' => Some((Self::PRook, Color::Black)),
+                _ => None,
+            },
+            // Unpromoted pieces (e.g., "p", "l")
+            (c, None) => match c {
+                'p' => Some((Self::Pawn, Color::White)),
+                'l' => Some((Self::Lance, Color::White)),
+                'n' => Some((Self::Knight, Color::White)),
+                's' => Some((Self::Silver, Color::White)),
+                'g' => Some((Self::Gold, Color::White)),
+                'r' => Some((Self::Rook, Color::White)),
+                'b' => Some((Self::Bishop, Color::White)),
+                'k' => Some((Self::King, Color::White)),
+                'P' => Some((Self::Pawn, Color::Black)),
+                'L' => Some((Self::Lance, Color::Black)),
+                'N' => Some((Self::Knight, Color::Black)),
+                'S' => Some((Self::Silver, Color::Black)),
+                'G' => Some((Self::Gold, Color::Black)),
+                'R' => Some((Self::Rook, Color::Black)),
+                'B' => Some((Self::Bishop, Color::Black)),
+                'K' => Some((Self::King, Color::Black)),
+                _ => None,
+            },
+            // Invalid input
+            _ => None,
+        }
+    }
+
+    pub fn to_str(self, color: Color) -> String {
+        let s: &str = match self {
+            Self::Pawn => "p",
+            Self::Lance => "l",
+            Self::Knight => "n",
+            Self::Silver => "s",
+            Self::Bishop => "b",
+            Self::Rook => "r",
+            Self::Gold => "g",
+            Self::King => "k",
+            Self::Tokin => "+p",
+            Self::PLance =>  "+l",
+            Self::PKnight => "+n",
+            Self::PSilver => "+s",
+            Self::PBishop => "+b",
+            Self::PRook => "+r",
+        };
+
+        if color == Color::Black {
+            s.to_uppercase()
+        } else {
+            s.to_string()
+        }
+    }
+
 }
+
+
+impl core::str::FromStr for Piece {
+    type Err = PieceParseError;
+
+    fn from_str(s: &str) -> core::result::Result<Self, Self::Err> {
+        Piece::try_from_str(s)
+            .map(|(piece, _color)| piece) // Extract the `Piece` from the tuple
+            .ok_or(PieceParseError) // Convert `Option` to `Result`
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ColoredPiece {
+    pub piece: Piece,
+    pub color: Color,
+}
+
+impl core::str::FromStr for ColoredPiece {
+    type Err = PieceParseError;
+
+    fn from_str(s: &str) -> core::result::Result<Self, Self::Err> {
+       Piece::try_from_str(s)
+           .map(|(piece, color)| ColoredPiece { piece, color }) 
+           .ok_or(PieceParseError)
+    }
+}
+
+impl core::fmt::Display for ColoredPiece {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.piece.to_str(self.color))
+    }
+}
+
+/* 
+    // Parse a ColoredPiece from a string
+    let cp: ColoredPiece = "+p".parse().unwrap();
+    println!("{:?}", cp); // Output: ColoredPiece { piece: Tokin, color: White }
+
+    let cp: ColoredPiece = "P".parse().unwrap();
+    println!("{:?}", cp); // Output: ColoredPiece { piece: Pawn, color: Black }
+
+    // Invalid input
+    let invalid: Result<ColoredPiece, _> = "x".parse();
+    println!("{:?}", invalid); // Output: Err(PieceParseError)
+
+
+    #[test]
+    fn test_colored_piece_from_str() {
+        // Valid inputs
+        assert_eq!(
+            ColoredPiece::from_str("+p"),
+            Ok(ColoredPiece {
+                piece: Piece::Tokin,
+                color: Color::White
+            })
+        );
+
+        assert_eq!(
+            ColoredPiece::from_str("P"),
+            Ok(ColoredPiece {
+                piece: Piece::Pawn,
+                color: Color::Black
+            })
+        );
+
+        assert_eq!(
+            ColoredPiece::from_str("+R"),
+            Ok(ColoredPiece {
+                piece: Piece::PRook,
+                color: Color::Black
+            })
+        );
+
+        assert_eq!(
+            ColoredPiece::from_str("b"),
+            Ok(ColoredPiece {
+                piece: Piece::Bishop,
+                color: Color::White
+            })
+        );
+
+        // Invalid inputs
+        assert_eq!(ColoredPiece::from_str("x"), Err(PieceParseError));
+        assert_eq!(ColoredPiece::from_str("+x"), Err(PieceParseError));
+        assert_eq!(ColoredPiece::from_str(""), Err(PieceParseError));
+        assert_eq!(ColoredPiece::from_str("++p"), Err(PieceParseError));
+    }
+
+
+*/
