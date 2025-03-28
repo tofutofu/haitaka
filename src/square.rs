@@ -292,7 +292,7 @@ impl Square {
         BitBoard(1 << self as usize)
     }
 
-    /// Get the bitboard with the "up" (forward-slanting) diagonal for this square.
+    /// Get the bitboard with the "up" (forward-slanting "/") diagonal for this square.
     ///
     /// # Examples
     /// ```
@@ -309,6 +309,8 @@ impl Square {
     ///     X . . . . . . . .
     /// });
     /// assert_eq!(Square::A1.up_diagonal(), Square::I9.up_diagonal());
+    /// assert_eq!(Square::A9.up_diagonal(), Square::A9.bitboard());
+    /// assert_eq!(Square::I1.up_diagonal(), Square::I1.bitboard());
     /// ```
     #[inline(always)]
     pub const fn up_diagonal(self) -> BitBoard {
@@ -317,7 +319,7 @@ impl Square {
         NEG_DIA[8 + rank - file]
     }
 
-    /// Get the bitboard with the "down" (backwards-slanting) diagonal for this square.
+    /// Get the bitboard with the "down" (backwards-slanting "\") diagonal for this square.
     ///
     /// # Examples
     /// ```
@@ -334,6 +336,8 @@ impl Square {
     ///     . . . . . . . . X
     /// });
     /// assert_eq!(Square::A9.down_diagonal(), Square::I1.down_diagonal());
+    /// assert_eq!(Square::A1.down_diagonal(), Square::A1.bitboard());
+    /// assert_eq!(Square::I9.down_diagonal(), Square::I9.bitboard());
     /// ```
     #[inline(always)]
     pub const fn down_diagonal(self) -> BitBoard {

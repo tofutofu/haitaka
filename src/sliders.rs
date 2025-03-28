@@ -333,6 +333,7 @@ pub const fn lance_pseudo_attacks(color: Color, square: Square) -> BitBoard {
 /// };
 /// assert_eq!(get_lance_moves(Color::Black, Square::I1, occ), mov2);
 /// ```
+#[inline(always)]
 pub const fn get_lance_moves(color: Color, square: Square, occ: BitBoard) -> BitBoard {
     //
     // Using the Qugiy algorithm -- as used in YaneuraOu
@@ -386,6 +387,7 @@ pub const fn get_lance_moves(color: Color, square: Square, occ: BitBoard) -> Bit
 ///     . . . . . . . . .
 /// };
 /// ```
+#[inline(always)]
 pub const fn get_rook_file_moves(square: Square, occ: BitBoard) -> BitBoard {
     let north = get_lance_moves(Color::Black, square, occ).0;
     let south = get_lance_moves(Color::White, square, occ).0;
@@ -444,6 +446,7 @@ const ROOK_RANK_MASKS: [(u128, u128); Square::NUM] = {
 /// };
 /// assert_eq!(get_rook_rank_moves(Square::E5, occ), mov);
 /// ```
+#[inline(always)]
 pub const fn get_rook_rank_moves(square: Square, occ: BitBoard) -> BitBoard {
     let (mut west_attacks, mut east_attacks) = ROOK_RANK_MASKS[square as usize];
 
@@ -476,7 +479,7 @@ pub const fn get_rook_rank_moves(square: Square, occ: BitBoard) -> BitBoard {
 ///     . X . . X . . . .
 ///     . . . . . . . . .
 /// };
-/// let mov_e5 = bitboard! {
+/// let e5_attacks = bitboard! {
 ///     . . . . . . . . .
 ///     . . . . X . . . .
 ///     . . . . X . . . .
@@ -487,9 +490,9 @@ pub const fn get_rook_rank_moves(square: Square, occ: BitBoard) -> BitBoard {
 ///     . . . . X . . . .
 ///     . . . . . . . . .
 /// };
-/// assert_eq!(get_rook_moves(Square::E5, occ), mov_e5);
+/// assert_eq!(get_rook_moves(Square::E5, occ), e5_attacks);
 ///
-/// let mov_h5 = bitboard! {
+/// let h5_attacks = bitboard! {
 ///     . . . . . . . . .
 ///     . . . . . . . . .
 ///     . . . . . . . . .
@@ -500,9 +503,9 @@ pub const fn get_rook_rank_moves(square: Square, occ: BitBoard) -> BitBoard {
 ///     . X X X * X X X X
 ///     . . . . X . . . .
 /// };
-/// assert_eq!(get_rook_moves(Square::H5, occ), mov_h5);
+/// assert_eq!(get_rook_moves(Square::H5, occ), h5_attacks);
 ///
-/// let mov_c7 = bitboard! {
+/// let c7_attacks = bitboard! {
 ///     . . X . . . . . .
 ///     . . X . . . . . .
 ///     X X * X X X X X X
@@ -513,10 +516,135 @@ pub const fn get_rook_rank_moves(square: Square, occ: BitBoard) -> BitBoard {
 ///     . . X . . . . . .
 ///     . . X . . . . . .
 /// };
-/// assert_eq!(get_rook_moves(Square::C7, occ), mov_c7);
+/// assert_eq!(get_rook_moves(Square::C7, occ), c7_attacks);
 /// ```
+#[inline(always)]
 pub const fn get_rook_moves(square: Square, occ: BitBoard) -> BitBoard {
     let bb1 = get_rook_rank_moves(square, occ);
     let bb2 = get_rook_file_moves(square, occ);
     bb1.bitor(bb2)
+}
+
+// Bishop attack rays
+//
+//  NW    NE
+//     sq
+//  SW    SE
+//
+const BISHOP_RAY_MASKS: [(u128, u128, u128, u128); Square::NUM] = {
+    let mut masks = [(0u128, 0u128, 0u128, 0u128); Square::NUM];
+    let mut index = 0;
+    while index < Square::NUM {
+        let square = Square::index_const(index);
+        let file = square.file();
+        let rank = square.rank();
+
+        let up = square.up_diagonal(); // forward slashing '/'
+        let down = square.down_diagonal(); // back slashing '\'      
+
+        let nw = down.bitand(rank.north().bitand(file.west())).0;
+        let ne = up.bitand(rank.north().bitand(file.east())).0;
+        let sw = up.bitand(rank.south().bitand(file.west())).0;
+        let se = down.bitand(rank.south().bitand(file.east())).0;
+
+        masks[index] = (nw, ne.reverse_bits(), sw, se.reverse_bits());
+
+        index += 1;
+    }
+    masks
+};
+
+// Layout
+//
+//  NW    NE
+//     +
+//  SW    SE
+//
+
+/// Get bishop moves.
+///
+/// This applies the Qugiy algorithm to calculate the Bishop pseudo-legal moves, given a position.
+/// ```text
+/// # occ = occupancy bits
+/// # attacks = ray attack bits (with bit indices greater than square index)
+/// BitBoard((((attacks & occ) - 1) ^ occ) & attacks)
+/// ```
+/// This algorithm can only apply to attack rays with bit indices greater than the square index.
+/// So, the east-wards (right-wards) rays have been reversed.
+///
+/// # Examples
+/// ```
+/// use sparrow::*;
+/// let occ = bitboard! {
+///     . . . . . . . . .
+///     . . . . X . . X .
+///     . . X . . . . . .
+///     . . . . . . . . .
+///     X X . . X . . X .
+///     . . . . . . . . .
+///     . . . . . . X . .
+///     . X . . X . . . .
+///     . . . . . . . . .
+/// };
+/// let e5_attacks = bitboard! {
+///     . . . . . . . . .
+///     . . . . . . . X .
+///     . . X . . . X . .
+///     . . . X . X . . .
+///     . . . . * . . . .
+///     . . . X . X . . .
+///     . . X . . . X . .
+///     . X . . . . . . .
+///     . . . . . . . . .
+/// };
+/// let h8_attacks = bitboard! {
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . X . . . .
+///     . . . X . . . . .
+///     X . X . . . . . .
+///     . * . . . . . . .
+///     X . X . . . . . .
+/// };
+/// let g3_attacks = bitboard! {
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . X . . . X
+///     . . . . . X . X .
+///     . . . . . . * . .
+///     . . . . . X . X .
+///     . . . . X . . . X
+/// };
+/// assert_eq!(get_bishop_moves(Square::E5, occ), e5_attacks);
+/// ```
+#[inline(always)]
+pub const fn get_bishop_moves(square: Square, occ: BitBoard) -> BitBoard {
+    let (mut nw, mut ne_rev, mut sw, mut se_rev) = BISHOP_RAY_MASKS[square as usize];
+
+    let occ = occ.0;
+    let occ_rev = occ.reverse_bits();
+
+    // Rust panics on arithmetic under/overflows ...
+    // TODO: Should I switch to an i128 base type to be able to skip these tests? :/
+    if (nw & occ) != 0 {
+        nw = (((nw & occ) - 1) ^ occ) & nw;
+    }
+
+    if (sw & occ) != 0 {
+        sw = (((sw & occ) - 1) ^ occ) & sw;
+    }
+
+    if (ne_rev & occ_rev) != 0 {
+        ne_rev = (((ne_rev & occ_rev) - 1) ^ occ_rev) & ne_rev;
+    }
+
+    if (se_rev & occ_rev) != 0 {
+        se_rev = (((se_rev & occ_rev) - 1) ^ occ_rev) & se_rev;
+    }
+
+    BitBoard(nw | sw | ne_rev.reverse_bits() | se_rev.reverse_bits())
 }

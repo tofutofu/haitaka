@@ -86,11 +86,27 @@ fn main() {
         X X . . X . . X .
         . . . . . . . . .
         . . . . . . X . .
-        . X . . X . . X X
+        . X . . X . . . X
         . . . . . . . . X
     };
+    // println!("{:#?}", occ);
+    // println!("{:#?}", get_rook_moves(Square::H1, occ));
+
+    /*
+    let (nw, ne_rev, sw, se_rev) = BISHOP_RAY_MASKS[Square::C3 as usize];
+
+    println!("NW:{:#?}", BitBoard(nw));
+    println!("NE:{:#?}", BitBoard(ne_rev.reverse_bits()));
+    println!("SW:{:#?}", BitBoard(sw));
+    println!("SE:{:#?}", BitBoard(se_rev.reverse_bits()));
+    */
+
     println!("{:#?}", occ);
-    println!("{:#?}", get_rook_moves(Square::H1, occ));
+    println!("{:#?}", get_bishop_moves(Square::E5, occ));
 
     //println!("{}", Square::G1 as usize);
+
+    //let fwd_⁄_slash = "forward slash";
+    //let bwd_∖_slash = "backward slash";
+    //println!("{} and {}", fwd_⁄_slash, bwd_∖_slash);
 }

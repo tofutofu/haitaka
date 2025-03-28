@@ -1184,3 +1184,14 @@ impl core::fmt::Debug for BitBoard {
         }
     }
 }
+
+/*
+#[repr(C, align(32))]
+pub struct BitBoard256 ( u128, u128 );  // lo, hi: little-endian order
+
+impl BitBoard {
+    pub const fn to_256(&self) -> BitBoard256 {
+        BitBoard256(self.0, 0)
+    }
+}
+*/
