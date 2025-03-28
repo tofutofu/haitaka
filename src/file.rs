@@ -1,7 +1,7 @@
 //! This module defines the File enum which represents the files (columns) on a Shogi board.
 //!
-//! Shogi files are indicated by arabic numerals. In diagrams file 1 (File::One) is the right-most column, at the lefthand-side of the Gote
-//! (White) player. File 9 (File::Nine) is the left-most column, at the lefthand side of the Sente (Black) player.
+//! Shogi files are indicated by arabic numerals. In diagrams file 1 (File::One) is the east-most column, at the westhand-side of the Gote
+//! (White) player. File 9 (File::Nine) is the west-most column, at the westhand side of the Sente (Black) player.
 //!
 //!
 use crate::*;
@@ -62,7 +62,7 @@ impl File {
 
     /// Get a bitboard with all squares on this file set.
     ///
-    /// File 1 is the right-most file board diagrams.
+    /// File 1 is the east-most file board diagrams.
     ///
     /// # Examples
     /// ```
@@ -84,14 +84,14 @@ impl File {
         BitBoard(0x1FF << 9 * (self as usize))
     }
 
-    /// Get a bitboard with all squares to the left of this file set.
+    /// Get a bitboard with all squares to the West of this file set.
     ///
     /// # Examples
     /// ```
     /// use sparrow::*;
-    /// assert_eq!(File::Nine.left(), BitBoard::EMPTY);
-    /// assert_eq!(File::Eight.left(), File::Nine.bitboard());
-    /// assert_eq!(File::Two.left(), bitboard!{
+    /// assert_eq!(File::Nine.west(), BitBoard::EMPTY);
+    /// assert_eq!(File::Eight.west(), File::Nine.bitboard());
+    /// assert_eq!(File::Two.west(), bitboard!{
     ///     X X X X X X X . .
     ///     X X X X X X X . .
     ///     X X X X X X X . .
@@ -104,20 +104,20 @@ impl File {
     /// });
     /// ```
     #[inline(always)]
-    pub const fn left(self) -> BitBoard {
+    pub const fn west(self) -> BitBoard {
         let v: u128 = (1 << Square::NUM) - 1;
         BitBoard::new(v << (9 * (self as usize + 1)))
     }
 
-    /// Get a bitboard with all squares to the right of this file set.
+    /// Get a bitboard with all squares to the East of this file set.
     ///
     /// # Examples
     ///
     /// ```
     /// use sparrow::*;
-    /// assert_eq!(File::One.right(), BitBoard::EMPTY);
-    /// assert_eq!(File::Two.right(), File::One.bitboard());
-    /// assert_eq!(File::Seven.right(), bitboard!{
+    /// assert_eq!(File::One.east(), BitBoard::EMPTY);
+    /// assert_eq!(File::Two.east(), File::One.bitboard());
+    /// assert_eq!(File::Seven.east(), bitboard!{
     ///     . . . X X X X X X
     ///     . . . X X X X X X
     ///     . . . X X X X X X
@@ -130,7 +130,7 @@ impl File {
     /// });
     /// ```
     #[inline(always)]
-    pub const fn right(self) -> BitBoard {
+    pub const fn east(self) -> BitBoard {
         let v: u128 = (1 << Square::NUM) - 1;
         BitBoard::new(v >> (9 * (9 - self as usize)))
     }

@@ -76,5 +76,21 @@ fn main() {
     }.0);
     */
 
-    println!("{:#?}", lance_pseudo_attacks(Color::White, Square::G8));
+    // println!("{:#?}", lance_pseudo_attacks(Color::White, Square::G8));
+
+    let occ = bitboard! {
+        . . . . . . . . .
+        . . . . X . . X .
+        . . X . . . . X .
+        . . . . . . . . .
+        X X . . X . . X .
+        . . . . . . . . .
+        . . . . . . X . .
+        . X . . X . . X X
+        . . . . . . . . X
+    };
+    println!("{:#?}", occ);
+    println!("{:#?}", get_rook_moves(Square::H1, occ));
+
+    //println!("{}", Square::G1 as usize);
 }
