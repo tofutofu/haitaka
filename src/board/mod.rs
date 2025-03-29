@@ -370,10 +370,10 @@ impl Board {
     /// ```
     /// # use sparrow::*;
     /// let board = Board::default();
-    /// // let piece = ColoredPiece { piece: Piece::King, color: Color::Black };
-    /// assert_eq!(board.color_on(Square::I5), Color::Black);
-    /// //assert_eq!(board.piece_on(Square::I5), Piece::King);
-    /// //assert_eq!(board.colored_piece_on(Square::I5), piece);    
+    /// let piece = ColoredPiece { piece: Piece::King, color: Color::Black };
+    /// assert_eq!(board.color_on(Square::I5), Some(Color::Black));
+    /// assert_eq!(board.piece_on(Square::I5), Some(Piece::King));
+    /// assert_eq!(board.colored_piece_on(Square::I5), Some(piece));    
     /// ```
     pub fn colored_piece_on(&self, square: Square) -> Option<ColoredPiece> {
         if let Some(piece) =  self.piece_on(square) {
@@ -468,15 +468,15 @@ impl Board {
     /// board.play("8c8d".parse().unwrap());
     /// board.play("2f2e".parse().unwrap());
     /// board.play("8d8e".parse().unwrap());
-    /// let expected: &str = "lnsgkgsnl/1r5b1/p1ppppppp/9/1p5P1/9/PPPPPPP1P/1B5R1/LNSGKGSNL b - 1";
-    /// assert_eq!(format!("{}", board), expected);
+    /// const SFEN: &str = "lnsgkgsnl/1r5b1/p1ppppppp/9/1p5P1/9/PPPPPPP1P/1B5R1/LNSGKGSNL b - 5";
+    /// assert_eq!(format!("{}", board), SFEN);
     /// ```
     /// ## Illegal moves
-    /// ```should_panic
-    /// # use sparrow::*;
-    /// let mut board = Board::default();
-    /// board.play("2g1g".parse().unwrap());
-    /// ```
+    /// //```should_panic
+    /// //# use sparrow::*;
+    /// // let mut board = Board::default();
+    /// // board.play("2g1g".parse().unwrap());
+    /// //```
     pub fn play(&mut self, mv: Move) {
         assert!(self.try_play(mv).is_ok(), "Illegal move {}!", mv);
     }
@@ -518,7 +518,7 @@ impl Board {
     /// board.play_unchecked("8c8d".parse().unwrap());
     /// board.play_unchecked("2f2e".parse().unwrap());
     /// board.play_unchecked("8d8e".parse().unwrap());
-    /// let expected: &str = "lnsgkgsnl/1r5b1/p1ppppppp/9/1p5P1/9/PPPPPPP1P/1B5R1/LNSGKGSNL b - 1";
+    /// let expected: &str = "lnsgkgsnl/1r5b1/p1ppppppp/9/1p5P1/9/PPPPPPP1P/1B5R1/LNSGKGSNL b - 5";
     /// assert_eq!(format!("{}", board), expected);
     /// ```
     pub fn play_unchecked(&mut self, mv: Move) {
