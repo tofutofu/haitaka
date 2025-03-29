@@ -119,6 +119,7 @@ impl Board {
                     // TODO: This needs to be done by function call
                     // since the hash also needs to be updated!
 
+                    board.capture(...)
                     board.inner.hands[color as usize][piece as usize] =
                         if count > 0 { count } else { 1 };
 
@@ -130,6 +131,10 @@ impl Board {
                 return Err(());
             }
         }
+
+        // TODO: err if we didn't read anything (should not be possible) -- at least not now
+        // in context of SFEN parsing -- 
+
         if count > 0 { Err(()) } else { Ok(()) }
     }
 
