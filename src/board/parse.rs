@@ -8,7 +8,7 @@ use crate::*;
 helpers::simple_error! {
     /// An error while parsing the SFEN string.
     pub enum SFENParseError {
-        InvalidBoard = "The board is invalid.",
+        InvalidBoard = "The board representation is invalid.",
         InvalidHands = "The hands representation is invalid",
         InvalidSideToMove = "The side to move is invalid.",
         InvalidMoveNumber = "The move number is invalid.",
@@ -23,8 +23,8 @@ impl Board {
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// const STARTPOS: &str = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPP/1B5R1/LNSGKGSNL w - 1";
-    /// let board = Board::from_sfen(STARTPOS, false).unwrap();
+    /// const STARTPOS: &str = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1";
+    /// let board = Board::from_sfen(STARTPOS).unwrap();
     /// assert_eq!(format!("{}", board), STARTPOS);
     /// ```
     pub fn from_sfen(sfen: &str) -> Result<Self, SFENParseError> {
@@ -41,18 +41,16 @@ impl Board {
         let mut next = || parts.next().ok_or(MissingField);
 
         Self::parse_board(&mut board, next()?).map_err(|_| InvalidBoard)?;
-
-        Self::parse_hands(&mut board, next()?).map_err(|_| InvalidHands)?;
-
         Self::parse_side_to_move(&mut board, next()?).map_err(|_| InvalidSideToMove)?;
-
+        Self::parse_hands(&mut board, next()?).map_err(|_| InvalidHands)?;
         Self::parse_move_number(&mut board, next()?).map_err(|_| InvalidMoveNumber)?;
-        if !board.move_number_is_valid() {
-            return Err(InvalidMoveNumber);
-        }
 
         if parts.next().is_some() {
             return Err(TooManyFields);
+        }
+
+        if !board.move_number_is_valid() {
+            return Err(InvalidMoveNumber);
         }
 
         if !board.is_valid() {
@@ -62,6 +60,7 @@ impl Board {
         let (checkers, pinned) = board.calculate_checkers_and_pins(board.side_to_move());
         board.checkers = checkers;
         board.pinned = pinned;
+
         if !board.checkers_and_pins_are_valid() {
             return Err(InvalidBoard);
         }
@@ -71,7 +70,7 @@ impl Board {
 
     /// Parse the board representation of a SFEN string.
     fn parse_board(board: &mut Board, s: &str) -> Result<(), ()> {
-        for (rank, row) in s.rsplit('/').enumerate() {
+        for (rank, row) in s.split('/').enumerate() {
             let rank = Rank::try_index(rank).ok_or(())?;
             let mut file = File::NUM;
             let mut prom: bool = false;
@@ -81,18 +80,17 @@ impl Board {
                     if prom {
                         return Err(());
                     };
-                    file -= offset as usize;
+                    file -= offset as usize; // let it panic
                 } else if c == '+' {
                     if prom {
                         return Err(());
                     };
                     prom = true;
                 } else if let Some((piece, color)) = Piece::try_from_char(c) {
+                    file -= 1; // let it panic
                     let piece = piece.do_promote(prom);
                     let square = Square::new(File::try_index(file).ok_or(())?, rank);
                     board.inner.xor_square(piece, color, square);
-
-                    file -= 1;
                     prom = false;
                 } else {
                     return Err(());
@@ -103,10 +101,12 @@ impl Board {
             }
         }
         Ok(())
-    }
+    }   
 
+    /// Parse the SFEN hands.
     fn parse_hands(board: &mut Board, s: &str) -> Result<(), ()> {
         let mut empty = false;
+        let mut found: bool = false;
         let mut count: u32 = 0;
 
         for c in s.chars() {
@@ -115,31 +115,33 @@ impl Board {
                     empty = true;
                 } else if let Some(num) = c.to_digit(10) {
                     count = 10 * count + num;
-                } else if let Some((piece, color)) = Piece::try_from_char(c) {
-                    // TODO: This needs to be done by function call
-                    // since the hash also needs to be updated!
-
-                    board.capture(...)
-                    board.inner.hands[color as usize][piece as usize] =
-                        if count > 0 { count } else { 1 };
-
-                    count = 0
+                } else if let Some((piece, color)) = Piece::try_from_char(c) {  
+                    board.unchecked_set_hand(color, piece, if count > 0 { count } else { 1 });
+                    count = 0;
+                    found = true;
                 } else {
                     return Err(());
                 }
-            } else {
+            } else { // we read another '-'
                 return Err(());
             }
         }
 
-        // TODO: err if we didn't read anything (should not be possible) -- at least not now
-        // in context of SFEN parsing -- 
+        if empty == found {
+            // both are false should not be possible, given non-empty input string;
+            // both true, implies an ill-formatted input string (containing pieces and '-')
+            return Err(());
+        }
+        if count > 0 {  // we read a dangling number without associated piece
+            return Err(());
+        }
 
-        if count > 0 { Err(()) } else { Ok(()) }
+        Ok(())
     }
 
     fn parse_side_to_move(board: &mut Board, s: &str) -> Result<(), ()> {
-        if s.parse::<Color>().map_err(|_| ())? != board.side_to_move() {
+        let stm: Color = s.parse().map_err(|_| ())?;
+        if stm != board.side_to_move() {
             board.inner.toggle_side_to_move();
         }
         Ok(())
@@ -164,7 +166,7 @@ impl FromStr for Board {
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// const STARTPOS: &str = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPP/1B5R1/LNSGKGSNL w - 1";
+    /// const STARTPOS: &str = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1";
     /// let board: Board = STARTPOS.parse().unwrap();
     /// assert_eq!(format!("{}", board), STARTPOS);
     /// ```
@@ -182,17 +184,18 @@ impl Display for Board {
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// const STARTPOS: &str = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPP/1B5R1/LNSGKGSNL w - 1";
-    /// let board = Board::default();
-    /// assert_eq!(format!("{}", board), STARTPOS);
+    /// let mut board: Board = SFEN_6PIECE_HANDICAP.parse().unwrap();
+    /// assert_eq!(format!("{}", board), SFEN_6PIECE_HANDICAP);
+    /// board = SFEN_4PIECE_HANDICAP.parse().unwrap();
+    /// assert_eq!(format!("{}", board), SFEN_4PIECE_HANDICAP);
+    /// board = SFEN_2PIECE_HANDICAP.parse().unwrap();
+    /// assert_eq!(format!("{}", board), SFEN_2PIECE_HANDICAP);
     /// ```
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         // BOARD
-        for &file in File::ALL.iter().rev() {
-            // 9 .. 1
+        for &rank in Rank::ALL.iter() {
             let mut empty = 0;
-            for &rank in Rank::ALL.iter() {
-                // a .. i
+            for &file in File::ALL.iter().rev() {
                 let square = Square::new(file, rank);
                 if let Some(piece) = self.colored_piece_on(square) {
                     if empty > 0 {
@@ -207,10 +210,13 @@ impl Display for Board {
             if empty > 0 {
                 write!(f, "{}", empty)?;
             }
-            if file < File::One {
+            if (rank as usize) < 8 {
                 write!(f, "/")?;
             }
         }
+
+        // STM
+        write!(f, " {}", self.side_to_move())?;
 
         // HANDS
         if self.is_hand_empty(Color::White) && self.is_hand_empty(Color::Black) {
@@ -230,9 +236,6 @@ impl Display for Board {
                 }
             }
         }
-
-        // STM
-        write!(f, " {}", self.side_to_move())?;
 
         // MOVE_NUMBER
         write!(f, " {}", self.move_number)?;

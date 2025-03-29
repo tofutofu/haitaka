@@ -1,13 +1,16 @@
 //! This module defines the Square enum to represent squares on a Shogi board.
 //!
 //! By Japanese convention squares are written as {file}{rank}. For instance, the topmost
-//! rightmost square in board diagrams is written as "1a", "11", or "1一"; the center
-//! square is written as "5e", "55", or "5五". Internally we represent square "1a" as
-//! Square::A1, and square "5e" as Square::E5.
+//! rightmost square in board diagrams is written either as "1a", "11", or "1一"; 
+//! the center square is written as "5e", "55", or "5五". Internally we represent square 
+//! "1a" as Square::A1, and square "5e" as Square::E5. So, other than in Internation Chess,
+//! ranks (rows) are indicated by letters and files (columns) by numerals.
 //!
 //! Squares are ordered internally in file-major order: A1, B1, C1, ... I8, I9. This
-//! means that the squares on the rightmost file (File::One) corresponds to the LSB
-//! (least significant) bits of the bitboards.
+//! means that the squares on the rightmost file (File::One) correspond to the LSB bits
+//! of the bitboards. The main reason for choosing this internal layout is that it
+//! makes move generation of Lance moves easier to implement and faster (since Lances 
+//! slide along files).
 //!    
 use core::convert::TryInto;
 use core::str::FromStr;
@@ -28,6 +31,9 @@ macro_rules! define_square_with_docs {
         }
     }
 }
+
+// Defining the squares in file-major order.
+// Note: Changing this order will break BitBoard::has (and other functions).
 
 define_square_with_docs! {
     A1, B1, C1, D1, E1, F1, G1, H1, I1,

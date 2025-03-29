@@ -8,7 +8,7 @@ struct ColorZobristConstants {
 #[derive(Debug)]
 struct ZobristConstants {
     color: [ColorZobristConstants; Color::NUM],
-    black_to_move: u64,
+    move_toggle: u64,
 }
 
 const ZOBRIST: ZobristConstants = {
@@ -56,11 +56,11 @@ const ZOBRIST: ZobristConstants = {
 
     let white = color_zobrist_constant!();
     let black = color_zobrist_constant!();
-    let black_to_move = rand!();
+    let move_toggle = rand!();
 
     ZobristConstants {
         color: [white, black],
-        black_to_move,
+        move_toggle,
     }
 };
 
@@ -82,7 +82,7 @@ impl ZobristBoard {
             pieces: [BitBoard::EMPTY; Piece::NUM],
             colors: [BitBoard::EMPTY; Color::NUM],
             hands: [[0; Piece::NUM]; Color::NUM],
-            side_to_move: Color::White,
+            side_to_move: Color::Black,
             hash: 0,
         }
     }
@@ -113,8 +113,18 @@ impl ZobristBoard {
     }
 
     #[inline(always)]
+    pub fn unchecked_set_hand(&mut self, color: Color, piece: Piece, count: u32) {
+        self.hands[color as usize][piece as usize] = count as u8;
+    }
+
+    #[inline(always)]
+    pub fn take_in_hand(&mut self, color: Color, piece: Piece) {
+        self.hands[color as usize][piece.unpromote() as usize] += 1;
+    }
+
+    #[inline(always)]
     pub fn is_hand_empty(&self, color: Color) -> bool {
-        self.hands[color as usize].is_empty()
+        self.hands[color as usize].iter().all(|&count| count == 0)
     }
 
     #[inline(always)]
@@ -144,7 +154,7 @@ impl ZobristBoard {
     #[inline(always)]
     pub fn toggle_side_to_move(&mut self) {
         self.side_to_move = !self.side_to_move;
-        self.hash ^= ZOBRIST.black_to_move;
+        self.hash ^= ZOBRIST.move_toggle;
     }
 
 
