@@ -11,8 +11,8 @@ use crate::*;
 /// ```
 /// # use sparrow::*;
 /// let mut square = Square::E5;
-/// let mut black_attacks = king(Color::Black, square);
-/// let mut white_attacks = king(Color::White, square);
+/// let mut black_attacks = king_attacks(Color::Black, square);
+/// let mut white_attacks = king_attacks(Color::White, square);
 ///
 /// assert_eq!(black_attacks, white_attacks);
 /// assert_eq!(black_attacks, bitboard!{
@@ -27,8 +27,8 @@ use crate::*;
 ///     . . . . . . . . .
 /// });
 ///
-/// black_attacks = gold(Color::Black, square);
-/// white_attacks = gold(Color::White, square);
+/// black_attacks = gold_attacks(Color::Black, square);
+/// white_attacks = gold_attacks(Color::White, square);
 ///
 /// assert_ne!(black_attacks, white_attacks);
 /// assert_eq!(black_attacks, bitboard! {
@@ -55,8 +55,8 @@ use crate::*;
 /// });
 ///
 /// square = Square::I1;
-/// black_attacks = king(Color::Black, square);
-/// white_attacks = king(Color::White, square);
+/// black_attacks = king_attacks(Color::Black, square);
+/// white_attacks = king_attacks(Color::White, square);
 ///
 /// assert_eq!(black_attacks, white_attacks);
 /// assert_eq!(black_attacks, bitboard!{
@@ -97,9 +97,9 @@ macro_rules! define_pseudo_attack {
     };
 }
 
-// Define the specific pseudo-attack functions using the macro
+// Define the specific pseudo-legal attack functions using the macro
 define_pseudo_attack!(
-    king,
+    king_attacks,
     Square::B2,
     bitboard! {
         . . . . . . X X X
@@ -126,7 +126,7 @@ define_pseudo_attack!(
 );
 
 define_pseudo_attack!(
-    gold,
+    gold_attacks,
     Square::B2,
     bitboard! {
         . . . . . . X X X
@@ -153,7 +153,7 @@ define_pseudo_attack!(
 );
 
 define_pseudo_attack!(
-    silver,
+    silver_attacks,
     Square::B2,
     bitboard! {
         . . . . . . X X X
@@ -180,7 +180,7 @@ define_pseudo_attack!(
 );
 
 define_pseudo_attack!(
-    knight,
+    knight_attacks,
     Square::B3,
     bitboard! {
         . . . . . . X . X
@@ -207,7 +207,7 @@ define_pseudo_attack!(
 );
 
 define_pseudo_attack!(
-    pawn,
+    pawn_attacks,
     Square::B2,
     bitboard! {
         . . . . . . . . X

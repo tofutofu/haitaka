@@ -101,7 +101,7 @@ impl Board {
             }
         }
         Ok(())
-    }   
+    }
 
     /// Parse the SFEN hands.
     fn parse_hands(board: &mut Board, s: &str) -> Result<(), ()> {
@@ -115,14 +115,15 @@ impl Board {
                     empty = true;
                 } else if let Some(num) = c.to_digit(10) {
                     count = 10 * count + num;
-                } else if let Some((piece, color)) = Piece::try_from_char(c) {  
+                } else if let Some((piece, color)) = Piece::try_from_char(c) {
                     board.unchecked_set_hand(color, piece, if count > 0 { count } else { 1 });
                     count = 0;
                     found = true;
                 } else {
                     return Err(());
                 }
-            } else { // we read another '-'
+            } else {
+                // we read another '-'
                 return Err(());
             }
         }
@@ -132,7 +133,8 @@ impl Board {
             // both true, implies an ill-formatted input string (containing pieces and '-')
             return Err(());
         }
-        if count > 0 {  // we read a dangling number without associated piece
+        if count > 0 {
+            // we read a dangling number without associated piece
             return Err(());
         }
 
@@ -264,10 +266,5 @@ mod tests {
         }
     }
 
-    #[test]
-    fn invalid_ep_fen() {
-        let fen = "4k3/8/5N2/8/2pP4/8/8/4K3 b - d3 0 1";
-        assert!(matches!(fen.parse::<Board>(), Err(FenParseError::InvalidEnPassant)));
-    }
 }
 */

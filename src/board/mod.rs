@@ -1,10 +1,11 @@
 use crate::*;
 
 mod parse;
+mod validate;
 mod zobrist;
 
-use zobrist::*;
 pub use parse::*;
+use zobrist::*;
 
 // TODO: Keep simple status of "Drawn" or distinguish "Sennichite" and "Jishogi"?
 //    /// The game ended in a draw by sennichite.
@@ -26,20 +27,19 @@ pub enum GameStatus {
 // See YaneuraOu source/types.h
 //
 // https://en.wikipedia.org/wiki/Sennichite
-// 
-// "If the same game position occurs four times with the same player to move 
-// and the same pieces in hand for each player, then the game ends in sennichite 
-//      iff 
-// the positions are not due to perpetual check. 
+//
+// "If the same game position occurs four times with the same player to move
+// and the same pieces in hand for each player, then the game ends in sennichite
+//      iff
+// the positions are not due to perpetual check.
 // (Perpetual check is an illegal move, which ends the game in a loss in tournament play.)"
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RepetitionStatus {
     /// No repetitions so far
     None,
     /// Win because of continuous checks with sennichite
-    Win,   
+    Win,
     /// Loss becauss of continuus checks with sennichite
     Loss,
     /// Normal sennichite, without perpetual check
@@ -49,7 +49,6 @@ pub enum RepetitionStatus {
     /// YaneuraOu - on board same, but in hand worse
     Inferior,
 }
-
 
 helpers::simple_error! {
     /// An error returned when the move played was illegal.
@@ -65,11 +64,12 @@ pub const SFEN_STARTPOS: &str = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1
 pub const SFEN_6PIECE_HANDICAP: &str = "2sgkgs2/9/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 2";
 
 /// SFEN string for 4-piece handicap
-pub const SFEN_4PIECE_HANDICAP: &str = "1nsgkgsn1/9/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 2";
+pub const SFEN_4PIECE_HANDICAP: &str =
+    "1nsgkgsn1/9/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 2";
 
 /// SFEN string for 2-piece handicap
-pub const SFEN_2PIECE_HANDICAP: &str = "lnsgkgsnl/9/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 2";
-
+pub const SFEN_2PIECE_HANDICAP: &str =
+    "lnsgkgsnl/9/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 2";
 
 /// A Shogi board.
 ///
@@ -88,7 +88,6 @@ impl Default for Board {
     }
 }
 
-
 impl Board {
     /// Get a board with the default start position.
     ///
@@ -100,33 +99,6 @@ impl Board {
     /// ```
     pub fn startpos() -> Self {
         Self::default()
-    }
-
-    /// Is the position valid?
-    pub fn is_valid(&self) -> bool {
-        true
-    }
-
-    /// Calculate checkers and pins.
-    pub fn calculate_checkers_and_pins(&self, _color: Color) -> (BitBoard, BitBoard) {
-        let checkers = BitBoard::EMPTY;
-        let pinned = BitBoard::EMPTY;
-        (checkers, pinned)
-    }
-
-    /// Are the checkers and pins valid?
-    pub fn checkers_and_pins_are_valid(&self) -> bool {
-        true
-    }
-
-    /// Are the counts of pieces in hand valid?
-    pub fn hands_are_valid(&self) -> bool {
-        true
-    }
-
-    /// Is the move number valid?
-    pub const fn move_number_is_valid(&self) -> bool {
-        self.move_number > 0
     }
 
     /// Return a reference to the hand for color.
@@ -141,9 +113,9 @@ impl Board {
     }
 
     /// Set the count of a piece in hand for color.
-    /// 
+    ///
     /// This function performs no checks in the validity of count!
-    /// 
+    ///
     #[inline(always)]
     pub fn unchecked_set_hand(&mut self, color: Color, piece: Piece, count: u32) {
         self.inner.unchecked_set_hand(color, piece, count);
@@ -154,11 +126,38 @@ impl Board {
         self.inner.take_in_hand(color, piece);
     }
 
-
     /// Get a [`BitBoard`] of all the pieces of the given piece type.
     #[inline(always)]
     pub fn pieces(&self, piece: Piece) -> BitBoard {
         self.inner.pieces(piece)
+    }
+
+    // TODO: Review `pseudo_golds`
+    // I think this will need to be called a _lot_, so it might be much better
+    // to cache this.
+
+    /// Get a [`BitBoard`] of all pieces that move like Gold
+    /// (apart from the King).
+    ///
+    #[inline(always)]
+    pub fn pseudo_golds(&self) -> BitBoard {
+        self.inner.pieces(Piece::Gold)
+            | self.inner.pieces(Piece::Tokin)
+            | self.inner.pieces(Piece::PSilver)
+            | self.inner.pieces(Piece::PKnight)
+            | self.inner.pieces(Piece::PLance)
+            | self.inner.pieces(Piece::PRook)
+            | self.inner.pieces(Piece::PBishop)
+    }
+
+    /// Get a [`BitBoard`] of all pieces that move like Silver
+    /// (apart from the King).
+    ///
+    #[inline(always)]
+    pub fn pseudo_silvers(&self) -> BitBoard {
+        self.inner.pieces(Piece::Silver)
+            | self.inner.pieces(Piece::PRook)
+            | self.inner.pieces(Piece::PBishop)
     }
 
     /// Get a reference to the hands array.
@@ -175,7 +174,7 @@ impl Board {
 
     /// Get a [`BitBoard`] of all the pieces of a certain color and piece type.
     /// Shorthand for `board.colors(color) & board.pieces(piece)`.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -221,7 +220,7 @@ impl Board {
     }
 
     /// Get the current side to move.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -235,9 +234,9 @@ impl Board {
     }
 
     /// Get the incrementally updated position hash.
-    /// 
+    ///
     /// Does not include the move number.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -246,7 +245,7 @@ impl Board {
     /// board.play("8c8d".parse().unwrap());
     /// board.play("2f2e".parse().unwrap());
     /// board.play("8d8e".parse().unwrap());
-    /// 
+    ///
     /// const SFEN: &str = "lnsgkgsnl/1r5b1/p1ppppppp/9/1p5P1/9/PPPPPPP1P/1B5R1/LNSGKGSNL b - 5";
     /// let expected: Board = Board::from_sfen(SFEN).unwrap();
     /// assert_eq!(expected.hash(), board.hash());
@@ -259,31 +258,31 @@ impl Board {
     /// Get the pinned pieces for the side to move.
     /// Note that this counts pieces regardless of color.
     /// This counts any piece preventing check on our king.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// TODO
-    /// 
+    ///
     #[inline(always)]
     pub fn pinned(&self) -> BitBoard {
         self.pinned
     }
 
     /// Get the pieces currently giving check.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// TODO
-    /// 
+    ///
     #[inline(always)]
     pub fn checkers(&self) -> BitBoard {
         self.checkers
     }
 
     /// Get the [move number].
-    /// 
-    /// In Shogi, other than in International Chess, moves are always numbered 
-    /// by their "half-move number" in Shogi. 
+    ///
+    /// In Shogi, other than in International Chess, moves are always numbered
+    /// by their "half-move number" in Shogi.
     ///
     /// # Examples
     /// ```
@@ -301,7 +300,7 @@ impl Board {
     }
 
     /// Set the [move number]
-    /// 
+    ///
     /// # Panics
     /// This method panics if the argument is zero. The first move number in
     /// non-handicap games is by convention 1.
@@ -324,10 +323,10 @@ impl Board {
     // The `piece_on`` function seems rather inefficient (slow)?
     // If we use an extra array, this can be replaced by simple lookup.
     // Question is that the extra array also needs to updated during
-    // move/unmove so it's unclear if we'd gain any speed overall? 
+    // move/unmove so it's unclear if we'd gain any speed overall?
 
     /// Get the [`Piece`] on `square`, if there is one.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -338,11 +337,14 @@ impl Board {
     /// ```
     #[inline(always)]
     pub fn piece_on(&self, square: Square) -> Option<Piece> {
-        Piece::ALL.iter().copied().find(|&p| self.pieces(p).has(square))
+        Piece::ALL
+            .iter()
+            .copied()
+            .find(|&p| self.pieces(p).has(square))
     }
 
     /// Get the [`Color`] of the piece on `square`, if there is one.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -363,9 +365,9 @@ impl Board {
     }
 
     /// Get the [`ColoredPiece`] on `square`, if there is one.
-    /// 
+    ///
     /// This is a convenience function, mainly useful in parsing of SFEN strings.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -376,16 +378,16 @@ impl Board {
     /// assert_eq!(board.colored_piece_on(Square::I5), Some(piece));    
     /// ```
     pub fn colored_piece_on(&self, square: Square) -> Option<ColoredPiece> {
-        if let Some(piece) =  self.piece_on(square) {
+        if let Some(piece) = self.piece_on(square) {
             let color = self.color_on(square).unwrap();
-            Some(ColoredPiece {piece, color})
-        } else {            
+            Some(ColoredPiece { piece, color })
+        } else {
             None
-        }      
+        }
     }
 
     /// Get the king square of the given side.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -403,25 +405,24 @@ impl Board {
     // TODO: Review how the `status` function is used/can be improved.
     // I don't particularly like the cozy-chess impl.
 
-
     /// Get the status of the game.
-    /// 
+    ///
     /// Note that this game may still be drawn from threefold repetition.
     /// The game may also be drawn from insufficient material cases such
     /// as bare kings; This method does not detect such cases.
     /// If the game is won, the loser is the current side to move.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ## Checkmate
-    /// 
+    ///
     /// ## Jishogi
-    /// 
+    ///
     /// ## Sennichite Draw/Win/Loss
-    /// 
+    ///
     /// ```
     pub fn status(&self) -> GameStatus {
-        /* 
+        /*
         if self.generate_moves(|_| true) {
             if self.halfmove_clock() < 100 {
                 GameStatus::Ongoing
@@ -439,22 +440,22 @@ impl Board {
     }
 
     pub fn repetition_state(&self, _ply: usize) -> RepetitionStatus {
-        // TODO!        
+        // TODO!
         RepetitionStatus::None
     }
 
     /// Check if two positions are equivalent.
     /// This differs from the [`Eq`] implementation in that it does not check the move number
     /// This method can be used as a strict check for four-fold repetition or positions.
-    /// 
+    ///
     pub fn same_position(&self, other: &Self) -> bool {
         self.hash() == other.hash() && self.inner.board_is_equal(&other.inner)
     }
-   
-    /// Play a move while checking its legality. 
-    /// 
+
+    /// Play a move while checking its legality.
+    ///
     /// # Panics
-    /// 
+    ///
     /// This panics if the move is illegal.
     /// See [`Board::try_play`] for a non-panicking variant.
     /// See [`Board::play_unchecked`] for a faster variant that allows illegal moves.
@@ -483,7 +484,7 @@ impl Board {
 
     /// Non-panicking version of [`Board::play`].
     /// Tries to play a move, returning `Ok(())` on success.
-    /// 
+    ///
     /// # Errors
     /// Errors with [`IllegalMoveError`] if the move was illegal.
     pub fn try_play(&mut self, mv: Move) -> Result<(), IllegalMoveError> {
@@ -499,17 +500,17 @@ impl Board {
     }
 
     /// Unchecked version of [`Board::play`].
-    /// 
+    ///
     /// Use this method with caution. Only legal moves should ever be passed.
     /// Playing illegal moves may corrupt the board state and cause panics.
     /// (Even if it doesn't caused undefined behavior.)
-    /// 
+    ///
     /// # Panics
     /// This may panic eventually if the move is illegal.
-    /// 
+    ///
     /// Playing illegal moves may also corrupt the board state, which may cause further panics.
     /// See [`Board::play`] for a variant _guaranteed_ to panic immediately on illegal moves.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -522,13 +523,14 @@ impl Board {
     /// assert_eq!(format!("{}", board), expected);
     /// ```
     pub fn play_unchecked(&mut self, mv: Move) {
-
         // reset pins and checkers
         self.pinned = BitBoard::EMPTY;
         self.checkers = BitBoard::EMPTY;
 
-        let color = self.inner.side_to_move();        
-        let moved = self.piece_on(mv.from).expect("Missing piece on move's from square");
+        let color = self.inner.side_to_move();
+        let moved = self
+            .piece_on(mv.from)
+            .expect("Missing piece on move's from square");
 
         let victim = self.piece_on(mv.to);
         // let their_king = self.king(!color);
@@ -552,7 +554,7 @@ impl Board {
 
         // update checkers and pins: TODO!
 
-        /* 
+        /*
         // Finalize the move (special cases for each piece).
         // Updating checker information for non-sliding pieces happens here.
         match moved {
@@ -609,25 +611,25 @@ impl Board {
             }
         }
         */
-        
+
         self.inner.toggle_side_to_move();
     }
 
-     /// Attempt to play a [null move](https://www.chessprogramming.org/Null_Move),
+    /// Attempt to play a [null move](https://www.chessprogramming.org/Null_Move),
     /// returning a new board if successful.
-    /// 
+    ///
     /// A null move is a pass. A pass is not legal in Shogi (unless it means you resign).
     /// But during the search we can attempt a null move to see if this leaves the King
     /// in check. If the King is in check, this function returns None.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// TODO!
-    /// 
+    ///
     /// ```
     pub fn null_move(&self) -> Option<Board> {
         None
-        /* 
+        /*
         if self.checkers.is_empty() {
             let mut board = self.clone();
             board.move_number += 1;
@@ -648,7 +650,7 @@ impl Board {
                     board.pieces(Piece::Queen)
                 ))
             );
-    
+
             for square in their_attackers {
                 let between = get_between_rays(square, our_king) & board.occupied();
                 if between.len() == 1 {
@@ -661,5 +663,4 @@ impl Board {
         }
         */
     }
-
 }

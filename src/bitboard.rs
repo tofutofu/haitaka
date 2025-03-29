@@ -793,14 +793,13 @@ impl BitBoard {
         self.0 & (1u128 << square as usize) != 0
     }
 
-    /* 
+    /*
     // Slower version of `has` but with better abstraction.
     #[inline(always)]
     pub const fn has_slow(self, square: Square) -> bool {
         !self.is_disjoint(square.bitboard())
     }
     */
-
 
     /// Check if a bitboard contains no squares in common with another.
     ///

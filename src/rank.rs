@@ -87,6 +87,52 @@ const SOUTH_C: BitBoard = SOUTH_D.bitor(RANK_D);
 const SOUTH_B: BitBoard = SOUTH_C.bitor(RANK_C);
 const SOUTH_A: BitBoard = SOUTH_B.bitor(RANK_B);
 
+/// Get the no-fly-zones for a piece.
+/// Returns a BitBoard where a piece of the given color may not
+/// be dropped.
+#[inline(always)]
+pub const fn no_fly_zone(color: Color, piece: Piece) -> BitBoard {
+    match piece {
+        Piece::Pawn | Piece::Lance => {
+            if color as usize == Color::White as usize {
+                RANK_I
+            } else {
+                RANK_A
+            }
+        }
+        Piece::Knight => {
+            if color as usize == Color::White as usize {
+                RANK_I.bitor(RANK_H)
+            } else {
+                RANK_A.bitor(RANK_B)
+            }
+        }
+        _ => BitBoard::EMPTY,
+    }
+}
+
+/// Returns a BitBoard representing all squares where a piece may
+/// be dropped. This is the inverse of `no_fly_zone`.
+pub const fn drop_zone(color: Color, piece: Piece) -> BitBoard {
+    match piece {
+        Piece::Pawn | Piece::Lance => {
+            if color as usize == Color::White as usize {
+                NORTH_I
+            } else {
+                SOUTH_A
+            }
+        }
+        Piece::Knight => {
+            if color as usize == Color::White as usize {
+                NORTH_H
+            } else {
+                SOUTH_B
+            }
+        }
+        _ => BitBoard::FULL,
+    }
+}
+
 impl Rank {
     // TODO: Should these array be lifted out of the impl
     // to avoid code bloat?!

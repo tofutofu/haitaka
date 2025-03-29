@@ -67,7 +67,7 @@ const ZOBRIST: ZobristConstants = {
 // This is Copy for performance reasons, since Copy guarantees a bit-for-bit copy.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ZobristBoard {
-    // 
+    //
     pieces: [BitBoard; Piece::NUM], // piece type => bit map of board locations
     colors: [BitBoard; Color::NUM], // color => bit map of board locations
     hands: [[u8; Piece::NUM]; Color::NUM], // color => [number of pieces in hand, indexed by piece type]
@@ -133,7 +133,6 @@ impl ZobristBoard {
     }
 
     pub fn board_is_equal(&self, other: &Self) -> bool {
-
         // TODO! hands!
 
         self.pieces == other.pieces
@@ -156,9 +155,6 @@ impl ZobristBoard {
         self.side_to_move = !self.side_to_move;
         self.hash ^= ZOBRIST.move_toggle;
     }
-
-
-
 }
 
 /*

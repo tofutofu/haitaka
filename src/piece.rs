@@ -51,6 +51,18 @@ crate::helpers::simple_error! {
 }
 
 impl Piece {
+    // Max number of pieces for a piece type to have in hand
+    pub const MAX_HAND: [u8; Self::NUM] = [
+        18, // Pawn
+        4,  // Lance
+        4,  // Knight
+        4,  // Silver
+        2,  // Bishop
+        2,  // Rook
+        4,  // Gold
+        0, 0, 0, 0, 0, 0, 0,
+    ];
+
     /// Is this piece a promoted piece?
     pub const fn is_promoted(self) -> bool {
         return (self as usize) > Self::King as usize;

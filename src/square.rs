@@ -1,15 +1,15 @@
 //! This module defines the Square enum to represent squares on a Shogi board.
 //!
 //! By Japanese convention squares are written as {file}{rank}. For instance, the topmost
-//! rightmost square in board diagrams is written either as "1a", "11", or "1一"; 
-//! the center square is written as "5e", "55", or "5五". Internally we represent square 
+//! rightmost square in board diagrams is written either as "1a", "11", or "1一";
+//! the center square is written as "5e", "55", or "5五". Internally we represent square
 //! "1a" as Square::A1, and square "5e" as Square::E5. So, other than in Internation Chess,
 //! ranks (rows) are indicated by letters and files (columns) by numerals.
 //!
 //! Squares are ordered internally in file-major order: A1, B1, C1, ... I8, I9. This
 //! means that the squares on the rightmost file (File::One) correspond to the LSB bits
 //! of the bitboards. The main reason for choosing this internal layout is that it
-//! makes move generation of Lance moves easier to implement and faster (since Lances 
+//! makes move generation of Lance moves easier to implement and faster (since Lances
 //! slide along files).
 //!    
 use core::convert::TryInto;
@@ -366,25 +366,41 @@ impl Square {
     /// ```
     /// # use sparrow::*;
     /// assert_eq!(Square::A1.offset(2, 1), Square::B3);
-    /// assert_eq!(Square::B3.offset(-2, -1), Square::A1);    
+    /// assert_eq!(Square::B3.offset(-2, -1), Square::A1);  
+    /// assert_eq!(Square::H1.offset(0, 1), Square::I1);
+    /// assert_eq!(Square::H9.offset(0, 1), Square::I9);
     /// ```
     pub const fn offset(self, file_offset: i8, rank_offset: i8) -> Square {
         if let Some(sq) = self.try_offset(file_offset, rank_offset) {
             sq
         } else {
-            panic!("Offset puts square out of bounds.")
+            panic!("Offset puts square out of bounds");
         }
     }
 
     /// Non-panicking version of [`Square::offset`].
+    ///
     /// # Errors
     /// See [`Square::offset`]'s panics.
+    ///
+    /// # Examples
+    /// ```
+    /// use sparrow::*;
+    /// assert_eq!(Square::A1.try_offset(1, 1), Some(Square::B2));
+    /// assert_eq!(Square::E5.try_offset(-1, -1), Some(Square::D4));
+    /// assert_eq!(Square::H9.try_offset(0, -1), Some(Square::G9));
+    /// assert_eq!(Square::C3.try_offset(2, 0), Some(Square::C5));
+    /// assert_eq!(Square::A1.try_offset(-1, 0), None); // File out of bounds
+    /// assert_eq!(Square::A1.try_offset(0, -1), None); // Rank out of bounds
+    /// assert_eq!(Square::I9.try_offset(1, 0), None); // File out of bounds
+    /// assert_eq!(Square::I9.try_offset(0, 1), None); // Rank out of bounds
+    /// ```
     #[inline(always)]
     pub const fn try_offset(self, file_offset: i8, rank_offset: i8) -> Option<Square> {
         let file_index = self.file() as i8 + file_offset;
         let rank_index = self.rank() as i8 + rank_offset;
 
-        if file_index < 0 || file_index >= 8 || rank_index < 0 || rank_index >= 8 {
+        if file_index < 0 || file_index >= 9 || rank_index < 0 || rank_index >= 9 {
             return None;
         }
         Some(Square::new(

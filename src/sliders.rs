@@ -652,3 +652,60 @@ pub const fn get_bishop_moves(square: Square, occ: BitBoard) -> BitBoard {
 
     BitBoard(nw | sw | ne_rev.reverse_bits() | se_rev.reverse_bits())
 }
+
+/// Get all squares between two squares, if reachable via a ray.
+/// The `from` and `to` square are not included in the returns [`BitBoard`].
+///
+/// # Examples
+/// ```
+/// # use sparrow::*;
+/// let rays = get_between_rays(Square::E2, Square::E7);
+/// assert_eq!(rays, bitboard! {
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . X X X X . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+///     . . . . . . . . .
+/// });
+/// let no_rays = get_between_rays(Square::A1, Square::B3);
+///  assert_eq!(no_rays, BitBoard::EMPTY);
+/// ```
+#[inline(always)]
+pub const fn get_between_rays(from: Square, to: Square) -> BitBoard {
+    const fn get_between_rays(from: Square, to: Square) -> BitBoard {
+        let dx = to.file() as i8 - from.file() as i8; // -8 .. 8
+        let dy = to.rank() as i8 - from.rank() as i8; // -8 .. 8
+        let orthogonal = dx == 0 || dy == 0;
+        let diagonal = dx.abs() == dy.abs();
+        if !(orthogonal || diagonal) {
+            return BitBoard::EMPTY;
+        }
+        let dx = dx.signum(); // -1, 0, 1
+        let dy = dy.signum();
+        let mut square = from.offset(dx, dy);
+        let mut between = BitBoard::EMPTY;
+        while square as u8 != to as u8 {
+            between.0 |= square.bitboard().0;
+            square = square.offset(dx, dy);
+        }
+        between
+    }
+    const TABLE: [[BitBoard; Square::NUM]; Square::NUM] = {
+        let mut table = [[BitBoard::EMPTY; Square::NUM]; Square::NUM];
+        let mut i = 0;
+        while i < table.len() {
+            let mut j = 0;
+            while j < table[i].len() {
+                table[i][j] = get_between_rays(Square::index_const(i), Square::index_const(j));
+                j += 1;
+            }
+            i += 1;
+        }
+        table
+    };
+    TABLE[from as usize][to as usize]
+}
