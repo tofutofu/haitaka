@@ -246,25 +246,25 @@ impl Display for Board {
     }
 }
 
-/*
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn handles_valid_fens() {
-        for fen in include_str!("test_data/valid.sfens").lines() {
-            let board = Board::from_fen(fen, true).unwrap();
+    fn handles_valid_sfens() {
+        for sfen in include_str!("test_data/valid.sfens").lines() {
+            let board = Board::from_sfen(sfen).unwrap();
             assert!(board.validity_check());
         }
     }
 
     #[test]
-    fn handles_invalid_fens() {
-        for fen in include_str!("test_data/invalid.sfens").lines() {
-            assert!(Board::from_fen(fen, true).is_err(), "FEN \"{}\" should not parse", fen);
+    fn handles_invalid_sfens() {
+        for sfen in include_str!("test_data/invalid.sfens").lines() {
+            assert!(Board::from_sfen(sfen).is_err(), "FEN \"{}\" should not parse", sfen);
         }
     }
 
 }
-*/
+
