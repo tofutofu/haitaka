@@ -81,7 +81,7 @@ pub struct Board {
     inner: ZobristBoard,
     pinned: BitBoard,
     checkers: BitBoard,
-    move_number: u16,
+    move_number: u16,  // TODO: change to usize?
 }
 
 impl Default for Board {
@@ -507,134 +507,6 @@ impl Board {
         Ok(())
     }
 
-    /// Is this move legal?
-    pub fn is_legal(&self, mv: Move) -> bool {
-        self.is_legal_drop(mv) || self.is_legal_board_move(mv)
-    }
-
-    /// Is this move a legal drop?
-    pub fn is_legal_drop(&self, mv: Move) -> bool {
-        if let Move::Drop { piece, to } = mv {
-            let color = self.side_to_move();
-
-            if piece == Piece::King
-                || self.occupied().has(to)
-                || no_fly_zone(color, piece).has(to)
-                || (piece == Piece::Pawn && !self.pawn_drop_ok(color, to))
-            {
-                return false;
-            }
-
-            match self.checkers.len() {
-                0 => return true,
-                1 => return self.target_squares::<true>().has(to),
-                _ => return false,
-            }
-        }
-        false
-    }
-
-    /// Is this move a legal board move?
-    pub fn is_legal_board_move(&self, mv: Move) -> bool {
-        if let Move::BoardMove {
-            from,
-            to,
-            promotion,
-        } = mv
-        {
-            let color = self.side_to_move();
-            let our_pieces = self.colors(color);
-
-            if our_pieces.has(to) || !our_pieces.has(from) {
-                return false;
-            }
-
-            let piece = match self.piece_on(from) {
-                Some(piece) => piece,
-                None => return false, // should be unreachable, but returning false seems safer
-            };
-
-            if piece == Piece::King {
-                if promotion {
-                    return false;
-                }
-                return self.king_is_legal(color, from, to);
-            }
-
-            if promotion {
-                // `from` or `to` must be in the promotion zone
-                let zone = prom_zone(color);
-                if !(zone.has(to) || zone.has(from)) {
-                    return false;
-                }
-            }
-
-            // pinned piece are not allowe to move off the attacking ray,
-            // but are allowed to move along that ray (for instance to capture the checker!)
-            if self.pinned.has(from) && !line_ray(self.king(color), from).has(to) {
-                return false;
-            }
-
-            // get permitted to-squares depending on checkers
-            let target_squares: BitBoard = match self.checkers().len() {
-                0 => self.target_squares::<false>(),
-                1 => self.target_squares::<true>(),
-                _ => return false, // if there are 2 checkers, King needed to move
-            };
-
-            // piece needs to move to a target square
-            let attacks: BitBoard;
-            match piece {
-                Piece::Pawn => {
-                    return (target_squares & pawn_attacks(color, from)).has(to);
-                }
-                Piece::Knight => {
-                    return (target_squares & knight_attacks(color, from)).has(to);
-                }
-                Piece::Silver => {
-                    return (target_squares & silver_attacks(color, from)).has(to);
-                }
-                Piece::Lance => {
-                    attacks = lance_pseudo_attacks(color, from);
-                    return (target_squares & attacks).has(to)
-                        && (get_between_rays(from, to) & self.occupied()).is_empty();
-                }
-                Piece::Rook => {
-                    attacks = rook_pseudo_attacks(from);
-                    return (target_squares & attacks).has(to)
-                        && (get_between_rays(from, to) & self.occupied()).is_empty();
-                }
-                Piece::PRook => {
-                    attacks = rook_pseudo_attacks(from) | king_attacks(color, from);
-                    return (target_squares & attacks).has(to)
-                        && (get_between_rays(from, to) & self.occupied()).is_empty();
-                }
-                Piece::Bishop => {
-                    attacks = bishop_pseudo_attacks(from);
-                    return (target_squares & attacks).has(to)
-                        && (get_between_rays(from, to) & self.occupied()).is_empty();
-                }
-                Piece::PBishop => {
-                    attacks = bishop_pseudo_attacks(from) | king_attacks(color, from);
-                    return (target_squares & attacks).has(to)
-                        && (get_between_rays(from, to) & self.occupied()).is_empty();
-                }
-                Piece::King => {
-                    return false; // cannot happen
-                }
-                _ => {
-                    // Gold or promoted small pieces
-                    return (target_squares & gold_attacks(color, from)).has(to);
-                }
-            }
-        }
-        false
-    }
-
-    pub fn king_is_legal(&self, _color: Color, _from: Square, _to: Square) -> bool {
-        false
-    }
-
     /// Unchecked version of [`Board::play`].
     ///
     /// Use this method with caution. Only legal moves should ever be passed.
@@ -699,7 +571,6 @@ impl Board {
             // update checkers and pins
             self.update_checkers_and_pins(color, final_piece, to);
         }
-
         // update move_number
         self.move_number += 1;
 

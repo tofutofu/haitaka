@@ -25,10 +25,10 @@ impl PromotionStatus {
 /// Iterate it to unpack its moves.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BoardMoves {
-    color: Color,
-    piece: Piece,
-    from: Square,
-    to: BitBoard,
+    pub color: Color,
+    pub piece: Piece,
+    pub from: Square,
+    pub to: BitBoard,
 }
 
 impl BoardMoves {

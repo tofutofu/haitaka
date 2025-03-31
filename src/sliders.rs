@@ -523,7 +523,8 @@ pub const fn get_rook_rank_moves(square: Square, occ: BitBoard) -> BitBoard {
 /// assert_eq!(get_rook_moves(Square::C7, occ), c7_attacks);
 /// ```
 #[inline(always)]
-pub const fn get_rook_moves(square: Square, occ: BitBoard) -> BitBoard {
+pub const fn get_rook_moves(_color: Color, square: Square, occ: BitBoard) -> BitBoard {
+    // The _color argument is not used, but added for consistency in function signatures.
     let bb1 = get_rook_rank_moves(square, occ);
     let bb2 = get_rook_file_moves(square, occ);
     bb1.bitor(bb2)
@@ -626,7 +627,8 @@ const BISHOP_RAY_MASKS: [(u128, u128, u128, u128); Square::NUM] = {
 /// assert_eq!(get_bishop_moves(Square::E5, occ), e5_attacks);
 /// ```
 #[inline(always)]
-pub const fn get_bishop_moves(square: Square, occ: BitBoard) -> BitBoard {
+pub const fn get_bishop_moves(_color: Color, square: Square, occ: BitBoard) -> BitBoard {
+    // The _color argument is not used, but added for consistency in function signatures.
     let (mut nw, mut ne_rev, mut sw, mut se_rev) = BISHOP_RAY_MASKS[square as usize];
 
     let occ = occ.0;
