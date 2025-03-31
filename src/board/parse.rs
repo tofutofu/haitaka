@@ -44,8 +44,17 @@ impl Board {
         Self::parse_side_to_move(&mut board, next()?).map_err(|_| InvalidSideToMove)?;
         Self::parse_hands(&mut board, next()?).map_err(|_| InvalidHands)?;
 
-        // TODO: make optional
-        Self::parse_move_number(&mut board, next()?).map_err(|_| InvalidMoveNumber)?;
+        // Parse the move number if it exists, otherwise set a default value
+        if let Some(move_number_str) = parts.next() {
+            Self::parse_move_number(&mut board, move_number_str).map_err(|_| InvalidMoveNumber)?;
+        } else {
+            // Default move number: 1 if Black to move, 2 if White to move
+            board.move_number = if board.side_to_move() == Color::Black {
+                1
+            } else {
+                2
+            };
+        }
 
         if parts.next().is_some() {
             return Err(TooManyFields);
