@@ -136,6 +136,7 @@ impl Board {
         // Check non-sliders (including short-range of PRook and PBishop).
         // Note that the opponent King is checked separately!
 
+        checkers |= pawn_attacks(color, our_king) & their_pieces & self.pieces(Piece::Pawn);
         checkers |= knight_attacks(color, our_king) & their_pieces & self.pieces(Piece::Knight);
         checkers |= silver_attacks(color, our_king) & their_pieces & self.pseudo_silvers();
         checkers |= gold_attacks(color, our_king) & their_pieces & self.pseudo_golds();

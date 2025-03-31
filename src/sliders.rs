@@ -709,3 +709,56 @@ pub const fn get_between_rays(from: Square, to: Square) -> BitBoard {
     };
     TABLE[from as usize][to as usize]
 }
+
+/// Get a ray on the board that passes through both squares, if it exists.
+///
+/// These rays include the `from` and `to` square.
+///
+/// # Examples
+/// ```
+/// # use sparrow::*;
+/// let rays = line_ray(Square::B1, Square::I8);
+/// assert_eq!(rays, bitboard! {
+///     . . . . . . . . .
+///     . . . . . . . . X
+///     . . . . . . . X .
+///     . . . . . . X . .
+///     . . . . . X . . .
+///     . . . . X . . . .
+///     . . . X . . . . .
+///     . . X . . . . . .
+///     . X . . . . . . .
+/// });
+/// ```
+#[inline(always)]
+pub const fn line_ray(from: Square, to: Square) -> BitBoard {
+    const fn get_line_rays(from: Square, to: Square) -> BitBoard {
+        let rays = bishop_pseudo_attacks(from);
+        if rays.has(to) {
+            return BitBoard(
+                (rays.0 | from.bitboard().0) & (bishop_pseudo_attacks(to).0 | to.bitboard().0),
+            );
+        }
+        let rays = rook_pseudo_attacks(from);
+        if rays.has(to) {
+            return BitBoard(
+                (rays.0 | from.bitboard().0) & (rook_pseudo_attacks(to).0 | to.bitboard().0),
+            );
+        }
+        BitBoard::EMPTY
+    }
+    const TABLE: [[BitBoard; Square::NUM]; Square::NUM] = {
+        let mut table = [[BitBoard::EMPTY; Square::NUM]; Square::NUM];
+        let mut i = 0;
+        while i < table.len() {
+            let mut j = 0;
+            while j < table[i].len() {
+                table[i][j] = get_line_rays(Square::index_const(i), Square::index_const(j));
+                j += 1;
+            }
+            i += 1;
+        }
+        table
+    };
+    TABLE[from as usize][to as usize]
+}

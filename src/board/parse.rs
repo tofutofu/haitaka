@@ -246,7 +246,6 @@ impl Display for Board {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -262,9 +261,11 @@ mod tests {
     #[test]
     fn handles_invalid_sfens() {
         for sfen in include_str!("test_data/invalid.sfens").lines() {
-            assert!(Board::from_sfen(sfen).is_err(), "FEN \"{}\" should not parse", sfen);
+            assert!(
+                Board::from_sfen(sfen).is_err(),
+                "FEN \"{}\" should not parse",
+                sfen
+            );
         }
     }
-
 }
-

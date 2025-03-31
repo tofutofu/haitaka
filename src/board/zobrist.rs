@@ -122,6 +122,22 @@ impl ZobristBoard {
         self.hands[color as usize][piece.unpromote() as usize] += 1;
     }
 
+    // TODO: better use an Option or Result here
+
+    /// Take from hand
+    ///
+    /// # Panics
+    /// If hand doesn't contain this piece.
+    ///
+    #[inline(always)]
+    pub fn take_from_hand(&mut self, color: Color, piece: Piece) {
+        if let Some(v) = self.hands[color as usize][piece.unpromote() as usize].checked_sub(1) {
+            self.hands[color as usize][piece.unpromote() as usize] = v;
+        } else {
+            panic!("Hand doesn't contain piece");
+        }
+    }
+
     #[inline(always)]
     pub fn is_hand_empty(&self, color: Color) -> bool {
         self.hands[color as usize].iter().all(|&count| count == 0)

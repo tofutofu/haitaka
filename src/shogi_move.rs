@@ -1,70 +1,251 @@
-use core::str::FromStr;
-
+//! This module implements a simple Move enum to represent moves.
+//!
+//! References:
+//! - [wiki: Shogi Notation](https://en.wikipedia.org/wiki/Shogi_notation)
+//! - [USI - Universal Shogi Interface](http://hgm.nubati.net/usi.html)
+//!
 use crate::*;
-
-// TODO: Check against common formats (SFEN, KIF)
+use core::str::FromStr;
 
 /// A Shogi move.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Move {
-    /// The square to move the piece from.
-    pub from: Square,
-    /// The square to move the piece to.
-    pub to: Square,
-    /// Flag to indicate if piece promotes or not.
-    pub promotion: bool,
+pub enum Move {
+    Drop {
+        piece: Piece,
+        to: Square,
+    },
+    BoardMove {
+        from: Square,
+        to: Square,
+        promotion: bool,
+    },
 }
 
 crate::helpers::simple_error! {
     /// The value was not a valid [`Move`].
-    pub struct MoveParseError = "The value was not a valid Move.";
+    pub enum MoveParseError {
+        InvalidPiece = "Invalid piece",
+        InvalidSquare = "Invalid square",
+        InvalidFormat = "Invalid move format",
+        ExtraCharacters = "Extra characters found"
+    }
+}
+
+impl Move {
+    /// Is this move a promotion?
+    #[inline(always)]
+    pub const fn is_promotion(&self) -> bool {
+        match self {
+            Move::BoardMove { promotion, .. } => *promotion,
+            Move::Drop { .. } => false,
+        }
+    }
+
+    /// Is this move a drop?
+    #[inline(always)]
+    pub const fn is_drop(&self) -> bool {
+        matches!(self, Move::Drop { .. })
+    }
+
+    /// Is this move a board move?
+    #[inline(always)]
+    pub const fn is_board_move(&self) -> bool {
+        !self.is_drop()
+    }
+
+    // Helper function to parse a square.
+    fn parse_square_range(
+        s: &str,
+        range: std::ops::Range<usize>,
+    ) -> Result<Square, MoveParseError> {
+        s.get(range)
+            .ok_or(MoveParseError::InvalidSquare)?
+            .parse::<Square>()
+            .map_err(|_| MoveParseError::InvalidSquare)
+    }
+
+    /// Parse a move string based on the notation used by Reier Grimbergen.
+    ///
+    /// # Grammar
+    /// - `move := drop | board_move`
+    /// - `drop := PIECE * square`
+    /// - `board_move := piece square capture_or_hyphen square [prom]`
+    /// - `piece := [+] PIECE`
+    /// - `square := file rank`
+    /// - `file := [1-9]`
+    /// - `rank := [a-i]`
+    /// - `capture_or_hyphen := [x-]`
+    /// - `prom := [+=]`
+    ///
+    /// # Examples
+    /// ```
+    /// use sparrow::{Move, Square, Piece};
+    ///
+    /// let mv = Move::parse("P*7b").unwrap();
+    /// assert_eq!(mv.piece, Piece::Pawn);
+    /// assert_eq!(mv.from, None);
+    /// assert_eq!(mv.to, Square::B7);
+    /// assert!(mv.is_drop());
+    ///
+    /// let mv = Move::parse("R8bx8f").unwrap();
+    /// assert_eq!(mv.piece, Piece::Rook);
+    /// assert_eq!(mv.from, Some(Square::B8));
+    /// assert_eq!(mv.to, Square::F8);
+    ///
+    /// let mv = Move::parse("B8hx3c+").unwrap();
+    /// assert_eq!(mv.piece, Piece::Bishop);
+    /// assert_eq!(mv.from, Some(Square::B8));
+    /// assert_eq!(mv.to, Square::3c);
+    /// assert!(mv.is_promotion());
+    ///
+    /// ```
+    pub fn parse(s: &str) -> Result<Self, MoveParseError> {
+        // Check for a drop move (e.g., "P*7b")
+        if let Some((piece_str, rest)) = s.split_once('*') {
+            let piece = piece_str
+                .parse::<Piece>()
+                .map_err(|_| MoveParseError::InvalidPiece)?;
+            let to = rest
+                .parse::<Square>()
+                .map_err(|_| MoveParseError::InvalidSquare)?;
+            return Ok(Move::Drop { piece, to });
+        }
+
+        // Parse a board move (e.g., "+R8bx8f" or "B8hx3c+")
+        let piece_str = if s.starts_with('+') {
+            &s[0..2] // "+PIECE"
+        } else {
+            &s[0..1] // "PIECE"
+        };
+        // TODO: Review if we may still want to keep the piece
+        // let piece = piece_str.parse::<Piece>().map_err(|_| MoveParseError::InvalidPiece)?;
+        let n = piece_str.len();
+
+        let from = Self::parse_square_range(s, n..n + 2)?;
+        let to = Self::parse_square_range(s, n + 3..n + 5)?;
+
+        let capture_or_hyphen = s.get(n + 2..n + 3).ok_or(MoveParseError::InvalidFormat)?;
+        if capture_or_hyphen != "x" && capture_or_hyphen != "-" {
+            return Err(MoveParseError::InvalidFormat);
+        }
+
+        let promotion = match s.get(n + 5..n + 6) {
+            Some("+") => true,
+            Some("=") => false,
+            None => false,
+            _ => return Err(MoveParseError::ExtraCharacters),
+        };
+
+        if s.len() > n + 6 {
+            return Err(MoveParseError::ExtraCharacters);
+        }
+
+        Ok(Move::BoardMove {
+            from,
+            to,
+            promotion,
+        })
+    }
 }
 
 impl FromStr for Move {
     type Err = MoveParseError;
 
-    /// Convert a string into a Move.
+    /// Convert a [USI](http://hgm.nubati.net/usi.html) move string into a Move.
+    ///
+    /// A USI move string is very similar to a UCI move string, except that drops
+    /// are also supported. This representation is much simpler than the complete
+    /// representation supported by [`Move::parse`].
+    ///
+    /// Grammar
+    /// -------
+    /// move := drop | board_move
+    /// drop := PIECE * square
+    /// board_move := square square [+]
+    /// square := file rank
+    /// file := [1-9]
+    /// rank := [a-i]
     ///
     /// # Examples
     ///
     /// ```
-    /// use sparrow::{Move, Square};
-    /// use core::str::FromStr;
+    /// use sparrow::*;
+    /// let mv = Move::from_str("P*7b").unwrap(); // Drop
+    /// assert_eq!(mv.piece, Some(Piece::Pawn));
+    /// assert_eq!(mv.from, None);
+    /// assert_eq!(mv.to, Square::B7);
+    /// assert_eq!(mv.promotion, false);
     ///
-    /// let mv = Move::from_str("7g7f").unwrap();
-    /// assert_eq!(mv.from, Square::from_str("7g").unwrap());
-    /// assert_eq!(mv.to, Square::from_str("7f").unwrap());
-    /// assert_eq!(mv.from, Square::G7);
+    /// let mv = Move::from_str("7g7f").unwrap(); // Board move
+    /// assert_eq!(mv.piece, None); // Inferred from board state
+    /// assert_eq!(mv.from, Some(Square::G7));
     /// assert_eq!(mv.to, Square::F7);
     /// assert_eq!(mv.promotion, false);
     ///
-    /// let mv = Move::from_str("7g7f+").unwrap();
-    /// assert_eq!(mv.from, Square::from_str("7g").unwrap());
-    /// assert_eq!(mv.to, Square::from_str("7f").unwrap());
-    /// assert_eq!(mv.from, Square::G7);
-    /// assert_eq!(mv.to, Square::F7);
+    /// let mv = Move::from_str("7g7f+").unwrap(); // Board move with promotion
     /// assert_eq!(mv.promotion, true);
+    ///
+    /// assert!(Move::from_str("P*10b").is_err()); // Invalid square
+    /// assert!(Move::from_str("7g").is_err()); // Too short
+    /// assert!(Move::from_str("7g7f++").is_err()); // Invalid extra characters
     /// ```
-
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        fn parse(s: &str) -> Option<Move> {
-            Some(Move {
-                from: s.get(0..2)?.parse().ok()?,
-                to: s.get(2..4)?.parse().ok()?,
-                promotion: s.get(4..5) == Some("+"),
-            })
+        // drop
+        if let Some((piece_str, rest)) = s.split_once('*') {
+            let piece = piece_str
+                .parse::<Piece>()
+                .map_err(|_| MoveParseError::InvalidPiece)?;
+            let to = rest
+                .parse::<Square>()
+                .map_err(|_| MoveParseError::InvalidSquare)?;
+            return Ok(Move::Drop { piece, to });
         }
-        parse(s).ok_or(MoveParseError)
+
+        // board move
+        if s.len() < 4 {
+            return Err(MoveParseError::InvalidFormat);
+        }
+
+        let from = Self::parse_square_range(s, 0..2)?;
+        let to = Self::parse_square_range(s, 2..4)?;
+
+        let promotion = match s.get(5..6) {
+            // note that '=' is not in spec
+            Some("+") => true,
+            None => false,
+            _ => return Err(MoveParseError::ExtraCharacters),
+        };
+
+        if s.len() > 5 {
+            return Err(MoveParseError::ExtraCharacters);
+        }
+
+        Ok(Move::BoardMove {
+            from,
+            to,
+            promotion,
+        })
     }
 }
 
 impl core::fmt::Display for Move {
+    /// Display a [`Move`] in [USI](http://hgm.nubati.net/usi.html) format.
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        if self.promotion {
-            write!(f, "{}{}+", self.from, self.to)?;
-        } else {
-            write!(f, "{}{}", self.from, self.to)?;
+        match self {
+            Move::Drop { piece, to } => {
+                write!(f, "{}*{}", piece.to_str(Color::Black), to)
+            }
+            Move::BoardMove {
+                from,
+                to,
+                promotion,
+            } => {
+                if *promotion {
+                    write!(f, "{}{}+", from, to)
+                } else {
+                    write!(f, "{}{}", from, to)
+                }
+            }
         }
-        Ok(())
     }
 }

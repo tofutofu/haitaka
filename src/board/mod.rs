@@ -1,9 +1,11 @@
 use crate::*;
 
+mod movegen;
 mod parse;
 mod validate;
 mod zobrist;
 
+pub use movegen::*;
 pub use parse::*;
 use zobrist::*;
 
@@ -386,6 +388,16 @@ impl Board {
         }
     }
 
+    /// Is a Pawn drop ok on the given square?
+    ///
+    /// This does not check if the square itself is empty. It is only used
+    /// to prevent dropping a double-pawn.
+    ///
+    #[inline(always)]
+    pub fn pawn_drop_ok(&self, color: Color, square: Square) -> bool {
+        (self.colors(color) & self.pieces(Piece::Pawn) & square.file().bitboard()).is_empty()
+    }
+
     /// Get the king square of the given side.
     ///
     /// # Examples
@@ -495,8 +507,132 @@ impl Board {
         Ok(())
     }
 
-    pub fn is_legal(&self, _mv: Move) -> bool {
-        true
+    /// Is this move legal?
+    pub fn is_legal(&self, mv: Move) -> bool {
+        self.is_legal_drop(mv) || self.is_legal_board_move(mv)
+    }
+
+    /// Is this move a legal drop?
+    pub fn is_legal_drop(&self, mv: Move) -> bool {
+        if let Move::Drop { piece, to } = mv {
+            let color = self.side_to_move();
+
+            if piece == Piece::King
+                || self.occupied().has(to)
+                || no_fly_zone(color, piece).has(to)
+                || (piece == Piece::Pawn && !self.pawn_drop_ok(color, to))
+            {
+                return false;
+            }
+
+            match self.checkers.len() {
+                0 => return true,
+                1 => return self.target_squares::<true>().has(to),
+                _ => return false,
+            }
+        }
+        false
+    }
+
+    /// Is this move a legal board move?
+    pub fn is_legal_board_move(&self, mv: Move) -> bool {
+        if let Move::BoardMove {
+            from,
+            to,
+            promotion,
+        } = mv
+        {
+            let color = self.side_to_move();
+            let our_pieces = self.colors(color);
+
+            if our_pieces.has(to) || !our_pieces.has(from) {
+                return false;
+            }
+
+            let piece = match self.piece_on(from) {
+                Some(piece) => piece,
+                None => return false, // should be unreachable, but returning false seems safer
+            };
+
+            if piece == Piece::King {
+                if promotion {
+                    return false;
+                }
+                return self.king_is_legal(color, from, to);
+            }
+
+            if promotion {
+                // `from` or `to` must be in the promotion zone
+                let zone = prom_zone(color);
+                if !(zone.has(to) || zone.has(from)) {
+                    return false;
+                }
+            }
+
+            // pinned piece are not allowe to move off the attacking ray,
+            // but are allowed to move along that ray (for instance to capture the checker!)
+            if self.pinned.has(from) && !line_ray(self.king(color), from).has(to) {
+                return false;
+            }
+
+            // get permitted to-squares depending on checkers
+            let target_squares: BitBoard = match self.checkers().len() {
+                0 => self.target_squares::<false>(),
+                1 => self.target_squares::<true>(),
+                _ => return false, // if there are 2 checkers, King needed to move
+            };
+
+            // piece needs to move to a target square
+            let attacks: BitBoard;
+            match piece {
+                Piece::Pawn => {
+                    return (target_squares & pawn_attacks(color, from)).has(to);
+                }
+                Piece::Knight => {
+                    return (target_squares & knight_attacks(color, from)).has(to);
+                }
+                Piece::Silver => {
+                    return (target_squares & silver_attacks(color, from)).has(to);
+                }
+                Piece::Lance => {
+                    attacks = lance_pseudo_attacks(color, from);
+                    return (target_squares & attacks).has(to)
+                        && (get_between_rays(from, to) & self.occupied()).is_empty();
+                }
+                Piece::Rook => {
+                    attacks = rook_pseudo_attacks(from);
+                    return (target_squares & attacks).has(to)
+                        && (get_between_rays(from, to) & self.occupied()).is_empty();
+                }
+                Piece::PRook => {
+                    attacks = rook_pseudo_attacks(from) | king_attacks(color, from);
+                    return (target_squares & attacks).has(to)
+                        && (get_between_rays(from, to) & self.occupied()).is_empty();
+                }
+                Piece::Bishop => {
+                    attacks = bishop_pseudo_attacks(from);
+                    return (target_squares & attacks).has(to)
+                        && (get_between_rays(from, to) & self.occupied()).is_empty();
+                }
+                Piece::PBishop => {
+                    attacks = bishop_pseudo_attacks(from) | king_attacks(color, from);
+                    return (target_squares & attacks).has(to)
+                        && (get_between_rays(from, to) & self.occupied()).is_empty();
+                }
+                Piece::King => {
+                    return false; // cannot happen
+                }
+                _ => {
+                    // Gold or promoted small pieces
+                    return (target_squares & gold_attacks(color, from)).has(to);
+                }
+            }
+        }
+        false
+    }
+
+    pub fn king_is_legal(&self, _color: Color, _from: Square, _to: Square) -> bool {
+        false
     }
 
     /// Unchecked version of [`Board::play`].
@@ -515,104 +651,114 @@ impl Board {
     /// ```
     /// # use sparrow::*;
     /// let mut board = Board::default();
-    /// board.play_unchecked("2g2f".parse().unwrap());
-    /// board.play_unchecked("8c8d".parse().unwrap());
-    /// board.play_unchecked("2f2e".parse().unwrap());
-    /// board.play_unchecked("8d8e".parse().unwrap());
+    /// board.play_unchecked("P2g-2f".parse().unwrap());
+    /// board.play_unchecked("P8c-8d".parse().unwrap());
+    /// board.play_unchecked("P2f-2e".parse().unwrap());
+    /// board.play_unchecked("P8d-8e".parse().unwrap());
     /// let expected: &str = "lnsgkgsnl/1r5b1/p1ppppppp/9/1p5P1/9/PPPPPPP1P/1B5R1/LNSGKGSNL b - 5";
     /// assert_eq!(format!("{}", board), expected);
     /// ```
     pub fn play_unchecked(&mut self, mv: Move) {
-        // reset pins and checkers
-        self.pinned = BitBoard::EMPTY;
-        self.checkers = BitBoard::EMPTY;
-
         let color = self.inner.side_to_move();
-        let moved = self
-            .piece_on(mv.from)
-            .expect("Missing piece on move's from square");
 
-        let victim = self.piece_on(mv.to);
-        // let their_king = self.king(!color);
+        if let Move::Drop { piece, to } = mv {
+            // take piece out of hand
+            self.inner.take_from_hand(color, piece);
+
+            // drop the piece
+            self.inner.xor_square(piece, color, to);
+
+            // update checkers and pins
+            self.update_checkers_and_pins(color, piece, to);
+        } else if let Move::BoardMove {
+            from,
+            to,
+            promotion,
+        } = mv
+        {
+            // read piece from board
+            let piece = self
+                .piece_on(from)
+                .expect("Missing piece on move's `from` square");
+
+            // optional capture
+            if let Some(capture) = self.piece_on(from) {
+                // remove capture
+                self.inner.xor_square(capture, !color, to);
+                // take in hand
+                self.inner.take_in_hand(color, capture.unpromote());
+            }
+
+            // lift piece up
+            self.inner.xor_square(piece, color, from);
+
+            // perhaps promote then drop piece
+            let final_piece = if promotion { piece.promote() } else { piece };
+            self.inner.xor_square(final_piece, color, to);
+
+            // update checkers and pins
+            self.update_checkers_and_pins(color, final_piece, to);
+        }
 
         // update move_number
         self.move_number += 1;
 
-        // lift the piece
-        self.inner.xor_square(moved, color, mv.from);
+        // update stm
+        self.inner.toggle_side_to_move();
+    }
 
-        // drop the piece
-        let prom_piece = if mv.promotion { moved.promote() } else { moved };
-        self.inner.xor_square(prom_piece, color, mv.to);
+    fn update_checkers_and_pins(&mut self, color: Color, piece: Piece, to: Square) {
+        // reset pins and checkers
+        self.pinned = BitBoard::EMPTY;
+        self.checkers = BitBoard::EMPTY;
 
-        if let Some(victim) = victim {
-            // remove from square
-            self.inner.xor_square(victim, !color, mv.to);
-            // take in hand
-            self.inner.take_in_hand(color, victim.unpromote());
-        }
+        // update for non-sliders
+        let them = !color;
+        let their_king = self.king(them);
 
-        // update checkers and pins: TODO!
-
-        /*
-        // Finalize the move (special cases for each piece).
-        // Updating checker information for non-sliding pieces happens here.
-        match moved {
-            Piece::Knight => self.checkers |= get_knight_moves(their_king) & mv.to.bitboard(),
+        match piece {
             Piece::Pawn => {
-                if let Some(promotion) = mv.promotion {
-                    // Get rid of the pawn and replace it with the promotion. Also update checkers.
-                    self.inner.xor_square(Piece::Pawn, color, mv.to);
-                    self.inner.xor_square(promotion, color, mv.to);
-                    if promotion == Piece::Knight {
-                        self.checkers |= get_knight_moves(their_king) & mv.to.bitboard();
-                    }
-                } else {
-                    let double_move_from = Rank::Second.bitboard() | Rank::Seventh.bitboard();
-                    let double_move_to = Rank::Fourth.bitboard() | Rank::Fifth.bitboard();
-                    let ep_square = self.inner.en_passant().map(|ep| {
-                        Square::new(ep, Rank::Sixth.relative_to(color))
-                    });
-                    if double_move_from.has(mv.from) && double_move_to.has(mv.to) {
-                        // Double move, update en passant.
-                        new_en_passant = Some(mv.to.file());
-                    } else if Some(mv.to) == ep_square {
-                        // En passant capture.
-                        let victim_square = Square::new(
-                            mv.to.file(),
-                            Rank::Fifth.relative_to(color)
-                        );
-                        self.inner.xor_square(Piece::Pawn, !color, victim_square);
-                    }
-                    // Update checkers.
-                    self.checkers |= get_pawn_attacks(their_king, !color) & mv.to.bitboard();
-                }
+                self.checkers |= pawn_attacks(them, their_king) & to.bitboard();
+            }
+            Piece::Knight => {
+                self.checkers |= knight_attacks(them, their_king) & to.bitboard();
+            }
+            Piece::Silver | Piece::PRook => {
+                self.checkers |= silver_attacks(them, their_king) & to.bitboard();
+            }
+            Piece::Gold
+            | Piece::PBishop
+            | Piece::Tokin
+            | Piece::PLance
+            | Piece::PKnight
+            | Piece::PSilver => {
+                self.checkers |= gold_attacks(them, their_king) & to.bitboard();
             }
             _ => {}
         }
 
-        // Almost there. Just have to update checker and pinned information for sliding pieces.
-        let our_attackers = self.colors(color) & (
-            (get_bishop_rays(their_king) & (
-                self.pieces(Piece::Bishop) |
-                self.pieces(Piece::PBishop)
-            )) |
-            (get_rook_rays(their_king) & (
-                self.pieces(Piece::Rook) |
-                self.pieces(Piece::PRook)
-            ))
-        );
-        for square in our_attackers {
-            let between = get_between_rays(square, their_king) & self.occupied();
+        // update checkers and pins for sliders
+        let our_pieces = self.colors(color);
+        let occupied = self.occupied();
+
+        let bishops = self.pieces(Piece::Bishop) | self.pieces(Piece::PBishop);
+        let rooks = self.pieces(Piece::Rook) | self.pieces(Piece::PRook);
+        let lances = self.pieces(Piece::Lance);
+
+        let bishop_attacks = bishop_pseudo_attacks(their_king) & bishops;
+        let rook_attacks = bishop_pseudo_attacks(their_king) & rooks;
+        let lance_attacks = lance_pseudo_attacks(color, their_king) & lances;
+
+        let our_slider_attackers = our_pieces & (bishop_attacks | rook_attacks | lance_attacks);
+
+        for attacker in our_slider_attackers {
+            let between = get_between_rays(attacker, their_king) & occupied;
             match between.len() {
-                0 => self.checkers |= square.bitboard(),
-                1 => self.pinned |= between,
+                0 => self.checkers |= attacker.bitboard(),
+                1 => self.pinned |= between, // note: this included pieces of both colors
                 _ => {}
             }
         }
-        */
-
-        self.inner.toggle_side_to_move();
     }
 
     /// Attempt to play a [null move](https://www.chessprogramming.org/Null_Move),

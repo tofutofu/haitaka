@@ -88,8 +88,9 @@ const SOUTH_B: BitBoard = SOUTH_C.bitor(RANK_C);
 const SOUTH_A: BitBoard = SOUTH_B.bitor(RANK_B);
 
 /// Get the no-fly-zones for a piece.
-/// Returns a BitBoard where a piece of the given color may not
-/// be dropped.
+///
+/// Returns a BitBoard where a piece may _not_ be dropped.
+///
 #[inline(always)]
 pub const fn no_fly_zone(color: Color, piece: Piece) -> BitBoard {
     match piece {
@@ -113,6 +114,7 @@ pub const fn no_fly_zone(color: Color, piece: Piece) -> BitBoard {
 
 /// Returns a BitBoard representing all squares where a piece may
 /// be dropped. This is the inverse of `no_fly_zone`.
+#[inline(always)]
 pub const fn drop_zone(color: Color, piece: Piece) -> BitBoard {
     match piece {
         Piece::Pawn | Piece::Lance => {
@@ -130,6 +132,47 @@ pub const fn drop_zone(color: Color, piece: Piece) -> BitBoard {
             }
         }
         _ => BitBoard::FULL,
+    }
+}
+
+/// Returns a [`BitBoard`] representing the promotion zone for the color.
+#[inline(always)]
+pub const fn prom_zone(color: Color) -> BitBoard {
+    match color {
+        Color::White => SOUTH_F,
+        Color::Black => NORTH_D,
+    }
+}
+
+/// Returns a [`BitBoard`] of all squares where the piece _must_ promote.
+///
+/// This is equivalent to the ranks in the promotion zone where a piece
+/// can not be dropped.
+///
+/// # Examples
+/// ```
+/// use sparrow::*;
+/// let no_drops = no_fly_zone(Color::White, Piece::Pawn);
+/// let proms = prom_zone(Color::White);
+/// assert_eq!(must_prom_zone(Color::White), proms & no_drops);
+///
+/// let no_drops = no_fly_zone(Color::Black, Piece::Pawn);
+/// let proms = prom_zone(Color::Black);
+/// assert_eq!(must_prom_zone(Color::Black), proms & no_drops);
+///
+/// ```
+#[inline(always)]
+pub const fn must_prom_zone(color: Color, piece: Piece) -> BitBoard {
+    match piece {
+        Piece::Pawn | Piece::Lance => match color {
+            Color::White => RANK_I,
+            Color::Black => RANK_A,
+        },
+        Piece::Knight => match color {
+            Color::White => SOUTH_G,
+            Color::Black => NORTH_C,
+        },
+        _ => BitBoard::EMPTY,
     }
 }
 
