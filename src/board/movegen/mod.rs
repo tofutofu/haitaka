@@ -40,17 +40,16 @@ mod commoner {
         Knight => knight_attacks(color, square),
         Silver => silver_attacks(color, square),
         Gold => gold_attacks(color, square),
-        Bishop => get_bishop_moves(color, square, blockers), 
+        Bishop => get_bishop_moves(color, square, blockers),
         Rook => get_rook_moves(color, square, blockers),
         Tokin => gold_attacks(color, square),
         PLance => gold_attacks(color, square),
         PSilver => gold_attacks(color, square),
         PKnight => gold_attacks(color, square),
-        PBishop =>  get_bishop_moves(color, square, blockers) | gold_attacks(color, square),      
+        PBishop =>  get_bishop_moves(color, square, blockers) | gold_attacks(color, square),
         PRook => get_rook_moves(color, square, blockers) | silver_attacks(color, square)
     }
 }
-
 
 macro_rules! abort_if {
     ($($expr:expr),*) => {
@@ -61,12 +60,14 @@ macro_rules! abort_if {
 }
 
 impl Board {
-
-    // Target destination squares of moves (other than by King).
+    // Target destination squares of board moves (other than by King).
     //
-    // This function should only be called when there is at most one checker.
+    // This function is only called when there is _at most one_ checker.
+    // Its main purpose is to reduce the number of target squares when the
+    // King is in check (and also to prevent illegal capture of one's own pieces
+    // ...which actually sometimes has been observed in amateur tournaments...).
     //
-    pub(crate) fn target_squares<const IN_CHECK: bool>(&self) -> BitBoard {
+    fn target_squares<const IN_CHECK: bool>(&self) -> BitBoard {
         let color = self.side_to_move();
         let targets = if IN_CHECK {
             // when in check, we must block the checker or capture it
@@ -80,10 +81,36 @@ impl Board {
         targets & !self.colors(color)
     }
 
+    // Similar to target_squares but for drop moves.
+    //
+    // In check, a drop can only be used to interpose. Otherwise, any empty square is ok.
+    // Note that this doesn't exclude the forbidden drop ranks of Pawn, Lance and Knight.
+    //
+    fn target_drops<const IN_CHECK: bool>(&self) -> BitBoard {
+        let color = self.side_to_move();
+        let targets = if IN_CHECK {
+            // when in check, we must block the checker
+            let checker = self.checkers().next_square().unwrap();
+            let our_king = self.king(color);
+            get_between_rays(checker, our_king) & !self.occupied()
+        } else {
+            !self.occupied()
+        };
+        targets
+    }
+
+    // Board moves
+
     // Generate legal moves for all the "commoners" (all pieces except King).
     fn add_common_legals<
-        P: commoner::Commoner, F: FnMut(BoardMoves) -> bool, const IN_CHECK: bool
-    >(&self, mask: BitBoard, listener: &mut F) -> bool {
+        P: commoner::Commoner,
+        F: FnMut(PieceMoves) -> bool,
+        const IN_CHECK: bool,
+    >(
+        &self,
+        mask: BitBoard,
+        listener: &mut F,
+    ) -> bool {
         let color = self.side_to_move();
         let pieces = self.colored_pieces(color, P::PIECE) & mask;
         let pinned = self.pinned();
@@ -93,7 +120,7 @@ impl Board {
         for piece in pieces & !pinned {
             let moves = P::pseudo_legals(color, piece, blockers) & target_squares;
             if !moves.is_empty() {
-                abort_if!(listener(BoardMoves {
+                abort_if!(listener(PieceMoves::BoardMoves {
                     color: color,
                     piece: P::PIECE,
                     from: piece,
@@ -102,7 +129,7 @@ impl Board {
             }
         }
 
-        if !IN_CHECK && P::PIECE != Piece::Knight { 
+        if !IN_CHECK && P::PIECE != Piece::Knight {
             // Pinned pieces (apart from Kinght!) can still move along the attack ray between King and checker.
             // Only consider pinned pieces when not in check, since a pinned piece can never capture a checker.
             let our_king = self.king(color);
@@ -110,7 +137,7 @@ impl Board {
                 let target_squares = target_squares & line_ray(our_king, piece);
                 let moves = P::pseudo_legals(color, piece, blockers) & target_squares;
                 if !moves.is_empty() {
-                    abort_if!(listener(BoardMoves {
+                    abort_if!(listener(PieceMoves::BoardMoves {
                         color: color,
                         piece: P::PIECE,
                         from: piece,
@@ -152,12 +179,11 @@ impl Board {
 
         let color = self.side_to_move();
         let their_pieces = self.colors(!color);
-        let blockers = self.occupied()
-            ^ self.colored_pieces(color, Piece::King)
-            | square.bitboard();
+        let blockers =
+            self.occupied() ^ self.colored_pieces(color, Piece::King) | square.bitboard();
         short_circuit! {
             gold_attacks(color, square) & their_pieces & (
-                self.pieces(Piece::Gold) | 
+                self.pieces(Piece::Gold) |
                 self.pieces(Piece::Tokin) |
                 self.pieces(Piece::PLance) |
                 self.pieces(Piece::PKnight) |
@@ -168,11 +194,11 @@ impl Board {
             pawn_attacks(color, square) & their_pieces & self.pieces(Piece::Pawn),
             lazy_and! {
                 self.pieces(Piece::Bishop) | self.pieces(Piece::PBishop) & their_pieces,
-                get_bishop_moves(color, square, blockers)  
+                get_bishop_moves(color, square, blockers)
             },
             lazy_and! {
                 self.pieces(Piece::Rook) | self.pieces(Piece::PRook) & their_pieces,
-                get_rook_moves(color, square, blockers) 
+                get_rook_moves(color, square, blockers)
             },
             lazy_and! {
                 self.pieces(Piece::Lance) & their_pieces,
@@ -182,28 +208,30 @@ impl Board {
         }
     }
 
-    fn add_king_legals<
-        F: FnMut(BoardMoves) -> bool, const IN_CHECK: bool
-    >(&self, mask: BitBoard, listener: &mut F) -> bool {
+    fn add_king_legals<F: FnMut(PieceMoves) -> bool, const IN_CHECK: bool>(
+        &self,
+        mask: BitBoard,
+        listener: &mut F,
+    ) -> bool {
         const PIECE: Piece = Piece::King;
 
         let color = self.side_to_move();
         let our_pieces = self.colors(color);
         let our_king = self.king(color);
-        if !mask.has(our_king) { 
+        if !mask.has(our_king) {
             return false;
         }
         let mut moves = king_attacks(color, our_king) & !our_pieces;
         for to in moves {
             // removing unsafe squares should generally be more efficient than
-            // adding safe squares to an originally empty bitboard, since 
+            // adding safe squares to an originally empty bitboard, since
             // until the endgame most squares will be safe
             if !self.king_safe_on(to) {
                 moves ^= to.bitboard();
             }
         }
         if !moves.is_empty() {
-            abort_if!(listener(BoardMoves {
+            abort_if!(listener(PieceMoves::BoardMoves {
                 color: color,
                 piece: PIECE,
                 from: our_king,
@@ -213,9 +241,11 @@ impl Board {
         false
     }
 
-    fn add_all_legals<
-        F: FnMut(BoardMoves) -> bool, const IN_CHECK: bool
-    >(&self, mask: BitBoard, listener: &mut F) -> bool {
+    fn add_all_legals<F: FnMut(PieceMoves) -> bool, const IN_CHECK: bool>(
+        &self,
+        mask: BitBoard,
+        listener: &mut F,
+    ) -> bool {
         abort_if! {
             self.add_common_legals::<commoner::Pawn, _, IN_CHECK>(mask, listener),
             self.add_common_legals::<commoner::Lance, _, IN_CHECK>(mask, listener),
@@ -231,6 +261,42 @@ impl Board {
             self.add_common_legals::<commoner::PBishop, _, IN_CHECK>(mask, listener),
             self.add_common_legals::<commoner::PRook, _, IN_CHECK>(mask, listener),
             self.add_king_legals::<_, IN_CHECK>(mask, listener)
+        }
+        false
+    }
+
+    // Drops
+    fn add_drops<P: commoner::Commoner, F: FnMut(PieceMoves) -> bool, const IN_CHECK: bool>(
+        &self,
+        listener: &mut F,
+    ) -> bool {
+        let color = self.side_to_move();
+        let piece = P::PIECE;
+
+        if self.inner.hand(color)[piece as usize] > 0 {
+            let target_squares = self.target_drops::<IN_CHECK>();
+            let permitted = drop_zone(color, piece);
+            let to = target_squares & permitted;
+            return listener(PieceMoves::Drops { color, piece, to });
+        }
+        false
+    }
+
+    fn add_all_drops<F: FnMut(PieceMoves) -> bool, const IN_CHECK: bool>(
+        &self,
+        listener: &mut F,
+    ) -> bool {
+        if self.is_hand_empty(self.side_to_move()) {
+            return false;
+        }
+        abort_if! {
+            self.add_drops::<commoner::Pawn, _, IN_CHECK>(listener),
+            self.add_drops::<commoner::Lance, _, IN_CHECK>(listener),
+            self.add_drops::<commoner::Knight, _, IN_CHECK>(listener),
+            self.add_drops::<commoner::Silver, _, IN_CHECK>(listener),
+            self.add_drops::<commoner::Gold, _, IN_CHECK>(listener),
+            self.add_drops::<commoner::Rook, _, IN_CHECK>(listener),
+            self.add_drops::<commoner::Bishop, _, IN_CHECK>(listener)
         }
         false
     }
@@ -257,7 +323,7 @@ impl Board {
 
             match self.checkers.len() {
                 0 => return true,
-                1 => return self.target_squares::<true>().has(to),
+                1 => return self.target_drops::<true>().has(to),
                 _ => return false,
             }
         }
@@ -370,14 +436,18 @@ impl Board {
     }
 
     /// Generate all legal moves given a position in no particular order.
-    /// 
-    /// To retrieve moves, a `listener` callback must be passed that receives [`BoardMoves`].
-    /// 
-    /// The listener will be called a maximum of TODO times.
+    ///
+    /// To retrieve moves, a `listener` callback must be passed that receives [`PieceMoves`].
+    ///
+    /// The listener will be called max 1 time for the King of the side that is to move,
+    /// max 2 times for every other particular piece on the board, and max 1 time for every
+    /// piece type in hand. So, it will be called at least once, and never more than 38 x 2 times.
+    /// In a typical middle-game position, it can be expected to be called about 20 times.
+    ///
     /// The listener can interrupt and stop move generation early by returning `true`.
     /// This function will then also return `true`. Otherwise, this function eventually
     /// returns `false`.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
@@ -393,19 +463,39 @@ impl Board {
     /// });
     /// assert_eq!(total_moves, 30);
     /// ```
-    pub fn generate_moves(&self, listener: impl FnMut(BoardMoves) -> bool) -> bool {
-        self.generate_moves_for(BitBoard::FULL, listener)
+    pub fn generate_moves(&self, listener: impl FnMut(PieceMoves) -> bool) -> bool {
+        self.generate_moves_internal(listener)
+    }
+
+    fn generate_moves_internal(&self, mut listener: impl FnMut(PieceMoves) -> bool) -> bool {
+        let listener = &mut listener;
+        abort_if! {
+            self.generate_board_moves_for(BitBoard::FULL, listener),
+            self.generate_drops(listener)
+        }
+        false
+    }
+
+    pub fn generate_drops(&self, listener: &mut impl FnMut(PieceMoves) -> bool) -> bool {
+        match self.checkers().len() {
+            0 => self.add_all_drops::<_, false>(listener),
+            1 => self.add_all_drops::<_, true>(listener),
+            _ => false,
+        }
     }
 
     /// Version of [`Board::generate_moves`] moves that generates moves for a subset of pieces.
-    /// 
+    ///
+    /// Argument `mask` is used to select the subset of pieces for which we want to
+    /// generate moves.
+    ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
     /// let board = Board::default();
     /// let pawns = board.pieces(Piece::Pawn);
     /// let mut pawn_moves = 0;
-    /// board.generate_moves_for(pawns, |moves| {
+    /// board.generate_board_moves_for(pawns, |moves| {
     ///     // Done this way for demonstration.
     ///     // Actual counting is best done in bulk with moves.len().
     ///     for _mv in moves {
@@ -415,15 +505,15 @@ impl Board {
     /// });
     /// assert_eq!(pawn_moves, 9);
     /// ```
-    pub fn generate_moves_for(
-        &self, mask: BitBoard, mut listener: impl FnMut(BoardMoves) -> bool
+    pub fn generate_board_moves_for(
+        &self,
+        mask: BitBoard,
+        mut listener: &mut impl FnMut(PieceMoves) -> bool,
     ) -> bool {
         match self.checkers().len() {
             0 => self.add_all_legals::<_, false>(mask, &mut listener),
             1 => self.add_all_legals::<_, true>(mask, &mut listener),
-            _ => self.add_king_legals::<_, true>(mask, &mut listener)
+            _ => self.add_king_legals::<_, true>(mask, &mut listener),
         }
     }
-
-
 }

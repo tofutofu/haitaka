@@ -81,7 +81,7 @@ pub struct Board {
     inner: ZobristBoard,
     pinned: BitBoard,
     checkers: BitBoard,
-    move_number: u16,  // TODO: change to usize?
+    move_number: u16, // TODO: change to usize?
 }
 
 impl Default for Board {

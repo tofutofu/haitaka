@@ -43,6 +43,8 @@ impl Board {
         Self::parse_board(&mut board, next()?).map_err(|_| InvalidBoard)?;
         Self::parse_side_to_move(&mut board, next()?).map_err(|_| InvalidSideToMove)?;
         Self::parse_hands(&mut board, next()?).map_err(|_| InvalidHands)?;
+
+        // TODO: make optional
         Self::parse_move_number(&mut board, next()?).map_err(|_| InvalidMoveNumber)?;
 
         if parts.next().is_some() {
@@ -150,6 +152,7 @@ impl Board {
     }
 
     fn parse_move_number(board: &mut Board, s: &str) -> Result<(), ()> {
+        // TODO: make optional
         board.move_number = s.parse().map_err(|_| ())?;
         if board.move_number == 0 {
             return Err(());

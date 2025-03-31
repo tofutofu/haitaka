@@ -21,76 +21,128 @@ impl PromotionStatus {
     }
 }
 
-/// A structure representing multiple moves for a piece on the board.
-/// Iterate it to unpack its moves.
+/// A compact enum representing all the moves for one particular piece
+/// either on the board or in hand.
+///
+/// Iterate over the PieceMoves instance to unpack the moves.
+/// Note that the iterator will either return only [`Move::Drop`] or only
+/// [`Move::BoardMove`] items depending on whether we iterate over drops or board moves.
+///
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct BoardMoves {
-    pub color: Color,
-    pub piece: Piece,
-    pub from: Square,
-    pub to: BitBoard,
+pub enum PieceMoves {
+    Drops {
+        color: Color,
+        piece: Piece,
+        to: BitBoard,
+    },
+    BoardMoves {
+        color: Color,
+        piece: Piece,
+        from: Square,
+        to: BitBoard,
+    },
 }
 
-impl BoardMoves {
+impl PieceMoves {
     /// Get the number of generated to-squares.
     ///
-    /// The BoardMovesIter will generate at least this number of moves,
+    /// The PieceMovesIter will generate at least this number of moves,
     /// but may generate up to twice as many, depending on piece and position.
     ///
     pub fn len(&self) -> usize {
-        self.to.len() as usize
+        match self {
+            PieceMoves::Drops { to, .. } | PieceMoves::BoardMoves { to, .. } => to.len() as usize,
+        }
     }
 
     /// Check if there are no [`Move`]s.
     pub fn is_empty(&self) -> bool {
-        self.to.is_empty()
+        match self {
+            PieceMoves::Drops { to, .. } | PieceMoves::BoardMoves { to, .. } => to.is_empty(),
+        }
     }
 
     /// Check if this set of moves contains a given [`Move`].
+    /// The given move can either be a [`Move::Drop`] or [`Move::BoardMove`].
     pub fn has(&self, mv: Move) -> bool {
-        if let Move::BoardMove {
-            from,
-            to,
-            promotion,
-        } = mv
-        {
-            if self.from != from || !self.to.has(to) {
-                return false;
+        match (self, mv) {
+            // Handle BoardMoves
+            (
+                PieceMoves::BoardMoves {
+                    color,
+                    piece,
+                    from,
+                    to,
+                },
+                Move::BoardMove {
+                    from: mv_from,
+                    to: mv_to,
+                    promotion,
+                },
+            ) => {
+                if *from != mv_from || !to.has(mv_to) {
+                    return false;
+                }
+                match PromotionStatus::new(*color, *piece, *from, mv_to) {
+                    PromotionStatus::CannotPromote => !promotion,
+                    PromotionStatus::MustPromote => promotion,
+                    PromotionStatus::MayPromote => true, // Either is valid!
+                }
             }
-            match PromotionStatus::new(self.color, self.piece, from, to) {
-                PromotionStatus::CannotPromote => !promotion,
-                PromotionStatus::MustPromote => promotion,
-                PromotionStatus::MayPromote => true, // Either is valid!
-            }
-        } else {
-            false
+            // Handle Drops
+            (
+                PieceMoves::Drops { piece, to, .. },
+                Move::Drop {
+                    piece: mv_piece,
+                    to: mv_to,
+                },
+            ) => *piece == mv_piece && to.has(mv_to),
+
+            // If the variants don't match, return false
+            _ => false,
         }
     }
 }
 
-/// Iterator over the moves in a [`BoardMoves`] instance.
+/// Iterator over the moves in a [`PieceMoves`] instance.
 /// The associated item is a [`Move`].
-pub struct BoardMovesIter {
-    moves: BoardMoves,
+pub struct PieceMovesIter {
+    moves: PieceMoves,
+    // `to` is set to some square if we just returned a promotion move
+    // and we want to return the corresponding non-promotion move on the next step;
+    // for Drops this always remains None
     to: Option<Square>,
-    // promotion factor is 2 for promotable pieces, otherwise 1
-    // this is used to calculate the upperbound of the size_hint
+    // 'promotion_factor' is used to calculate the upperbound for the size_hint;
+    // it is 2 for promotable pieces, otherwise 1;
+    // for Drops it is always 1
     promotion_factor: usize,
 }
 
-impl BoardMovesIter {
-    /// Helper function to calculate the number of moves for a pawn.
-    fn len_for_pawn(&self, color: Color, num_targets: usize) -> usize {
+impl PieceMovesIter {
+    fn new(moves: PieceMoves) -> Self {
+        let promotion_factor = match moves {
+            PieceMoves::BoardMoves { piece, .. } if piece.is_promotable() => 2,
+            _ => 1,
+        };
+
+        Self {
+            moves,
+            to: None,
+            promotion_factor,
+        }
+    }
+
+    /// Helper function to calculate the number of board moves for a pawn.
+    fn len_for_pawn(&self, color: Color, from: Square, to: BitBoard, num_targets: usize) -> usize {
         let must_prom_zone = must_prom_zone(color, Piece::Pawn);
         let prom_zone = prom_zone(color);
-        let to = self.moves.to;
 
         // If any destination square is in the must-promote zone, no promotions are possible
         if !(to & must_prom_zone).is_empty() {
             num_targets
         }
         // If the pawn is already in the promotion zone or can move into it, promotions are possible
-        else if prom_zone.has(self.moves.from) || !(prom_zone & to).is_empty() {
+        else if prom_zone.has(from) || !(prom_zone & to).is_empty() {
             2 * num_targets
         }
         // Otherwise, no promotions are possible
@@ -99,11 +151,10 @@ impl BoardMovesIter {
         }
     }
 
-    // Helper to calculate the number of moves for a lance.
-    fn len_for_lance(&self, color: Color, num_targets: usize) -> usize {
+    // Helper to calculate the number of board moves for a lance.
+    fn len_for_lance(&self, color: Color, to: BitBoard, num_targets: usize) -> usize {
         let must_prom_zone = must_prom_zone(color, Piece::Lance);
         let prom_zone = prom_zone(color);
-        let to = self.moves.to;
 
         let m = (to & prom_zone).len();
         if m > 0 {
@@ -115,11 +166,10 @@ impl BoardMovesIter {
         num_targets
     }
 
-    // Helper to calculate the number of moves for a knight.
-    fn len_for_knight(&self, color: Color, num_targets: usize) -> usize {
+    // Helper to calculate the number of board moves for a knight.
+    fn len_for_knight(&self, color: Color, to: BitBoard, num_targets: usize) -> usize {
         let must_prom_zone = must_prom_zone(color, Piece::Knight);
         let prom_zone = prom_zone(color);
-        let to = self.moves.to;
 
         if (to & must_prom_zone).len() > 0 {
             // Knight must promote
@@ -134,109 +184,138 @@ impl BoardMovesIter {
     }
 }
 
-impl IntoIterator for BoardMoves {
+impl IntoIterator for PieceMoves {
     type Item = Move;
 
-    type IntoIter = BoardMovesIter;
+    type IntoIter = PieceMovesIter;
 
     fn into_iter(self) -> Self::IntoIter {
-        BoardMovesIter {
-            moves: self,
-            to: None,
-            promotion_factor: if self.piece.is_promotable() { 2 } else { 1 },
-        }
+        PieceMovesIter::new(self)
     }
 }
 
-impl Iterator for BoardMovesIter {
+impl Iterator for PieceMovesIter {
     type Item = Move;
 
-    // Promotions (for a given (`from`, `to`) pair) are always returned first.
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        let from = self.moves.from;
-
-        if let Some(to) = self.to {
-            // previously returned item was a promotion
-            // now return the corresponding non-promotion
-
-            self.moves.to ^= to.bitboard();
-            self.to = None;
-
-            return Some(Move::BoardMove {
+        match &mut self.moves {
+            // Handle drop moves
+            PieceMoves::Drops { piece, to, .. } => {
+                let to_square = to.next_square()?;
+                Some(Move::Drop {
+                    piece: *piece,
+                    to: to_square,
+                })
+            }
+            // Handle board moves
+            // Promotions (for a given (`from`, `to`) pair) are always returned first.
+            PieceMoves::BoardMoves {
+                color,
+                piece,
                 from,
                 to,
-                promotion: false,
-            });
+            } => {
+                let from = *from;
+
+                if self.to.is_some() {
+                    // previously returned item was a promotion
+                    // now return the corresponding non-promotion
+
+                    let to_square = self.to.unwrap();
+                    self.to = None;
+
+                    *to ^= to_square.bitboard();
+
+                    return Some(Move::BoardMove {
+                        from,
+                        to: to_square,
+                        promotion: false,
+                    });
+                }
+
+                let to_square = to.next_square()?;
+
+                let promotion = match PromotionStatus::new(*color, *piece, from, to_square) {
+                    PromotionStatus::CannotPromote => {
+                        *to ^= to_square.bitboard(); // eat `to` bit
+                        false
+                    }
+                    PromotionStatus::MayPromote => {
+                        // set `self.to` to make non-promotion in next step
+                        self.to = Some(to_square);
+                        true
+                    }
+                    PromotionStatus::MustPromote => {
+                        *to ^= to_square.bitboard(); // eat `to` bit
+                        true
+                    }
+                };
+
+                Some(Move::BoardMove {
+                    from,
+                    to: to_square,
+                    promotion,
+                })
+            }
         }
-
-        let color = self.moves.color;
-        let piece = self.moves.piece;
-        let from = self.moves.from;
-        let to = self.moves.to.next_square()?;
-
-        let promotion = match PromotionStatus::new(color, piece, from, to) {
-            PromotionStatus::CannotPromote => {
-                self.moves.to ^= to.bitboard(); // eats `to` bit
-                false
-            }
-            PromotionStatus::MayPromote => {
-                // sets `self.to` to be used for non-promotion in next step
-                self.to = Some(to);
-                true
-            }
-            PromotionStatus::MustPromote => {
-                // eats `to` bit
-                self.moves.to ^= to.bitboard();
-                true
-            }
-        };
-
-        Some(Move::BoardMove {
-            from,
-            to,
-            promotion,
-        })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let remaining_moves = self.moves.to.len() as usize;
-        let pending = if self.to.is_some() { 1 } else { 0 };
+        match &self.moves {
+            PieceMoves::Drops { to, .. } => {
+                let remaining_moves = to.len() as usize;
+                (remaining_moves, Some(remaining_moves))
+            }
+            PieceMoves::BoardMoves { to, .. } => {
+                let remaining_moves = to.len() as usize;
+                let pending_non_promotion = if self.to.is_some() { 1 } else { 0 };
 
-        let lo = remaining_moves + pending;
-        let hi = self.promotion_factor * remaining_moves + pending;
-        (lo, Some(hi))
+                let lo = remaining_moves + pending_non_promotion;
+                let hi = self.promotion_factor * remaining_moves + pending_non_promotion;
+                (lo, Some(hi))
+            }
+        }
     }
 }
 
-impl ExactSizeIterator for BoardMovesIter {
+impl ExactSizeIterator for PieceMovesIter {
     fn len(&self) -> usize {
-        let num_targets = self.moves.to.len() as usize;
-        if !self.moves.piece.is_promotable() {
-            // piece is either King, Gold, or already promoted
-            num_targets
-        } else {
-            // piece could still promote
-            let color = self.moves.color;
-            let piece = self.moves.piece;
+        match self.moves {
+            PieceMoves::Drops { to, .. } => to.len() as usize,
+            PieceMoves::BoardMoves {
+                color,
+                piece,
+                from,
+                to,
+            } => {
+                let num_targets = to.len() as usize;
+                let pending_non_promotion = if self.to.is_some() { 1 } else { 0 };
 
-            match piece {
-                Piece::Pawn => self.len_for_pawn(color, num_targets),
-                Piece::Lance => self.len_for_lance(color, num_targets),
-                Piece::Knight => self.len_for_knight(color, num_targets),
-                _ => {
-                    // Silver, Rook or Bishop
-                    let from = self.moves.from;
-                    let to = self.moves.to;
-                    let zone = prom_zone(color);
+                if !piece.is_promotable() {
+                    // piece is either King, Gold, or already promoted
+                    num_targets + pending_non_promotion
+                } else {
+                    // piece could still promote
+                    let total_moves = match piece {
+                        Piece::Pawn => self.len_for_pawn(color, from, to, num_targets),
+                        Piece::Lance => self.len_for_lance(color, to, num_targets),
+                        Piece::Knight => self.len_for_knight(color, to, num_targets),
+                        _ => {
+                            // Silver, Rook or Bishop
+                            let zone = prom_zone(color);
 
-                    if zone.has(from) {
-                        // piece can promote on any move
-                        2 * num_targets
-                    } else {
-                        // piece can promote on some moves
-                        (2 * (zone & to).len() + (zone.not() & to).len()) as usize
-                    }
+                            if zone.has(from) {
+                                // piece can always promote
+                                2 * num_targets
+                            } else {
+                                // piece may sometimes promote
+                                (2 * (zone & to).len() + (zone.not() & to).len()) as usize
+                            }
+                        }
+                    };
+
+                    total_moves + pending_non_promotion
                 }
             }
         }
@@ -250,7 +329,7 @@ mod tests {
 
     #[test]
     fn len_handles_promotions() {
-        let mv = BoardMoves {
+        let mv = PieceMoves {
             piece: Piece::Pawn,
             from: Square::A7,
             to: Square::A8.bitboard() | Square::B8.bitboard()
@@ -266,7 +345,7 @@ mod tests {
 
     #[test]
     fn has_works() {
-        let mv = BoardMoves {
+        let mv = PieceMoves {
             piece: Piece::King,
             from: Square::A7,
             to: get_king_moves(Square::A7)
@@ -285,7 +364,7 @@ mod tests {
 
     #[test]
     fn has_handles_promotions() {
-        let mv = BoardMoves {
+        let mv = PieceMoves {
             piece: Piece::Pawn,
             from: Square::A7,
             to: Square::A8.bitboard() | Square::B8.bitboard()
