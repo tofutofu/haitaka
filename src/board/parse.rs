@@ -127,7 +127,14 @@ impl Board {
                 } else if let Some(num) = c.to_digit(10) {
                     count = 10 * count + num;
                 } else if let Some((piece, color)) = Piece::try_from_char(c) {
-                    board.unchecked_set_hand(color, piece, if count > 0 { count } else { 1 });
+                    if count > u8::MAX as u32 {
+                        return Err(()); // way... too large
+                    }
+                    board.unchecked_set_hand(
+                        color,
+                        piece,
+                        if count > 0 { count as u8 } else { 1u8 },
+                    );
                     count = 0;
                     found = true;
                 } else {

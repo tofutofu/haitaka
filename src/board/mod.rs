@@ -119,7 +119,7 @@ impl Board {
     /// This function performs no checks in the validity of count!
     ///
     #[inline(always)]
-    pub fn unchecked_set_hand(&mut self, color: Color, piece: Piece, count: u32) {
+    pub fn unchecked_set_hand(&mut self, color: Color, piece: Piece, count: u8) {
         self.inner.unchecked_set_hand(color, piece, count);
     }
 

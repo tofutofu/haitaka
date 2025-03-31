@@ -3,6 +3,7 @@ use crate::*;
 #[derive(Debug)]
 struct ColorZobristConstants {
     pieces: [[u64; Square::NUM]; Piece::NUM],
+    hand: [[u64; 20]; Piece::NUM], // making room for counts
 }
 
 #[derive(Debug)]
@@ -42,14 +43,21 @@ const ZOBRIST: ZobristConstants = {
     macro_rules! color_zobrist_constant {
         () => {{
             let mut pieces = [[0u64; Square::NUM]; Piece::NUM];
+            let mut hand = [[0u64; 20]; Piece::NUM];
             fill_array!(pieces: {
                 let mut squares = [0; Square::NUM];
                 fill_array!(squares: rand!());
                 squares
             });
+            fill_array!(hand: {
+                let mut counts = [0; 20];
+                fill_array!(counts: rand!());
+                counts
+            });
 
             ColorZobristConstants {
                 pieces,
+                hand
             }
         }};
     }
@@ -113,16 +121,19 @@ impl ZobristBoard {
     }
 
     #[inline(always)]
-    pub fn unchecked_set_hand(&mut self, color: Color, piece: Piece, count: u32) {
-        self.hands[color as usize][piece as usize] = count as u8;
+    pub fn unchecked_set_hand(&mut self, color: Color, piece: Piece, count: u8) {
+        let old_count = self.hands[color as usize][piece as usize];
+        self.hands[color as usize][piece as usize] = count;
+        self.xor_hand(color, piece, old_count, count);
     }
 
     #[inline(always)]
     pub fn take_in_hand(&mut self, color: Color, piece: Piece) {
-        self.hands[color as usize][piece.unpromote() as usize] += 1;
+        let piece = piece.unpromote();
+        let old_count = self.hands[color as usize][piece as usize];
+        self.hands[color as usize][piece as usize] = old_count + 1;
+        self.xor_hand(color, piece, old_count, old_count + 1);
     }
-
-    // TODO: better use an Option or Result here
 
     /// Take from hand
     ///
@@ -131,8 +142,10 @@ impl ZobristBoard {
     ///
     #[inline(always)]
     pub fn take_from_hand(&mut self, color: Color, piece: Piece) {
-        if let Some(v) = self.hands[color as usize][piece.unpromote() as usize].checked_sub(1) {
-            self.hands[color as usize][piece.unpromote() as usize] = v;
+        let piece = piece.unpromote();
+        if let Some(new_count) = self.hands[color as usize][piece as usize].checked_sub(1) {
+            self.hands[color as usize][piece as usize] = new_count;
+            self.xor_hand(color, piece, new_count + 1, new_count);
         } else {
             panic!("Hand doesn't contain piece");
         }
@@ -149,11 +162,10 @@ impl ZobristBoard {
     }
 
     pub fn board_is_equal(&self, other: &Self) -> bool {
-        // TODO! hands!
-
-        self.pieces == other.pieces
+        self.side_to_move == other.side_to_move
+            && self.pieces == other.pieces
             && self.colors == other.colors
-            && self.side_to_move == other.side_to_move
+            && self.hands == other.hands
     }
 
     #[inline(always)]
@@ -164,7 +176,13 @@ impl ZobristBoard {
         self.hash ^= ZOBRIST.color[color as usize].pieces[piece as usize][square as usize];
     }
 
-    // TODO: Update pieces in hand!
+    #[inline(always)]
+    fn xor_hand(&mut self, color: Color, piece: Piece, old_count: u8, new_count: u8) {
+        // XOR out the old count
+        self.hash ^= ZOBRIST.color[color as usize].hand[piece as usize][old_count as usize];
+        // XOR in the new count
+        self.hash ^= ZOBRIST.color[color as usize].hand[piece as usize][new_count as usize];
+    }
 
     #[inline(always)]
     pub fn toggle_side_to_move(&mut self) {
@@ -173,36 +191,27 @@ impl ZobristBoard {
     }
 }
 
-/*
 #[cfg(test)]
 mod tests {
     use crate::Board;
 
     #[test]
     fn zobrist_transpositions() {
-        let board = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
-            .parse::<Board>().unwrap();
+        let board = Board::startpos();
+
         const MOVES: &[[[&str; 4]; 2]] = &[
-            [["e2c4", "h8f8", "d2h6", "b4b3"], ["e2c4", "b4b3", "d2h6", "h8f8"]],
-            [["c3a4", "f6g8", "e1d1", "a8c8"], ["c3a4", "a8c8", "e1d1", "f6g8"]],
-            [["h1g1", "f6g4", "d2h6", "b4b3"], ["h1g1", "b4b3", "d2h6", "f6g4"]],
-            [["a1c1", "c7c5", "c3a4", "a6e2"], ["c3a4", "c7c5", "a1c1", "a6e2"]],
-            [["e2c4", "h8h5", "f3f5", "e7d8"], ["f3f5", "h8h5", "e2c4", "e7d8"]],
-            [["d5d6", "e8h8", "f3f6", "a6c4"], ["f3f6", "a6c4", "d5d6", "e8h8"]],
-            [["f3e3", "e8h8", "a2a4", "a8c8"], ["a2a4", "a8c8", "f3e3", "e8h8"]],
-            [["e1d1", "f6d5", "b2b3", "a8c8"], ["e1d1", "a8c8", "b2b3", "f6d5"]],
-            [["e1d1", "e8f8", "e5c6", "h8h5"], ["e1d1", "h8h5", "e5c6", "e8f8"]],
-            [["e2d3", "c7c6", "g2g4", "h8h6"], ["e2d3", "h8h6", "g2g4", "c7c6"]],
-            [["f3h5", "f6h7", "c3b1", "g7f6"], ["c3b1", "f6h7", "f3h5", "g7f6"]],
-            [["e2d3", "g6g5", "d2f4", "b6d5"], ["d2f4", "g6g5", "e2d3", "b6d5"]],
-            [["a2a3", "h8h5", "c3b1", "a8d8"], ["a2a3", "a8d8", "c3b1", "h8h5"]],
-            [["a2a4", "e8h8", "e1h1", "e7d8"], ["e1h1", "e8h8", "a2a4", "e7d8"]],
-            [["b2b3", "e8f8", "g2g3", "a6b7"], ["b2b3", "a6b7", "g2g3", "e8f8"]],
-            [["e5g4", "e8d8", "d2e3", "a6d3"], ["d2e3", "a6d3", "e5g4", "e8d8"]],
-            [["g2h3", "e7d8", "e5g4", "b6c8"], ["e5g4", "b6c8", "g2h3", "e7d8"]],
-            [["e5d3", "a6b7", "g2g3", "h8h6"], ["e5d3", "h8h6", "g2g3", "a6b7"]],
-            [["e5g4", "h8h5", "f3f5", "e6f5"], ["f3f5", "e6f5", "e5g4", "h8h5"]],
-            [["g2g3", "a8c8", "e5d3", "e7f8"], ["e5d3", "a8c8", "g2g3", "e7f8"]]
+            [
+                ["2g2f", "8c8d", "7g7f", "3c3d"],
+                ["7g7f", "8c8d", "2g2f", "3c3d"],
+            ],
+            [
+                ["2g2f", "3c3d", "7g7f", "8c8d"],
+                ["7g7f", "8c8d", "2g2f", "3c3d"],
+            ],
+            [
+                ["5g5f", "8c8d", "2h5h", "3c3d"],
+                ["5g5f", "3c3d", "2h5h", "8c8d"],
+            ],
         ];
         for (i, [moves_a, moves_b]) in MOVES.iter().enumerate() {
             let mut board_a = board.clone();
@@ -217,4 +226,3 @@ mod tests {
         }
     }
 }
-*/
