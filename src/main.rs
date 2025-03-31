@@ -1,35 +1,38 @@
 pub use sparrow::*;
 
-/*
-const fn get_between_rays(from: Square, to: Square) -> BitBoard {
-    let dx = to.file() as i8 - from.file() as i8; // -8 .. 8
-    let dy = to.rank() as i8 - from.rank() as i8; // -8 .. 8
-    let orthogonal = dx == 0 || dy == 0;
-    let diagonal = dx.abs() == dy.abs();
-    if !(orthogonal || diagonal) {
-        return BitBoard::EMPTY;
-    }
-    let dx = dx.signum(); // -1, 0, 1
-    let dy = dy.signum();
-    let mut square = from.offset(dx, dy);
-    let mut between = BitBoard::EMPTY;
-    while square as usize != to as usize {
-        between.0 |= square.bitboard().0;
-        square = square.offset(dx, dy);
-    }
-    between
-}
-*/
+// Using main - for now - as scratch pad.
 
 fn main() {
     println!("Hello, Shogi World!");
 
-    println!("{:#?}", get_between_rays(Square::E5, Square::B2));
+    test4();
 
     println!("Done!");
 }
 
+fn test4() {
+    let mv = Move::parse("P*7b").unwrap();
+
+    if let Move::Drop { piece, to } = mv {
+        println!("This is a drop move.");
+        println!("Piece: {:?}, To square: {:?}", piece, to);
+    } else {
+        println!("This is not a drop move.");
+    }
+
+    let mv = Move::parse("B8hx3c+").unwrap();
+    assert!(mv.is_board_move());
+    assert!(mv.piece().is_none());
+    assert_eq!(mv.from(), Some(Square::H8));
+    assert_eq!(mv.to(), Square::C3);
+    assert!(mv.is_promotion());
+}
+
 #[allow(dead_code)]
+pub fn test3() {
+    println!("{:#?}", get_between_rays(Square::E5, Square::B2));
+}
+
 pub fn test2() {
     let mut board = Board::default();
 

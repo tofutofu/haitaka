@@ -53,6 +53,42 @@ impl Move {
         !self.is_drop()
     }
 
+    /// Get the piece involved in the move.
+    ///
+    /// For `Move::Drop`, this directly returns the piece being dropped.
+    /// For `Move::BoardMove`, this requires additional context (the board state)
+    /// to infer the piece, so it returns `None` by default.
+    pub fn piece(&self) -> Option<Piece> {
+        match self {
+            Move::Drop { piece, .. } => Some(*piece),
+            Move::BoardMove { .. } => None,
+        }
+    }
+
+    /// Get the piece involved in the move, using the board state for context.
+    pub fn piece_on(&self, board: &Board) -> Option<Piece> {
+        match self {
+            Move::Drop { piece, .. } => Some(*piece),
+            Move::BoardMove { from, .. } => board.piece_on(*from),
+        }
+    }
+
+    /// Get the source square of the move, if applicable.
+    pub fn from(&self) -> Option<Square> {
+        match self {
+            Move::Drop { .. } => None, // Drops don't have a source square
+            Move::BoardMove { from, .. } => Some(*from),
+        }
+    }
+
+    /// Get the destination square of the move.
+    pub fn to(&self) -> Square {
+        match self {
+            Move::Drop { to, .. } => *to,
+            Move::BoardMove { to, .. } => *to,
+        }
+    }
+
     // Helper function to parse a square.
     fn parse_square_range(
         s: &str,
@@ -82,22 +118,24 @@ impl Move {
     /// use sparrow::{Move, Square, Piece};
     ///
     /// let mv = Move::parse("P*7b").unwrap();
-    /// assert_eq!(mv.piece, Piece::Pawn);
-    /// assert_eq!(mv.from, None);
-    /// assert_eq!(mv.to, Square::B7);
     /// assert!(mv.is_drop());
+    /// assert_eq!(mv.piece(), Some(Piece::Pawn));
+    /// assert_eq!(mv.to(), Square::B7);
+    /// assert!(!mv.is_promotion());
     ///
     /// let mv = Move::parse("R8bx8f").unwrap();
-    /// assert_eq!(mv.piece, Piece::Rook);
-    /// assert_eq!(mv.from, Some(Square::B8));
-    /// assert_eq!(mv.to, Square::F8);
+    /// assert!(mv.is_board_move());
+    /// assert!(mv.piece().is_none());
+    /// assert_eq!(mv.from(), Some(Square::B8));
+    /// assert_eq!(mv.to(), Square::F8);
+    /// assert!(!mv.is_promotion());
     ///
     /// let mv = Move::parse("B8hx3c+").unwrap();
-    /// assert_eq!(mv.piece, Piece::Bishop);
-    /// assert_eq!(mv.from, Some(Square::B8));
-    /// assert_eq!(mv.to, Square::3c);
+    /// assert!(mv.is_board_move());
+    /// assert!(mv.piece().is_none());
+    /// assert_eq!(mv.from(), Some(Square::H8));
+    /// assert_eq!(mv.to(), Square::C3);
     /// assert!(mv.is_promotion());
-    ///
     /// ```
     pub fn parse(s: &str) -> Result<Self, MoveParseError> {
         // Check for a drop move (e.g., "P*7b")
@@ -170,20 +208,22 @@ impl FromStr for Move {
     ///
     /// ```
     /// use sparrow::*;
-    /// let mv = Move::from_str("P*7b").unwrap(); // Drop
-    /// assert_eq!(mv.piece, Some(Piece::Pawn));
-    /// assert_eq!(mv.from, None);
-    /// assert_eq!(mv.to, Square::B7);
-    /// assert_eq!(mv.promotion, false);
+    /// use core::str::FromStr;
     ///
-    /// let mv = Move::from_str("7g7f").unwrap(); // Board move
-    /// assert_eq!(mv.piece, None); // Inferred from board state
-    /// assert_eq!(mv.from, Some(Square::G7));
-    /// assert_eq!(mv.to, Square::F7);
-    /// assert_eq!(mv.promotion, false);
+    /// let mv = Move::from_str("P*7b").unwrap();
+    /// assert_eq!(mv.piece(), Some(Piece::Pawn));
+    /// assert_eq!(mv.from(), None);
+    /// assert_eq!(mv.to(), Square::B7);
+    /// assert!(!mv.is_promotion());
     ///
-    /// let mv = Move::from_str("7g7f+").unwrap(); // Board move with promotion
-    /// assert_eq!(mv.promotion, true);
+    /// let mv = Move::from_str("7g7f").unwrap();
+    /// assert_eq!(mv.piece(), None);
+    /// assert_eq!(mv.from(), Some(Square::G7));
+    /// assert_eq!(mv.to(), Square::F7);
+    /// assert_eq!(mv.is_promotion(), false);
+    ///
+    /// let mv = Move::from_str("7g7f+").unwrap();
+    /// assert_eq!(mv.is_promotion(), true);
     ///
     /// assert!(Move::from_str("P*10b").is_err()); // Invalid square
     /// assert!(Move::from_str("7g").is_err()); // Too short
@@ -209,7 +249,7 @@ impl FromStr for Move {
         let from = Self::parse_square_range(s, 0..2)?;
         let to = Self::parse_square_range(s, 2..4)?;
 
-        let promotion = match s.get(5..6) {
+        let promotion = match s.get(4..5) {
             // note that '=' is not in spec
             Some("+") => true,
             None => false,
