@@ -489,7 +489,7 @@ pub const fn get_rook_rank_moves(square: Square, occ: BitBoard) -> BitBoard {
 ///     . . . . X . . . .
 ///     . . . . . . . . .
 /// };
-/// assert_eq!(get_rook_moves(Square::E5, occ), e5_attacks);
+/// assert_eq!(get_rook_moves(Color::White, Square::E5, occ), e5_attacks);
 ///
 /// let h5_attacks = bitboard! {
 ///     . . . . . . . . .
@@ -502,7 +502,7 @@ pub const fn get_rook_rank_moves(square: Square, occ: BitBoard) -> BitBoard {
 ///     . X X X * X X X X
 ///     . . . . X . . . .
 /// };
-/// assert_eq!(get_rook_moves(Square::H5, occ), h5_attacks);
+/// assert_eq!(get_rook_moves(Color::White, Square::H5, occ), h5_attacks);
 ///
 /// let c7_attacks = bitboard! {
 ///     . . X . . . . . .
@@ -515,7 +515,7 @@ pub const fn get_rook_rank_moves(square: Square, occ: BitBoard) -> BitBoard {
 ///     . . X . . . . . .
 ///     . . X . . . . . .
 /// };
-/// assert_eq!(get_rook_moves(Square::C7, occ), c7_attacks);
+/// assert_eq!(get_rook_moves(Color::White, Square::C7, occ), c7_attacks);
 /// ```
 #[inline(always)]
 pub const fn get_rook_moves(_color: Color, square: Square, occ: BitBoard) -> BitBoard {
@@ -619,7 +619,7 @@ const BISHOP_RAY_MASKS: [(u128, u128, u128, u128); Square::NUM] = {
 ///     . . . . . X . X .
 ///     . . . . X . . . X
 /// };
-/// assert_eq!(get_bishop_moves(Square::E5, occ), e5_attacks);
+/// assert_eq!(get_bishop_moves(Color::White, Square::E5, occ), e5_attacks);
 /// ```
 #[inline(always)]
 pub const fn get_bishop_moves(_color: Color, square: Square, occ: BitBoard) -> BitBoard {
