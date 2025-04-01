@@ -113,6 +113,9 @@ impl Move {
     /// - `capture_or_hyphen := [x-]`
     /// - `prom := [+=]`
     ///
+    /// Note that this is not used in USI. To parse the simple USI move format,
+    /// use [`Move::from_str`].
+    ///
     /// # Examples
     /// ```
     /// use sparrow::{Move, Square, Piece};
@@ -265,6 +268,14 @@ impl FromStr for Move {
             to,
             promotion,
         })
+    }
+}
+
+impl core::convert::TryFrom<&str> for Move {
+    type Error = MoveParseError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        Move::from_str(s)
     }
 }
 

@@ -21,6 +21,9 @@ impl Board {
     }
 
     /// Check if the board position is valid without considering checkers and pins.
+    ///
+    /// This does not validate the checkers and pins, but does verify that the King
+    ///  of the side_to_move is not in check.
     pub(super) fn is_valid(&self) -> bool {
         // Piece bitboards should not overlap.
         let mut occupied = BitBoard::EMPTY;
@@ -70,7 +73,6 @@ impl Board {
         true
     }
 
-    #[allow(dead_code)]
     /// Are the counts of pieces in hand valid?
     pub(super) fn hands_are_valid(&self) -> bool {
         let &hands = self.hands();
@@ -102,7 +104,6 @@ impl Board {
     //    when a move is actually made the King is not left in check. (This means
     //    that when no such move can be found, the program should resign.)
     //
-    // It seems that pinned also includes the opp's pieces??
 
     /// Calculate checkers and pins.
     pub(super) fn calculate_checkers_and_pins(&self, color: Color) -> (BitBoard, BitBoard) {

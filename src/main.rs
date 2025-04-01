@@ -1,15 +1,99 @@
 pub use sparrow::*;
-
 // Using main - for now - as scratch pad.
 
 fn main() {
     println!("Hello, Shogi World!");
 
-    test4();
+    test7();
 
     println!("Done!");
 }
 
+pub fn test7() {
+    let mut board = Board::startpos();
+    board.play("2g2f".parse().unwrap());
+    board.play("8c8d".parse().unwrap());
+    board.play("2f2e".parse().unwrap());
+    board.play("8d8e".parse().unwrap());
+    println!("'{}'", board);
+}
+
+pub fn test6() {
+    let sfen: &str = "ln3gsn1/7kl/3+B1p1p1/p4s2p/2P6/P2B3PP/1PNP+rPP2/2G3SK1/L4G1NL b G3Prs3p 65";
+    let mut board = Board::from_sfen(sfen).unwrap();
+    let mut pinned = board.pinned();
+    println!("occ {:#?}", board.occupied());
+    println!("white {:#?}", board.colors(Color::White));
+    println!("black {:#?}", board.colors(Color::Black));
+    println!("pinned {:#?}", pinned); // nothing yet - since for Black D4 is not a pinned piece!
+    let mv = Move::BoardMove {
+        from: Square::C6,
+        to: Square::A4,
+        promotion: false,
+    };
+    assert!(board.is_legal(mv));
+
+    let mv1: Result<Move, _> = "6c4a".try_into();
+    match mv1 {
+        Ok(mv1) => println!("Parsed move: {:?}", mv1),
+        Err(e) => println!("Failed to parse move: {}", e),
+    }
+
+    let mv2: Move = "6c4a".try_into().expect("huh");
+
+    board.play(mv2);
+
+    println!("occ {:#?}", board.occupied());
+    pinned = board.pinned();
+    println!("pinned {:#?}", pinned);
+}
+
+#[allow(dead_code)]
+fn test5() {
+    let bb = Square::A1.bitboard();
+    println!("A1: {:#?}", bb);
+    let shifted = bb.shift(Square::B1, Square::G2);
+    println!("B1->G2: {:#?}", shifted);
+
+    let mut board = Board::default();
+    let color = board.side_to_move();
+    println!("B {:#?}", board.colors(color));
+    // println!("W {:#?}", !board.colors(color));
+    println!("{:#?}", board.occupied());
+    println!("0x{:x}", board.hash());
+    println!("{} to move", board.side_to_move());
+
+    assert_eq!(color, Color::Black);
+    let mut mv = "2g2f".parse().unwrap();
+    /*
+    if let Move::BoardMove { from, to, .. } = mv {
+        println!("Move: {}", mv);
+        println!("{}: {:#?}", from, from.bitboard());
+        println!("{}: {:#?}", to, to.bitboard());
+        println!("{:?}", board.piece_on(Square::G2).unwrap());
+        println!("Pawn attacks {:#?}", pawn_attacks(color, from));
+        println!("Has {}: {}", to, pawn_attacks(color, from).has(to));
+    }
+    */
+    board.play(mv);
+    println!("{:#?}", board.occupied());
+    println!("0x{:x}", board.hash());
+    println!("{} to move", board.side_to_move());
+
+    mv = "8c8d".parse().unwrap();
+    board.play(mv);
+    println!("{:#?}", board.occupied());
+    println!("0x{:x}", board.hash());
+    println!("{} to move", board.side_to_move());
+
+    mv = "2f2e".parse().unwrap();
+    board.play(mv);
+    println!("{:#?}", board.occupied());
+    println!("0x{:x}", board.hash());
+    println!("{} to move", board.side_to_move());
+}
+
+#[allow(dead_code)]
 fn test4() {
     let mv = Move::parse("P*7b").unwrap();
 
@@ -28,7 +112,6 @@ fn test4() {
     assert!(mv.is_promotion());
 }
 
-#[allow(dead_code)]
 pub fn test3() {
     println!("{:#?}", get_between_rays(Square::E5, Square::B2));
 }

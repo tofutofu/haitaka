@@ -84,9 +84,18 @@ pub struct Board {
     move_number: u16, // TODO: change to usize?
 }
 
+/// Default only initializes an empty board.
+///
+/// This may be useful for setting up Tsume Shogi positions and for debugging.
+/// Use [`Board::startpos`] to initialize the default start position.
 impl Default for Board {
     fn default() -> Self {
-        Self::from_sfen(SFEN_STARTPOS).unwrap()
+        Self {
+            inner: ZobristBoard::empty(),
+            pinned: BitBoard::EMPTY,
+            checkers: BitBoard::EMPTY,
+            move_number: 0,
+        }
     }
 }
 
@@ -100,7 +109,7 @@ impl Board {
     /// assert_eq!(Board::startpos(), sfen.parse().unwrap());
     /// ```
     pub fn startpos() -> Self {
-        Self::default()
+        Self::from_sfen(SFEN_STARTPOS).unwrap()
     }
 
     /// Return a reference to the hand for color.
@@ -176,7 +185,7 @@ impl Board {
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// let board = Board::default();
+    /// let board = Board::startpos();
     /// let white_pawns = board.colored_pieces(Color::White, Piece::Pawn);
     /// assert_eq!(white_pawns, bitboard! {
     ///     . . . . . . . . .
@@ -201,6 +210,18 @@ impl Board {
     ///     . . . . . . . . .
     ///     . . . . . . . . .
     /// });
+    /// let white_lances = board.colored_pieces(Color::White, Piece::Lance);
+    /// assert_eq!(white_lances, bitboard! {
+    ///     X . . . . . . . X
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    /// });
     /// ```
     #[inline(always)]
     pub fn colored_pieces(&self, color: Color, piece: Piece) -> BitBoard {
@@ -211,7 +232,7 @@ impl Board {
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// let board = Board::default();
+    /// let board = Board::startpos();
     /// assert_eq!(board.occupied(), bitboard! {
     ///     X X X X X X X X X
     ///     . X . . . . . X .
@@ -234,12 +255,12 @@ impl Board {
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// let mut board = Board::default();
+    /// let mut board = Board::startpos();
     /// assert_eq!(board.side_to_move(), Color::Black);
     /// board.play("2g2f".parse().unwrap());
-    /// //assert_eq!(board.side_to_move(), Color::White);
-    /// //board.play("3c3d".parse().unwrap());
-    /// //assert_eq!(board.side_to_move(), Color::Black);
+    /// assert_eq!(board.side_to_move(), Color::White);
+    /// board.play("3c3d".parse().unwrap());
+    /// assert_eq!(board.side_to_move(), Color::Black);
     /// ```    
     pub fn side_to_move(&self) -> Color {
         self.inner.side_to_move()
@@ -252,7 +273,7 @@ impl Board {
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// let mut board = Board::default();
+    /// let mut board = Board::startpos();
     /// board.play("2g2f".parse().unwrap());
     /// board.play("8c8d".parse().unwrap());
     /// board.play("2f2e".parse().unwrap());
@@ -268,13 +289,26 @@ impl Board {
     }
 
     /// Get the pinned pieces for the side to move.
-    /// Note that this counts pieces regardless of color.
-    /// This counts any piece preventing check on our king.
+    ///
+    /// Note that this counts pieces regardless of color!
+    /// If there is a single piece, of any color, on an attack ray between our King
+    /// (the King of the side to move) and their Rook, Bishop or Lance, it is counted
+    /// as a 'pin'. This make it possible to simplify and optimize dealing with pins.
     ///
     /// # Examples
     ///
-    /// TODO
-    ///
+    /// ```
+    /// use sparrow::*;
+    /// let sfen: &str = "ln3gsn1/7kl/3+B1p1p1/p4s2p/2P6/P2B3PP/1PNP+rPP2/2G3SK1/L4G1NL b G3Prs3p 65";
+    /// let mut board = Board::from_sfen(sfen).unwrap();
+    /// // Since it's Black's turn, the Silver on D4 is not yet pinned
+    /// assert_eq!(board.pinned(), BitBoard::EMPTY);
+    /// let mv = Move::BoardMove { from: Square::C6, to: Square::A4, promotion: false };
+    /// assert!(board.is_legal(mv));
+    /// board.play(mv);
+    /// // Now it's White's turn and the Silver on D4 should be pinned
+    /// assert_eq!(board.pinned(), Square::D4.bitboard());
+    /// ```
     #[inline(always)]
     pub fn pinned(&self) -> BitBoard {
         self.pinned
@@ -284,7 +318,20 @@ impl Board {
     ///
     /// # Examples
     ///
-    /// TODO
+    /// ```
+    /// use sparrow::*;
+    /// let sfen: &str = "ln3gsn1/7kl/3+B1p1p1/p4s2p/2P6/P2B3PP/1PNP+rPP2/2G3SK1/L4G1NL b G3Prs3p 65";
+    /// let mut board = Board::from_sfen(sfen).unwrap();
+    /// assert_eq!(board.checkers(), BitBoard::EMPTY);
+    /// let mv = Move::BoardMove { from: Square::F6, to: Square::D4, promotion: false };
+    /// board.play(mv);
+    /// assert_eq!(board.checkers(), Square::D4.bitboard());
+    ///
+    /// // a rather absurd position with two checkers
+    /// let sfen: &str = "ln2+r1r2/5s+Pkl/3+B1p1p1/p4B2p/2P6/P6PP/1PNP1P3/2G3SK1/L4G1NL w 2GSN3Ps3p 76";
+    /// let mut board = Board::from_sfen(sfen).unwrap();
+    /// assert_eq!(board.checkers(), Square::B3.bitboard() | Square::D4.bitboard());
+    /// ```
     ///
     #[inline(always)]
     pub fn checkers(&self) -> BitBoard {
@@ -294,17 +341,22 @@ impl Board {
     /// Get the [move number].
     ///
     /// In Shogi, other than in International Chess, moves are always numbered
-    /// by their "half-move number" in Shogi.
+    /// by their "half-move number".
     ///
     /// # Examples
+    ///
     /// ```
     /// # use sparrow::*;
-    /// let mut board = Board::default();
+    /// let mut board = Board::startpos();
     /// assert_eq!(board.move_number(), 1);
-    /// board.play("7g7f".parse().unwrap());
+    /// board.play("2g2f".parse().unwrap());
+    /// assert_eq!(board.move_number(), 2);
     /// board.play("8c8d".parse().unwrap());
-    /// board.play("7f7e".parse().unwrap());
+    /// assert_eq!(board.move_number(), 3);
+    /// board.play("2f2e".parse().unwrap());
     /// assert_eq!(board.move_number(), 4);
+    /// board.play("8d8e".parse().unwrap());
+    /// assert_eq!(board.move_number(), 5);
     /// ```
     #[inline(always)]
     pub fn move_number(&self) -> u16 {
@@ -320,7 +372,7 @@ impl Board {
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// let mut board = Board::default();
+    /// let mut board = Board::startpos();
     /// assert_eq!(board.move_number(), 1);
     /// board.set_move_number(20);
     /// assert_eq!(board.move_number(), 20);
@@ -342,10 +394,10 @@ impl Board {
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// let board = Board::default();
+    /// let board = Board::startpos();
+    /// assert_eq!(board.piece_on(Square::E5), None);
     /// assert_eq!(board.piece_on(Square::A5), Some(Piece::King));
     /// assert_eq!(board.piece_on(Square::I5), Some(Piece::King));
-    /// assert_eq!(board.piece_on(Square::E5), None);
     /// ```
     #[inline(always)]
     pub fn piece_on(&self, square: Square) -> Option<Piece> {
@@ -360,10 +412,10 @@ impl Board {
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// let board = Board::default();
+    /// let board = Board::startpos();
+    /// assert_eq!(board.color_on(Square::E5), None);
     /// assert_eq!(board.color_on(Square::A5), Some(Color::White));
     /// assert_eq!(board.color_on(Square::I5), Some(Color::Black));
-    /// assert_eq!(board.color_on(Square::E5), None);
     /// ```
     #[inline(always)]
     pub fn color_on(&self, square: Square) -> Option<Color> {
@@ -383,7 +435,7 @@ impl Board {
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// let board = Board::default();
+    /// let board = Board::startpos();
     /// let piece = ColoredPiece { piece: Piece::King, color: Color::Black };
     /// assert_eq!(board.color_on(Square::I5), Some(Color::Black));
     /// assert_eq!(board.piece_on(Square::I5), Some(Piece::King));
@@ -400,9 +452,29 @@ impl Board {
 
     /// Is a Pawn drop ok on the given square?
     ///
-    /// This does not check if the square itself is empty. It is only used
-    /// to prevent dropping a double-pawn.
+    /// This function return true if there is already a Pawn (of this color)
+    /// somewhere on the file for this square. Its only purpose is to prevent
+    /// dropping a double-pawn.
     ///
+    /// # Examples
+    /// ```
+    /// use sparrow::*;
+    /// let board = Board::default();
+    /// for &square in Square::ALL.iter() {
+    ///     let bok = board.pawn_drop_ok(Color::Black, square);
+    ///     let wok = board.pawn_drop_ok(Color::White, square);
+    ///     if square.rank() as usize != 0 {
+    ///         assert!(bok);
+    ///     }
+    ///     if square.rank() as usize != 8 {
+    ///         assert!(wok);
+    ///     }
+    /// }
+    /// let board = Board::startpos();
+    /// for &square in Square::ALL.iter() {
+    ///     assert!(!board.pawn_drop_ok(Color::Black, square));
+    /// }
+    /// ```
     #[inline(always)]
     pub fn pawn_drop_ok(&self, color: Color, square: Square) -> bool {
         (self.colors(color) & self.pieces(Piece::Pawn) & square.file().bitboard()).is_empty()
@@ -413,7 +485,7 @@ impl Board {
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// let board = Board::default();
+    /// let board = Board::startpos();
     /// assert_eq!(board.king(Color::White), Square::A5);
     /// assert_eq!(board.king(Color::Black), Square::I5);
     /// ```
@@ -467,9 +539,19 @@ impl Board {
     }
 
     /// Check if two positions are equivalent.
-    /// This differs from the [`Eq`] implementation in that it does not check the move number
-    /// This method can be used as a strict check for four-fold repetition or positions.
     ///
+    /// This differs from the [`Eq`] implementation in that it does not check the move number.
+    /// This method can be used as a strict check for four-fold repetition or positions
+    /// (Sennichite).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sparrow::*;
+    /// let board1 = Board::startpos();
+    /// let board2: Board = SFEN_STARTPOS.parse().unwrap();
+    /// assert!(board1.same_position(&board2));
+    /// ```
     pub fn same_position(&self, other: &Self) -> bool {
         self.hash() == other.hash() && self.inner.board_is_equal(&other.inner)
     }
@@ -477,7 +559,6 @@ impl Board {
     /// Play a move while checking its legality.
     ///
     /// # Panics
-    ///
     /// This panics if the move is illegal.
     /// See [`Board::try_play`] for a non-panicking variant.
     /// See [`Board::play_unchecked`] for a faster variant that allows illegal moves.
@@ -486,20 +567,15 @@ impl Board {
     /// ## Legal moves
     /// ```
     /// # use sparrow::*;
-    /// let mut board = Board::default();
+    /// let sfen: &str = "lnsgkgsnl/1r5b1/p1ppppppp/9/1p5P1/9/PPPPPPP1P/1B5R1/LNSGKGSNL b - 5";
+    /// let mut board = Board::startpos();
     /// board.play("2g2f".parse().unwrap());
     /// board.play("8c8d".parse().unwrap());
     /// board.play("2f2e".parse().unwrap());
     /// board.play("8d8e".parse().unwrap());
-    /// const SFEN: &str = "lnsgkgsnl/1r5b1/p1ppppppp/9/1p5P1/9/PPPPPPP1P/1B5R1/LNSGKGSNL b - 5";
-    /// assert_eq!(format!("{}", board), SFEN);
+    /// let sfen_out = format!("{}", board);
+    /// assert_eq!(sfen_out, sfen);
     /// ```
-    /// ## Illegal moves
-    /// //```should_panic
-    /// //# use sparrow::*;
-    /// // let mut board = Board::default();
-    /// // board.play("2g1g".parse().unwrap());
-    /// //```
     pub fn play(&mut self, mv: Move) {
         assert!(self.try_play(mv).is_ok(), "Illegal move {}!", mv);
     }
@@ -532,11 +608,11 @@ impl Board {
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// let mut board = Board::default();
-    /// board.play_unchecked("P2g-2f".parse().unwrap());
-    /// board.play_unchecked("P8c-8d".parse().unwrap());
-    /// board.play_unchecked("P2f-2e".parse().unwrap());
-    /// board.play_unchecked("P8d-8e".parse().unwrap());
+    /// let mut board = Board::startpos();
+    /// board.play_unchecked("2g2f".parse().unwrap());
+    /// board.play_unchecked("8c8d".parse().unwrap());
+    /// board.play_unchecked("2f2e".parse().unwrap());
+    /// board.play_unchecked("8d8e".parse().unwrap());
     /// let expected: &str = "lnsgkgsnl/1r5b1/p1ppppppp/9/1p5P1/9/PPPPPPP1P/1B5R1/LNSGKGSNL b - 5";
     /// assert_eq!(format!("{}", board), expected);
     /// ```
@@ -564,7 +640,7 @@ impl Board {
                 .expect("Missing piece on move's `from` square");
 
             // optional capture
-            if let Some(capture) = self.piece_on(from) {
+            if let Some(capture) = self.piece_on(to) {
                 // remove capture
                 self.inner.xor_square(capture, !color, to);
                 // take in hand
