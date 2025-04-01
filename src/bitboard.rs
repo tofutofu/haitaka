@@ -273,11 +273,19 @@ impl BitBoard {
     }
 
     /// Shift bit set pattern so that square 'from' is mapped to square 'to'.
+    ///
+    /// # Examples
+    /// ```
+    /// use sparrow::*;
+    /// let bb = Square::A1.bitboard();
+    /// let shifted = bb.shift(Square::B1, Square::G2);
+    /// assert_eq!(shifted, Square::F2.bitboard());
+    /// ```
     pub const fn shift(self, from: Square, to: Square) -> Self {
         let dy = to.file() as i32 - from.file() as i32; // -8 .. =8
         let dx = to.rank() as i32 - from.rank() as i32; // -8 .. =8
 
-        self.shift_along_file(dy).shift_along_rank(dx)
+        self.shift_along_file(dx).shift_along_rank(dy)
     }
 }
 
