@@ -76,6 +76,10 @@ impl Board {
             return Err(InvalidBoard);
         }
 
+        if !board.hands_are_valid() {
+            return Err(InvalidBoard);
+        }
+
         Ok(board)
     }
 
