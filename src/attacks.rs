@@ -70,6 +70,23 @@ use crate::*;
 ///     . . . . . . . . .
 ///     . . . . . . . . .
 /// });
+///
+/// square = Square::G2;
+/// black_attacks = pawn_attacks(Color::Black, square);
+/// assert_eq!(black_attacks.len(), 1);
+/// assert!(black_attacks.has(Square::F2));
+///
+/// white_attacks = pawn_attacks(Color::White, square);
+/// assert_eq!(white_attacks.len(), 1);
+/// assert!(white_attacks.has(Square::H2));
+///
+/// square = Square::A1;
+/// black_attacks = pawn_attacks(Color::Black, square);
+/// assert!(black_attacks.is_empty());
+///
+/// square = Square::I1;
+/// white_attacks = pawn_attacks(Color::White, square);
+/// assert!(white_attacks.is_empty());
 /// ```
 // Macro to set up the attack vectors for non-sliding pieces.
 macro_rules! define_pseudo_attack {
@@ -178,7 +195,7 @@ define_pseudo_attack!(
 
 define_pseudo_attack!(
     knight_attacks,
-    Square::B3,
+    Square::C2,
     bitboard! {
         . . . . . . X . X
         . . . . . . . . .
@@ -205,7 +222,7 @@ define_pseudo_attack!(
 
 define_pseudo_attack!(
     pawn_attacks,
-    Square::B2,
+    Square::B1,
     bitboard! {
         . . . . . . . . X
         . . . . . . . . *
