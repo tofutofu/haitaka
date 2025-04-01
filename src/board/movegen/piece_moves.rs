@@ -202,7 +202,9 @@ impl Iterator for PieceMovesIter {
         match &mut self.moves {
             // Handle drop moves
             PieceMoves::Drops { piece, to, .. } => {
-                let to_square = to.next_square()?;
+                let to_square = to.next_square()?; // get it ...
+                *to ^= to_square.bitboard(); // ... and reset it
+
                 Some(Move::Drop {
                     piece: *piece,
                     to: to_square,

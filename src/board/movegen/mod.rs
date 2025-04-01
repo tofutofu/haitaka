@@ -514,6 +514,32 @@ impl Board {
     }
 
     /// Generate all drops in no particular order.
+    ///
+    /// # Examples
+    /// ```
+    /// use sparrow::*;
+    /// let sfen: & str = "lnsgk2nl/1r4gs1/p1pppp1pp/1p4p2/7P1/2P6/PP1PPPP1P/1SG4R1/LN2KGSNL b Bb 11";
+    /// let board = Board::from_sfen(sfen).unwrap();
+    /// assert_eq!(board.side_to_move(), Color::Black);
+    /// let hand = board.hand(Color::Black);
+    /// assert_eq!(hand[Piece::Bishop as usize], 1);
+    /// let empty_squares = !board.occupied();
+    /// let mut num_drops = 0;
+    /// board.generate_drops(|moves| {
+    ///     // should be able to drop the Bishop on every empty square
+    ///     if let PieceMoves::Drops { color, piece, to } = moves {
+    ///         assert_eq!(to, empty_squares);
+    ///     } else {
+    ///         assert!(false);
+    ///     }
+    ///     for mv in moves {
+    ///         assert!(mv.is_drop());
+    ///         num_drops += 1;
+    ///     }
+    ///     false
+    /// });
+    /// assert_eq!(num_drops, empty_squares.len());
+    /// ```
     pub fn generate_drops(&self, mut listener: impl FnMut(PieceMoves) -> bool) -> bool {
         match self.checkers().len() {
             0 => self.add_all_drops::<_, false>(&mut listener),

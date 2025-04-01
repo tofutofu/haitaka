@@ -4,9 +4,44 @@ pub use sparrow::*;
 fn main() {
     println!("Hello, Shogi World!");
 
-    test8();
+    test9();
 
     println!("Done!");
+}
+
+pub fn test9() {
+    let sfen: &str = "lnsgk2nl/1r4gs1/p1pppp1pp/1p4p2/7P1/2P6/PP1PPPP1P/1SG4R1/LN2KGSNL b Bb 11";
+    let board = Board::from_sfen(sfen).unwrap();
+    assert_eq!(board.side_to_move(), Color::Black);
+    let hand = board.hand(Color::Black);
+    assert_eq!(hand[Piece::Bishop as usize], 1);
+    let occ = board.occupied();
+    let mut num_drops = 0;
+    board.generate_drops(|moves| {
+        println!("{}", moves.len());
+
+        match moves {
+            PieceMoves::Drops { color, piece, to } => {
+                println!("{} {:?} To: {:#?}", color, piece, to);
+                assert_eq!(to, !occ);
+            }
+            _ => {
+                println!("Huh?");
+            }
+        }
+
+        for mv in moves {
+            println!("{}", mv);
+            assert!(mv.is_drop());
+            num_drops += 1;
+            //if num_drops > 3 {
+            //    break;
+            //}
+        }
+
+        false
+    });
+    assert_eq!(num_drops, 81 - occ.len());
 }
 
 pub fn test8() {
@@ -19,6 +54,9 @@ pub fn test8() {
         // Actual counting is best done in bulk with moves.len().
         for mv in moves {
             println!("{}", mv);
+            if let Move::BoardMove { .. } = mv {
+                println!("ok");
+            }
             num_moves += 1;
         }
         false
