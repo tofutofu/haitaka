@@ -154,11 +154,11 @@ pub const fn prom_zone(color: Color) -> BitBoard {
 /// use sparrow::*;
 /// let no_drops = no_fly_zone(Color::White, Piece::Pawn);
 /// let proms = prom_zone(Color::White);
-/// assert_eq!(must_prom_zone(Color::White), proms & no_drops);
+/// assert_eq!(must_prom_zone(Color::White, Piece::Pawn), proms & no_drops);
 ///
 /// let no_drops = no_fly_zone(Color::Black, Piece::Pawn);
 /// let proms = prom_zone(Color::Black);
-/// assert_eq!(must_prom_zone(Color::Black), proms & no_drops);
+/// assert_eq!(must_prom_zone(Color::Black, Piece::Pawn), proms & no_drops);
 ///
 /// ```
 #[inline(always)]
