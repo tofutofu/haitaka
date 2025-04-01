@@ -4,9 +4,27 @@ pub use sparrow::*;
 fn main() {
     println!("Hello, Shogi World!");
 
-    test7();
+    test8();
 
     println!("Done!");
+}
+
+pub fn test8() {
+    let board = Board::startpos();
+    //let piece = Piece::Pawn;
+    //let from = board.pieces(piece);
+    let mut num_moves = 0;
+    board.generate_moves(|moves| {
+        // Done this way for demonstration.
+        // Actual counting is best done in bulk with moves.len().
+        for mv in moves {
+            println!("{}", mv);
+            num_moves += 1;
+        }
+        false
+    });
+    //println!("{:?} moves: {}", piece, num_moves);
+    println!("All moves: {}", num_moves);
 }
 
 pub fn test7() {

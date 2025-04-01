@@ -180,7 +180,7 @@ impl Board {
         let color = self.side_to_move();
         let their_pieces = self.colors(!color);
         let blockers =
-            self.occupied() ^ self.colored_pieces(color, Piece::King) | square.bitboard();
+            (self.occupied() ^ self.colored_pieces(color, Piece::King)) | square.bitboard();
         short_circuit! {
             gold_attacks(color, square) & their_pieces & (
                 self.pieces(Piece::Gold) |
@@ -193,11 +193,11 @@ impl Board {
             knight_attacks(color, square) & their_pieces & self.pieces(Piece::Knight),
             pawn_attacks(color, square) & their_pieces & self.pieces(Piece::Pawn),
             lazy_and! {
-                self.pieces(Piece::Bishop) | self.pieces(Piece::PBishop) & their_pieces,
+                (self.pieces(Piece::Bishop) | self.pieces(Piece::PBishop)) & their_pieces,
                 get_bishop_moves(color, square, blockers)
             },
             lazy_and! {
-                self.pieces(Piece::Rook) | self.pieces(Piece::PRook) & their_pieces,
+                (self.pieces(Piece::Rook) | self.pieces(Piece::PRook)) & their_pieces,
                 get_rook_moves(color, square, blockers)
             },
             lazy_and! {
@@ -435,23 +435,28 @@ impl Board {
         }
     }
 
-    /// Generate all legal moves given a position in no particular order.
+    /// Generate all legal board moves and drops given a position in no particular order.
     ///
     /// To retrieve moves, a `listener` callback must be passed that receives [`PieceMoves`].
     ///
     /// The listener will be called max 1 time for the King of the side that is to move,
-    /// max 2 times for every other particular piece on the board, and max 1 time for every
-    /// piece type in hand. So, it will be called at least once, and never more than 38 x 2 times.
-    /// In a typical middle-game position, it can be expected to be called about 20 times.
+    /// max 2 times for every other piece on the board, and max 1 time for every piece type
+    /// in hand. So, it will never be called more than 38 x 2 times.
     ///
     /// The listener can interrupt and stop move generation early by returning `true`.
-    /// This function will then also return `true`. Otherwise, this function eventually
-    /// returns `false`.
+    /// This function will then also return `true`. Otherwise, the function eventually
+    /// returns `false` indicating that no more callbacks are to be expected.
+    ///
+    /// Note that the function signature requires `listener` to be passed as mutable (`mut`).
+    /// This is because the `FnMut` trait allows the closure to mutate its captured environment,
+    /// and passing it as mutable simplifies the implementation of move generation. The
+    /// implementation may call the `listener` multiple times, but it will never actually
+    /// modify the `listener` object itself.
     ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// let board = Board::default();
+    /// let board = Board::startpos();
     /// let mut total_moves = 0;
     /// board.generate_moves(|moves| {
     ///     // Done this way for demonstration.
@@ -463,36 +468,27 @@ impl Board {
     /// });
     /// assert_eq!(total_moves, 30);
     /// ```
-    pub fn generate_moves(&self, listener: impl FnMut(PieceMoves) -> bool) -> bool {
-        self.generate_moves_internal(listener)
-    }
-
-    fn generate_moves_internal(&self, mut listener: impl FnMut(PieceMoves) -> bool) -> bool {
-        let listener = &mut listener;
+    pub fn generate_moves(&self, mut listener: impl FnMut(PieceMoves) -> bool) -> bool {
         abort_if! {
-            self.generate_board_moves_for(BitBoard::FULL, listener),
-            self.generate_drops(listener)
+            self.generate_drops(&mut listener),
+            self.generate_board_moves(&mut listener)
         }
         false
     }
 
-    pub fn generate_drops(&self, listener: &mut impl FnMut(PieceMoves) -> bool) -> bool {
-        match self.checkers().len() {
-            0 => self.add_all_drops::<_, false>(listener),
-            1 => self.add_all_drops::<_, true>(listener),
-            _ => false,
-        }
+    /// Generate all legal board moves.
+    pub fn generate_board_moves(&self, listener: impl FnMut(PieceMoves) -> bool) -> bool {
+        self.generate_board_moves_for(BitBoard::FULL, listener)
     }
 
-    /// Version of [`Board::generate_moves`] moves that generates moves for a subset of pieces.
+    /// Generates moves for a subset of pieces.
     ///
-    /// Argument `mask` is used to select the subset of pieces for which we want to
-    /// generate moves.
+    /// Argument `mask` is used to select the subset of pieces.
     ///
     /// # Examples
     /// ```
     /// # use sparrow::*;
-    /// let board = Board::default();
+    /// let board = Board::startpos();
     /// let pawns = board.pieces(Piece::Pawn);
     /// let mut pawn_moves = 0;
     /// board.generate_board_moves_for(pawns, |moves| {
@@ -508,12 +504,56 @@ impl Board {
     pub fn generate_board_moves_for(
         &self,
         mask: BitBoard,
-        mut listener: &mut impl FnMut(PieceMoves) -> bool,
+        mut listener: impl FnMut(PieceMoves) -> bool,
     ) -> bool {
         match self.checkers().len() {
             0 => self.add_all_legals::<_, false>(mask, &mut listener),
             1 => self.add_all_legals::<_, true>(mask, &mut listener),
             _ => self.add_king_legals::<_, true>(mask, &mut listener),
+        }
+    }
+
+    /// Generate all drops in no particular order.
+    pub fn generate_drops(&self, mut listener: impl FnMut(PieceMoves) -> bool) -> bool {
+        match self.checkers().len() {
+            0 => self.add_all_drops::<_, false>(&mut listener),
+            1 => self.add_all_drops::<_, true>(&mut listener),
+            _ => false,
+        }
+    }
+
+    /// Generate all drops for a particular piece.
+    pub fn generate_drops_for(
+        &self,
+        piece: Piece,
+        mut listener: impl FnMut(PieceMoves) -> bool,
+    ) -> bool {
+        let num_checkers = self.checkers.len();
+        if num_checkers == 0 {
+            match piece {
+                Piece::Pawn => self.add_drops::<commoner::Pawn, _, false>(&mut listener),
+                Piece::Lance => self.add_drops::<commoner::Lance, _, false>(&mut listener),
+                Piece::Knight => self.add_drops::<commoner::Knight, _, false>(&mut listener),
+                Piece::Silver => self.add_drops::<commoner::Silver, _, false>(&mut listener),
+                Piece::Gold => self.add_drops::<commoner::Gold, _, false>(&mut listener),
+                Piece::Rook => self.add_drops::<commoner::Rook, _, false>(&mut listener),
+                Piece::Bishop => self.add_drops::<commoner::Bishop, _, false>(&mut listener),
+                _ => false, // Other pieces cannot be dropped
+            }
+        } else if num_checkers == 1 {
+            match piece {
+                Piece::Pawn => self.add_drops::<commoner::Pawn, _, true>(&mut listener),
+                Piece::Lance => self.add_drops::<commoner::Lance, _, true>(&mut listener),
+                Piece::Knight => self.add_drops::<commoner::Knight, _, true>(&mut listener),
+                Piece::Silver => self.add_drops::<commoner::Silver, _, true>(&mut listener),
+                Piece::Gold => self.add_drops::<commoner::Gold, _, true>(&mut listener),
+                Piece::Rook => self.add_drops::<commoner::Rook, _, true>(&mut listener),
+                Piece::Bishop => self.add_drops::<commoner::Bishop, _, true>(&mut listener),
+                _ => false, // Other pieces cannot be dropped
+            }
+        } else {
+            // move than one checker, so no drops are legal
+            false
         }
     }
 }

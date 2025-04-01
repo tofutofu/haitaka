@@ -64,32 +64,49 @@ impl Piece {
     ];
 
     /// Is this piece a promoted piece?
+    #[inline(always)]
     pub const fn is_promoted(self) -> bool {
         (self as usize) > Self::King as usize
     }
 
     /// Is this piece a non-promoted piece?
+    #[inline(always)]
     pub const fn is_unpromoted(self) -> bool {
         (self as usize) < Self::Tokin as usize
     }
 
     /// Can this piece ever promote?
+    #[inline(always)]
     pub const fn is_promotable(self) -> bool {
         (self as usize) < Self::Gold as usize
     }
 
     /// Can this piece with given color promote on the given square?
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sparrow::*;
+    /// assert!(Piece::Pawn.can_promote(Color::Black, Square::C1));
+    /// assert!(Piece::Pawn.can_promote(Color::White, Square::G1));
+    /// assert!(! Piece::Pawn.can_promote(Color::Black, Square::H7));
+    /// assert!(! Piece::Pawn.can_promote(Color::White, Square::C3));
+    /// ```
+    #[inline(always)]
     pub const fn can_promote(self, color: Color, square: Square) -> bool {
-        if self.is_promotable() {
+        if !self.is_promotable() {
+            false
+        } else {
+            let rank = square.rank() as usize;
             match color {
-                Color::White => return (square as usize) < 3 * 9,
-                Color::Black => return (square as usize) >= 6 * 9,
+                Color::White => rank > 5,
+                Color::Black => rank < 3,
             }
         }
-        false
     }
 
     /// Must this piece with given color promote on the given square?
+    #[inline(always)]
     pub const fn must_promote(self, color: Color, square: Square) -> bool {
         let rank = square.rank() as usize;
         if 1 < rank && rank < 7 {
@@ -115,6 +132,7 @@ impl Piece {
     /// This function does not perform any occupancy check.
     /// It assumes the given square is empty.
     ///
+    #[inline(always)]
     pub const fn can_drop(self, color: Color, square: Square) -> bool {
         !self.must_promote(color, square)
     }
@@ -125,6 +143,7 @@ impl Piece {
     /// Promote this piece.
     /// # Panics
     /// This function panics if the piece can not be promoted.
+    #[inline(always)]
     pub const fn promote(self) -> Self {
         match self {
             Self::Pawn => Self::Tokin,
@@ -137,16 +156,16 @@ impl Piece {
         }
     }
 
-    // TODO: we need a try_prom function
-
+    #[inline(always)]
     pub const fn do_promote(self, yes: bool) -> Self {
         if yes { self.promote() } else { self }
     }
 
     /// Unpromote this piece.
     ///
-    /// Note: This function does not panic. If called on
-    /// an unpromoted piece, that piece will simply be returned.
+    /// Note: This function never errors. If called on
+    /// an unpromoted piece, the same piece will be returned.
+    #[inline(always)]
     pub const fn unpromote(self) -> Self {
         match self {
             Self::Tokin => Self::Pawn,

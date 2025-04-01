@@ -174,36 +174,41 @@ mod tests {
         let white_attacks = king_attacks(Color::White, square);
 
         assert_eq!(black_attacks, white_attacks);
-        assert_eq!(black_attacks, bitboard!{
-             . . . . . . . . .
-             . . . . . . . . .
-             . . . . . . . . .
-             . . . X X X . . .
-             . . . X * X . . .
-             . . . X X X . . .
-             . . . . . . . . .
-             . . . . . . . . .
-             . . . . . . . . .
-         });
+        assert_eq!(
+            black_attacks,
+            bitboard! {
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . X X X . . .
+                . . . X * X . . .
+                . . . X X X . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
 
-         // corner
-         let square = Square::A9;
-         let black_attacks = king_attacks(Color::Black, square);
-         let white_attacks = king_attacks(Color::White, square);
+        // corner
+        let square = Square::A9;
+        let black_attacks = king_attacks(Color::Black, square);
+        let white_attacks = king_attacks(Color::White, square);
 
-         assert_eq!(black_attacks, white_attacks);
-         assert_eq!(black_attacks, bitboard!{
-             * X . . . . . . .
-             X X . . . . . . .
-             . . . . . . . . .
-             . . . . . . . . .
-             . . . . . . . . .
-             . . . . . . . . .
-             . . . . . . . . .
-             . . . . . . . . .
-             . . . . . . . . .
-         });         
-
+        assert_eq!(black_attacks, white_attacks);
+        assert_eq!(
+            black_attacks,
+            bitboard! {
+                * X . . . . . . .
+                X X . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
     }
 
     #[test]
@@ -213,56 +218,68 @@ mod tests {
         let white_attacks = gold_attacks(Color::White, square);
 
         assert_ne!(black_attacks, white_attacks);
-        assert_eq!(black_attacks, bitboard! {
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . X X X . . .
-            . . . X * X . . .
-            . . . . X . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        });
-        assert_eq!(white_attacks, bitboard! {
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . X . . . .
-            . . . X * X . . .
-            . . . X X X . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        });
+        assert_eq!(
+            black_attacks,
+            bitboard! {
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . X X X . . .
+                . . . X * X . . .
+                . . . . X . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
+        assert_eq!(
+            white_attacks,
+            bitboard! {
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . X . . . .
+                . . . X * X . . .
+                . . . X X X . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
 
         let square = Square::B1;
         let black_attacks = gold_attacks(Color::Black, square);
         let white_attacks = gold_attacks(Color::White, square);
 
         assert_ne!(black_attacks, white_attacks);
-        assert_eq!(black_attacks, bitboard! {
-            . . . . . . . X X
-            . . . . . . . X *
-            . . . . . . . . X
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        });
-        assert_eq!(white_attacks, bitboard! {
-            . . . . . . . . X
-            . . . . . . . X *
-            . . . . . . . X X
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        });
+        assert_eq!(
+            black_attacks,
+            bitboard! {
+                . . . . . . . X X
+                . . . . . . . X *
+                . . . . . . . . X
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
+        assert_eq!(
+            white_attacks,
+            bitboard! {
+                . . . . . . . . X
+                . . . . . . . X *
+                . . . . . . . X X
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
     }
 
     #[test]
@@ -272,56 +289,68 @@ mod tests {
         let white_attacks = silver_attacks(Color::White, square);
 
         assert_ne!(black_attacks, white_attacks);
-        assert_eq!(black_attacks, bitboard! {
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . X X X . . .
-            . . . . * . . . .
-            . . . X . X . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        });
-        assert_eq!(white_attacks, bitboard! {
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . X . X . . .
-            . . . . * . . . .
-            . . . X X X . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        });
+        assert_eq!(
+            black_attacks,
+            bitboard! {
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . X X X . . .
+                . . . . * . . . .
+                . . . X . X . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
+        assert_eq!(
+            white_attacks,
+            bitboard! {
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . X . X . . .
+                . . . . * . . . .
+                . . . X X X . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
 
         let square = Square::H9;
         let black_attacks = silver_attacks(Color::Black, square);
         let white_attacks = silver_attacks(Color::White, square);
 
         assert_ne!(black_attacks, white_attacks);
-        assert_eq!(black_attacks, bitboard! {
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            X X . . . . . . .
-            * . . . . . . . .
-            . X . . . . . . .
-        });
-        assert_eq!(white_attacks, bitboard! {
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . X . . . . . . .
-            * . . . . . . . .
-            X X . . . . . . .
-        });
+        assert_eq!(
+            black_attacks,
+            bitboard! {
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                X X . . . . . . .
+                * . . . . . . . .
+                . X . . . . . . .
+            }
+        );
+        assert_eq!(
+            white_attacks,
+            bitboard! {
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . X . . . . . . .
+                * . . . . . . . .
+                X X . . . . . . .
+            }
+        );
     }
 
     #[test]
@@ -331,55 +360,67 @@ mod tests {
         let white_attacks = knight_attacks(Color::White, square);
 
         assert_ne!(black_attacks, white_attacks);
-        assert_eq!(black_attacks, bitboard! {
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . X . X . . .
-            . . . . . . . . .
-            . . . . * . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        });
-        assert_eq!(white_attacks, bitboard! {
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . * . . . .
-            . . . . . . . . .
-            . . . X . X . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        });
+        assert_eq!(
+            black_attacks,
+            bitboard! {
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . X . X . . .
+                . . . . . . . . .
+                . . . . * . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
+        assert_eq!(
+            white_attacks,
+            bitboard! {
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . * . . . .
+                . . . . . . . . .
+                . . . X . X . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
 
         let square = Square::C1;
         let black_attacks = knight_attacks(Color::Black, square);
         let white_attacks = knight_attacks(Color::White, square);
 
-        assert_eq!(black_attacks, bitboard! {
-            . . . . . . . X .
-            . . . . . . . . .
-            . . . . . . . . *
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        });
-        assert_eq!(white_attacks, bitboard! {
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . *
-            . . . . . . . . .
-            . . . . . . . X .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        });
+        assert_eq!(
+            black_attacks,
+            bitboard! {
+                . . . . . . . X .
+                . . . . . . . . .
+                . . . . . . . . *
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
+        assert_eq!(
+            white_attacks,
+            bitboard! {
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . *
+                . . . . . . . . .
+                . . . . . . . X .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
     }
 
     #[test]
@@ -389,55 +430,67 @@ mod tests {
         let white_attacks = pawn_attacks(Color::White, square);
 
         assert_ne!(black_attacks, white_attacks);
-        assert_eq!(black_attacks, bitboard! {
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . X . . . .
-            . . . . * . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        });
-        assert_eq!(white_attacks, bitboard! {
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . * . . . .
-            . . . . X . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        });
+        assert_eq!(
+            black_attacks,
+            bitboard! {
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . X . . . .
+                . . . . * . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
+        assert_eq!(
+            white_attacks,
+            bitboard! {
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . * . . . .
+                . . . . X . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
 
         let square = Square::A1;
         let black_attacks = pawn_attacks(Color::Black, square);
         let white_attacks = pawn_attacks(Color::White, square);
 
         assert_ne!(black_attacks, white_attacks);
-        assert_eq!(black_attacks, bitboard! {
-            . . . . . . . . *
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        });
-        assert_eq!(white_attacks, bitboard! {
-            . . . . . . . . *
-            . . . . . . . . X
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        });
+        assert_eq!(
+            black_attacks,
+            bitboard! {
+                . . . . . . . . *
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
+        assert_eq!(
+            white_attacks,
+            bitboard! {
+                . . . . . . . . *
+                . . . . . . . . X
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+                . . . . . . . . .
+            }
+        );
     }
 }
