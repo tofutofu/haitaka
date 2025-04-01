@@ -88,15 +88,15 @@ impl Board {
     //
     fn target_drops<const IN_CHECK: bool>(&self) -> BitBoard {
         let color = self.side_to_move();
-        let targets = if IN_CHECK {
+
+        if IN_CHECK {
             // when in check, we must block the checker
             let checker = self.checkers().next_square().unwrap();
             let our_king = self.king(color);
             get_between_rays(checker, our_king) & !self.occupied()
         } else {
             !self.occupied()
-        };
-        targets
+        }
     }
 
     // Board moves
@@ -121,7 +121,7 @@ impl Board {
             let moves = P::pseudo_legals(color, piece, blockers) & target_squares;
             if !moves.is_empty() {
                 abort_if!(listener(PieceMoves::BoardMoves {
-                    color: color,
+                    color,
                     piece: P::PIECE,
                     from: piece,
                     to: moves
@@ -138,7 +138,7 @@ impl Board {
                 let moves = P::pseudo_legals(color, piece, blockers) & target_squares;
                 if !moves.is_empty() {
                     abort_if!(listener(PieceMoves::BoardMoves {
-                        color: color,
+                        color,
                         piece: P::PIECE,
                         from: piece,
                         to: moves
@@ -232,7 +232,7 @@ impl Board {
         }
         if !moves.is_empty() {
             abort_if!(listener(PieceMoves::BoardMoves {
-                color: color,
+                color,
                 piece: PIECE,
                 from: our_king,
                 to: moves

@@ -233,7 +233,7 @@ impl BitBoard {
     /// ```
     #[inline(always)]
     pub const fn shift_east(self, dx: usize) -> Self {
-        BitBoard(self.0 >> 9 * dx)
+        BitBoard(self.0 >> (9 * dx))
     }
 
     /// Shift the bit set pattern West (<-).
@@ -267,10 +267,9 @@ impl BitBoard {
     ///     X X . . . . . . .
     /// };
     /// assert_eq!(bb1.shift_west(1), bb2);
-
     #[inline(always)]
     pub const fn shift_west(self, dx: usize) -> Self {
-        BitBoard((self.0 << 9 * dx) & BitBoard::BOARD_MASK)
+        BitBoard((self.0 << (9 * dx)) & BitBoard::BOARD_MASK)
     }
 
     /// Shift bit set pattern so that square 'from' is mapped to square 'to'.
@@ -610,7 +609,7 @@ impl BitBoard {
     #[inline(always)]
     pub const fn flip_files(self) -> Self {
         const FILE_MASKS: [u128; 9] = [
-            0x1FF << 0,  // File 1
+            0x1FF,       // File 1
             0x1FF << 9,  // File 2
             0x1FF << 18, // File 3
             0x1FF << 27, // File 4
@@ -669,7 +668,7 @@ impl BitBoard {
         const RANK_ONE: u128 = 0x1008040201008040201;
 
         const RANK_MASKS: [u128; 9] = [
-            RANK_ONE << 0,
+            RANK_ONE,
             RANK_ONE << 1,
             RANK_ONE << 2,
             RANK_ONE << 3,
@@ -685,7 +684,7 @@ impl BitBoard {
                 | ((self.0 & RANK_MASKS[1]) << 6)
                 | ((self.0 & RANK_MASKS[2]) << 4)
                 | ((self.0 & RANK_MASKS[3]) << 2)
-                | ((self.0 & RANK_MASKS[4]) << 0)
+                | (self.0 & RANK_MASKS[4])
                 | ((self.0 & RANK_MASKS[5]) >> 2)
                 | ((self.0 & RANK_MASKS[6]) >> 4)
                 | ((self.0 & RANK_MASKS[7]) >> 6)

@@ -65,17 +65,17 @@ impl Piece {
 
     /// Is this piece a promoted piece?
     pub const fn is_promoted(self) -> bool {
-        return (self as usize) > Self::King as usize;
+        (self as usize) > Self::King as usize
     }
 
     /// Is this piece a non-promoted piece?
     pub const fn is_unpromoted(self) -> bool {
-        return (self as usize) < Self::Tokin as usize;
+        (self as usize) < Self::Tokin as usize
     }
 
     /// Can this piece ever promote?
     pub const fn is_promotable(self) -> bool {
-        return (self as usize) < Self::Gold as usize;
+        (self as usize) < Self::Gold as usize
     }
 
     /// Can this piece with given color promote on the given square?

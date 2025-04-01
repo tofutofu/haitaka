@@ -20,15 +20,10 @@ pub const fn get_lance_relevant_blockers(square: Square, color: Color) -> BitBoa
         Color::White => 1,
         Color::Black => -1,
     };
-    loop {
-        // this could be optimized, but it's not on the critical hot path
-        match sq.try_offset(0, dy) {
-            Some(next_sq) => {
-                ray |= next_sq.bitboard().0;
-                sq = next_sq;
-            }
-            None => break,
-        }
+    // this could be optimized, but it's not on the critical hot path
+    while let Some(next_sq) = sq.try_offset(0, dy) {
+        ray |= next_sq.bitboard().0;
+        sq = next_sq;
     }
     BitBoard(ray & BitBoard::INNER.0)
 }
@@ -456,12 +451,12 @@ pub const fn get_rook_rank_moves(square: Square, occ: BitBoard) -> BitBoard {
 
     let mut index = (west_attacks & occ.0).trailing_zeros();
     if index < 127 {
-        west_attacks = ((1 << (index + 1)) - 1) & west_attacks;
+        west_attacks &= (1 << (index + 1)) - 1;
     }
 
     index = (east_attacks & occ.0.reverse_bits()).trailing_zeros();
     if index < 127 {
-        east_attacks = ((1 << (index + 1)) - 1) & east_attacks;
+        east_attacks &= (1 << (index + 1)) - 1;
     }
 
     BitBoard::new(west_attacks | east_attacks.reverse_bits())
@@ -696,6 +691,7 @@ pub const fn get_between_rays(from: Square, to: Square) -> BitBoard {
         }
         between
     }
+    #[allow(clippy::large_const_arrays)]
     const TABLE: [[BitBoard; Square::NUM]; Square::NUM] = {
         let mut table = [[BitBoard::EMPTY; Square::NUM]; Square::NUM];
         let mut i = 0;
@@ -749,6 +745,7 @@ pub const fn line_ray(from: Square, to: Square) -> BitBoard {
         }
         BitBoard::EMPTY
     }
+    #[allow(clippy::large_const_arrays)]
     const TABLE: [[BitBoard; Square::NUM]; Square::NUM] = {
         let mut table = [[BitBoard::EMPTY; Square::NUM]; Square::NUM];
         let mut i = 0;

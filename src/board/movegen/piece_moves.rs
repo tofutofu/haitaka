@@ -171,10 +171,10 @@ impl PieceMovesIter {
         let must_prom_zone = must_prom_zone(color, Piece::Knight);
         let prom_zone = prom_zone(color);
 
-        if (to & must_prom_zone).len() > 0 {
+        if !(to & must_prom_zone).is_empty() {
             // Knight must promote
             num_targets
-        } else if (to & prom_zone).len() > 0 {
+        } else if !(to & prom_zone).is_empty() {
             // Knight may promote
             2 * num_targets
         } else {

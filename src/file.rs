@@ -81,7 +81,7 @@ impl File {
     /// ```
     #[inline(always)]
     pub const fn bitboard(self) -> BitBoard {
-        BitBoard(0x1FF << 9 * (self as usize))
+        BitBoard(0x1FF << (9 * (self as usize)))
     }
 
     /// Get a bitboard with all squares to the West of this file set.

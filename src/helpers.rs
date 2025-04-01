@@ -64,6 +64,7 @@ macro_rules! simple_enum {
                    And improves legality queens by about 1.6%.
                 */
                 if index < Self::NUM {
+                    #[allow(clippy::missing_transmute_annotations)]
                     Some(unsafe { core::mem::transmute(index) })
                 } else {
                     None

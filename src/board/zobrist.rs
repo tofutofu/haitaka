@@ -18,6 +18,9 @@ const ZOBRIST: ZobristConstants = {
     // The initial seed is an odd number, seed > 2**127, with bit count 63.
     // The multiplier, mult > 2 ** 125 has bit count 65.
     //
+    // The seed state is deliberately hard-coded to ensure consistency
+    // in different program runs.
+    //
     let mut state = 0x7369787465656E2062797465206E756Du128 | 1;
     macro_rules! rand {
         () => {{
@@ -168,6 +171,7 @@ impl ZobristBoard {
             && self.hands == other.hands
     }
 
+    // Update Zobrist hash for putting and removing a piece.
     #[inline(always)]
     pub fn xor_square(&mut self, piece: Piece, color: Color, square: Square) {
         let square_bb = square.bitboard();
@@ -176,11 +180,16 @@ impl ZobristBoard {
         self.hash ^= ZOBRIST.color[color as usize].pieces[piece as usize][square as usize];
     }
 
+    // Update Zobrist hash for dropping a piece or taking a piece in hand.
     #[inline(always)]
     fn xor_hand(&mut self, color: Color, piece: Piece, old_count: u8, new_count: u8) {
-        // XOR out the old count
+        debug_assert!(
+            (old_count as usize) < ZOBRIST.color[color as usize].hand[piece as usize].len()
+        );
+        debug_assert!(
+            (new_count as usize) < ZOBRIST.color[color as usize].hand[piece as usize].len()
+        );
         self.hash ^= ZOBRIST.color[color as usize].hand[piece as usize][old_count as usize];
-        // XOR in the new count
         self.hash ^= ZOBRIST.color[color as usize].hand[piece as usize][new_count as usize];
     }
 
@@ -194,6 +203,8 @@ impl ZobristBoard {
 #[cfg(test)]
 mod tests {
     use crate::Board;
+
+    // TODO: Test some more edge cases
 
     #[test]
     fn zobrist_transpositions() {

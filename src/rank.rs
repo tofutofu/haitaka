@@ -55,7 +55,7 @@ crate::helpers::enum_char_conv! {
 // to handle ranks.
 
 const MASK: u128 = 0x1008040201008040201;
-const RANK_A: BitBoard = BitBoard(MASK << 0);
+const RANK_A: BitBoard = BitBoard(MASK);
 const RANK_B: BitBoard = BitBoard(MASK << 1);
 const RANK_C: BitBoard = BitBoard(MASK << 2);
 const RANK_D: BitBoard = BitBoard(MASK << 3);
