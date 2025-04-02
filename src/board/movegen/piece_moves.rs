@@ -46,8 +46,8 @@ pub enum PieceMoves {
 impl PieceMoves {
     /// Get the number of generated to-squares.
     ///
-    /// The PieceMovesIter will generate at least this number of moves,
-    /// but may generate up to twice as many, depending on piece and position.
+    /// The PieceMovesIter will generate _at least_ this number of moves,
+    /// but may generate up to twice as many, depending on whether a piece can promote or not.
     ///
     pub fn len(&self) -> usize {
         match self {
@@ -132,12 +132,14 @@ impl PieceMovesIter {
         }
     }
 
-    /// Helper function to calculate the number of board moves for a pawn.
+    // Helper function for a pawm to calculate the number of remaining board moves in `to`.
+    // `to.len()` has already been calculated as `num_targets`.
     fn len_for_pawn(&self, color: Color, from: Square, to: BitBoard, num_targets: usize) -> usize {
         let must_prom_zone = must_prom_zone(color, Piece::Pawn);
         let prom_zone = prom_zone(color);
 
-        // If any destination square is in the must-promote zone, no promotions are possible
+        // If the destination square (there can only be one)
+        // is in the must-promote zone, no promotions are possible
         if !(to & must_prom_zone).is_empty() {
             num_targets
         }
@@ -149,21 +151,6 @@ impl PieceMovesIter {
         else {
             num_targets
         }
-    }
-
-    // Helper to calculate the number of board moves for a lance.
-    fn len_for_lance(&self, color: Color, to: BitBoard, num_targets: usize) -> usize {
-        let must_prom_zone = must_prom_zone(color, Piece::Lance);
-        let prom_zone = prom_zone(color);
-
-        let m = (to & prom_zone).len();
-        if m > 0 {
-            let n = (to & must_prom_zone).len();
-            let k = (to & prom_zone.not()).len();
-            // m already includes n (if n > 0) so we need to subtract n
-            return (2 * m - n + k) as usize;
-        }
-        num_targets
     }
 
     // Helper to calculate the number of board moves for a knight.
@@ -179,6 +166,24 @@ impl PieceMovesIter {
             2 * num_targets
         } else {
             // no promotions
+            num_targets
+        }
+    }
+
+    // Helper to calculate the number of board moves for a lance.
+    fn len_for_lance(&self, color: Color, to: BitBoard, num_targets: usize) -> usize {
+        debug_assert!(num_targets == to.len() as usize);
+        let prom_zone = prom_zone(color);
+
+        let m = (to & prom_zone).len() as usize;
+        if m > 0 {
+            // we have some possible promotions left
+            let must_prom_zone = must_prom_zone(color, Piece::Lance);
+            let n = (to & must_prom_zone).len() as usize; // required promotions (at most 1)
+            debug_assert!(n <= 1);
+            debug_assert!(m >= n);
+            num_targets + m - n
+        } else {
             num_targets
         }
     }
@@ -220,45 +225,37 @@ impl Iterator for PieceMovesIter {
             } => {
                 let from = *from;
 
-                if self.to.is_some() {
+                if let Some(to_square) = self.to {
                     // previously returned item was a promotion
                     // now return the corresponding non-promotion
 
-                    let to_square = self.to.unwrap();
                     self.to = None;
 
-                    *to ^= to_square.bitboard();
-
-                    return Some(Move::BoardMove {
+                    Some(Move::BoardMove {
                         from,
                         to: to_square,
                         promotion: false,
-                    });
+                    })
+                } else {
+                    let to_square = to.next_square()?;
+                    *to ^= to_square.bitboard(); // eat `to` bit
+
+                    let promotion = match PromotionStatus::new(*color, *piece, from, to_square) {
+                        PromotionStatus::CannotPromote => false,
+                        PromotionStatus::MayPromote => {
+                            // set `self.to` to generate non-promotion in next step
+                            self.to = Some(to_square);
+                            true
+                        }
+                        PromotionStatus::MustPromote => true,
+                    };
+
+                    Some(Move::BoardMove {
+                        from,
+                        to: to_square,
+                        promotion,
+                    })
                 }
-
-                let to_square = to.next_square()?;
-
-                let promotion = match PromotionStatus::new(*color, *piece, from, to_square) {
-                    PromotionStatus::CannotPromote => {
-                        *to ^= to_square.bitboard(); // eat `to` bit
-                        false
-                    }
-                    PromotionStatus::MayPromote => {
-                        // set `self.to` to make non-promotion in next step
-                        self.to = Some(to_square);
-                        true
-                    }
-                    PromotionStatus::MustPromote => {
-                        *to ^= to_square.bitboard(); // eat `to` bit
-                        true
-                    }
-                };
-
-                Some(Move::BoardMove {
-                    from,
-                    to: to_square,
-                    promotion,
-                })
             }
         }
     }
@@ -298,8 +295,8 @@ impl ExactSizeIterator for PieceMovesIter {
                     // piece is either King, Gold, or already promoted
                     num_targets + pending_non_promotion
                 } else {
-                    // piece could still promote
-                    let total_moves = match piece {
+                    // perhaps piece may still promote
+                    let remaining_moves = match piece {
                         Piece::Pawn => self.len_for_pawn(color, from, to, num_targets),
                         Piece::Lance => self.len_for_lance(color, to, num_targets),
                         Piece::Knight => self.len_for_knight(color, to, num_targets),
@@ -317,70 +314,240 @@ impl ExactSizeIterator for PieceMovesIter {
                         }
                     };
 
-                    total_moves + pending_non_promotion
+                    remaining_moves + pending_non_promotion
                 }
             }
         }
     }
 }
 
-/*
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn len_handles_promotions() {
-        let mv = PieceMoves {
-            piece: Piece::Pawn,
-            from: Square::A7,
-            to: Square::A8.bitboard() | Square::B8.bitboard()
+    fn len_works_with_non_promotions() {
+        let mv = PieceMoves::BoardMoves {
+            color: Color::Black,
+            piece: Piece::Gold,
+            from: Square::E5,
+            to: gold_attacks(Color::Black, Square::E5),
         };
-        assert_eq!(mv.len(), 8);
+        assert_eq!(mv.len(), 6);
         let mut iter = mv.into_iter();
-        assert_eq!(iter.len(), 8);
-        for len in (0..8).rev() {
+        assert_eq!(iter.len(), 6);
+
+        for len in (0..6).rev() {
             iter.next();
             assert_eq!(iter.len(), len);
         }
     }
 
     #[test]
-    fn has_works() {
-        let mv = PieceMoves {
-            piece: Piece::King,
-            from: Square::A7,
-            to: get_king_moves(Square::A7)
+    fn len_handles_promotions_black_lance() {
+        let mv = PieceMoves::BoardMoves {
+            color: Color::Black,
+            piece: Piece::Lance,
+            from: Square::I1,
+            to: File::One.bitboard() ^ Square::I1.bitboard(),
         };
-        assert!(!mv.has(Move {
-            from: Square::A7,
-            to: Square::A8,
-            promotion: Some(Piece::Queen)
+        assert_eq!(mv.len(), 8);
+
+        let mut iter = mv.into_iter();
+        assert_eq!(iter.len(), 10); // 3 promotions, but 1 required
+
+        for len in (0..10).rev() {
+            iter.next();
+            assert_eq!(iter.len(), len);
+        }
+
+        let mv = PieceMoves::BoardMoves {
+            color: Color::Black,
+            piece: Piece::Lance,
+            from: Square::I1,
+            to: File::One.bitboard() ^ Square::I1.bitboard() ^ Square::A1.bitboard(),
+        };
+        assert_eq!(mv.len(), 7);
+
+        let mut iter = mv.into_iter();
+        assert_eq!(iter.len(), 9); // 2 promotion alternatives
+
+        for len in (0..9).rev() {
+            iter.next();
+            assert_eq!(iter.len(), len);
+        }
+    }
+
+    #[test]
+    fn len_handles_promotions_white_lance() {
+        let mv = PieceMoves::BoardMoves {
+            color: Color::White,
+            piece: Piece::Lance,
+            from: Square::A1,
+            to: File::One.bitboard() ^ Square::A1.bitboard(),
+        };
+        assert_eq!(mv.len(), 8);
+
+        let mut iter = mv.into_iter();
+        assert_eq!(iter.len(), 10); // 3 promotions, but 1 required
+
+        for len in (0..10).rev() {
+            iter.next();
+            assert_eq!(iter.len(), len);
+        }
+
+        let mv = PieceMoves::BoardMoves {
+            color: Color::White,
+            piece: Piece::Lance,
+            from: Square::A1,
+            to: File::One.bitboard() ^ Square::A1.bitboard() ^ Square::I1.bitboard(),
+        };
+        assert_eq!(mv.len(), 7);
+
+        let mut iter = mv.into_iter();
+        assert_eq!(iter.len(), 9); // 2 promotion alternatives
+
+        for len in (0..9).rev() {
+            iter.next();
+            assert_eq!(iter.len(), len);
+        }
+    }
+
+    #[test]
+    fn len_handles_promotions_rook() {
+        let mv = PieceMoves::BoardMoves {
+            color: Color::Black,
+            piece: Piece::Rook,
+            from: Square::E1,
+            to: File::One.bitboard() ^ Square::E1.bitboard(),
+        };
+        assert_eq!(mv.len(), 8);
+
+        let mut iter = mv.into_iter();
+        assert_eq!(iter.len(), 11); // 3 promotions
+
+        for len in (0..11).rev() {
+            iter.next();
+            assert_eq!(iter.len(), len);
+        }
+
+        let mv = PieceMoves::BoardMoves {
+            color: Color::Black,
+            piece: Piece::Rook,
+            from: Square::C1,
+            to: File::One.bitboard() ^ Square::C1.bitboard(),
+        };
+        assert_eq!(mv.len(), 8);
+
+        let mut iter = mv.into_iter();
+        assert_eq!(iter.len(), 16);
+
+        for len in (0..16).rev() {
+            iter.next();
+            assert_eq!(iter.len(), len);
+        }
+    }
+
+    #[test]
+    fn len_handles_promotions_pawn() {
+        let mv = PieceMoves::BoardMoves {
+            color: Color::White,
+            piece: Piece::Pawn,
+            from: Square::F1,
+            to: Square::G1.bitboard(),
+        };
+        assert_eq!(mv.len(), 1);
+
+        let mut iter = mv.into_iter();
+        assert_eq!(iter.len(), 2);
+
+        for len in (0..2).rev() {
+            iter.next();
+            assert_eq!(iter.len(), len);
+        }
+
+        let mv = PieceMoves::BoardMoves {
+            color: Color::Black,
+            piece: Piece::Lance,
+            from: Square::H1,
+            to: Square::I1.bitboard(),
+        };
+        assert_eq!(mv.len(), 1);
+
+        let mut iter = mv.into_iter();
+        assert_eq!(iter.len(), 1); // promotion required
+
+        iter.next();
+        assert_eq!(iter.len(), 0);
+    }
+
+    #[test]
+    fn has_works() {
+        let mv = PieceMoves::BoardMoves {
+            color: Color::White,
+            piece: Piece::King,
+            from: Square::A5,
+            to: king_attacks(Color::White, Square::A5),
+        };
+        assert_eq!(mv.len(), 5); // remember, this is on an empty board
+
+        assert!(mv.has(Move::BoardMove {
+            from: Square::A5,
+            to: Square::B4,
+            promotion: false
         }));
-        assert!(mv.has(Move {
-            from: Square::A7,
-            to: Square::A8,
-            promotion: None
+
+        assert!(mv.has(Move::BoardMove {
+            from: Square::A5,
+            to: Square::B5,
+            promotion: false
+        }));
+
+        assert!(mv.has(Move::BoardMove {
+            from: Square::A5,
+            to: Square::B6,
+            promotion: false
         }));
     }
 
     #[test]
     fn has_handles_promotions() {
-        let mv = PieceMoves {
+        let mv = PieceMoves::BoardMoves {
+            color: Color::White,
             piece: Piece::Pawn,
-            from: Square::A7,
-            to: Square::A8.bitboard() | Square::B8.bitboard()
+            from: Square::F6,
+            to: Square::G6.bitboard(),
         };
-        assert!(mv.has(Move {
-            from: Square::A7,
-            to: Square::A8,
-            promotion: Some(Piece::Queen)
+        assert_eq!(mv.len(), 1);
+
+        assert!(mv.has(Move::BoardMove {
+            from: Square::F6,
+            to: Square::G6,
+            promotion: false
         }));
-        assert!(!mv.has(Move {
-            from: Square::A7,
-            to: Square::A8,
-            promotion: None
+
+        assert!(mv.has(Move::BoardMove {
+            from: Square::F6,
+            to: Square::G6,
+            promotion: true
         }));
     }
+
+    #[test]
+    fn has_works_with_drops() {
+        let mv = PieceMoves::Drops {
+            color: Color::Black,
+            piece: Piece::Rook,
+            to: BitBoard::FULL,
+        };
+
+        assert_eq!(mv.len(), 81);
+
+        for &square in Square::ALL.iter() {
+            assert!(mv.has(Move::Drop {
+                piece: Piece::Rook,
+                to: square
+            }));
+        }
+    }
 }
-*/

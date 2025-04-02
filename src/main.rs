@@ -4,9 +4,18 @@ pub use sparrow::*;
 fn main() {
     println!("Hello, Shogi World!");
 
-    test9();
+    test10();
 
     println!("Done!");
+}
+
+pub fn test10() {
+    let _mv = PieceMoves::BoardMoves {
+        color: Color::Black,
+        piece: Piece::Lance,
+        from: Square::I1,
+        to: File::One.bitboard() ^ Square::I1.bitboard(),
+    };
 }
 
 pub fn test9() {
