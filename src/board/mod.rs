@@ -228,6 +228,46 @@ impl Board {
         self.colors(color) & self.pieces(piece)
     }
 
+    /// Get a [`BitBoard`] of all the sliders for color.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sparrow::*;
+    /// let board = Board::startpos();
+    /// assert_eq!(board.sliders(Color::White), bitboard! {
+    ///     X . . . . . . . X
+    ///     . X . . . . . X .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    /// });
+    /// assert_eq!(board.sliders(Color::Black), bitboard! {
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . X . . . . . X .
+    ///     X . . . . . . . X
+    /// });
+    /// ```
+    #[inline(always)]
+    pub fn sliders(&self, color: Color) -> BitBoard {
+        (self.pieces(Piece::Lance)
+            | self.pieces(Piece::Rook)
+            | self.pieces(Piece::Bishop)
+            | self.pieces(Piece::PRook)
+            | self.pieces(Piece::PBishop))
+            & self.colors(color)
+    }
+
     /// Get a [`BitBoard`] of all the pieces on the board.
     /// # Examples
     /// ```

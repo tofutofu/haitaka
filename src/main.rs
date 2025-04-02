@@ -4,9 +4,36 @@ pub use sparrow::*;
 fn main() {
     println!("Hello, Shogi World!");
 
-    test9();
+    test10();
 
     println!("Done!");
+}
+
+pub fn test10() {
+    /*
+    let board = Board::startpos();
+    if board.generate_moves(|_| { println!("listener called"); true }) {
+        println!("got some moves");
+    } else {
+        println!("no moves!");
+    } */
+
+    let sfen = "ln2k2nl/2g1G2+R1/p1pppp2p/6p2/9/2P6/P1+bPPPP1P/5K3/L1+rS1GSNL w S2Pbgsn2p 34";
+    let board = Board::from_sfen(sfen).unwrap();
+    if board.generate_moves(|_| {
+        println!("listener called");
+        true
+    }) {
+        println!("got some moves");
+    } else {
+        println!("no moves!");
+    }
+
+    let res = board.generate_moves(|mv| {
+        println!("{:?}", mv);
+        true
+    });
+    println!("generate_moves returned: {}", res);
 }
 
 pub fn test9() {

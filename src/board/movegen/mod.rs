@@ -91,9 +91,14 @@ impl Board {
 
         if IN_CHECK {
             // when in check, we must block the checker
-            let checker = self.checkers().next_square().unwrap();
-            let our_king = self.king(color);
-            get_between_rays(checker, our_king) & !self.occupied()
+            let checkers = self.checkers() & self.sliders(!color);
+            if !checkers.is_empty() {
+                let checker = self.checkers().next_square().unwrap();
+                let our_king = self.king(color);
+                get_between_rays(checker, our_king) & !self.occupied()
+            } else {
+                BitBoard::EMPTY
+            }
         } else {
             !self.occupied()
         }
@@ -275,6 +280,9 @@ impl Board {
 
         if self.inner.hand(color)[piece as usize] > 0 {
             let target_squares = self.target_drops::<IN_CHECK>();
+            if target_squares.is_empty() {
+                return false;
+            }
             let permitted = drop_zone(color, piece);
             let to = target_squares & permitted;
             return listener(PieceMoves::Drops { color, piece, to });
@@ -442,6 +450,10 @@ impl Board {
     /// The listener will be called max 1 time for the King of the side that is to move,
     /// max 2 times for every other piece on the board, and max 1 time for every piece type
     /// in hand. So, it will never be called more than 38 x 2 times.
+    ///
+    /// If the side_to_move is in check, and has no legal-moves, the listener will not be
+    /// called. Normally this means the side_to_move has been checkmated. There is no stalemate
+    /// in Shogi, however. If the side_to_move has no legal moves, they simply lose.
     ///
     /// The listener can interrupt and stop move generation early by returning `true`.
     /// This function will then also return `true`. Otherwise, the function eventually
