@@ -130,7 +130,7 @@ impl Board {
         }
 
         if !IN_CHECK && P::PIECE != Piece::Knight {
-            // Pinned pieces (apart from Kinght!) can still move along the attack ray between King and checker.
+            // Pinned pieces (apart from Knight!) can still move along the attack ray between King and checker.
             // Only consider pinned pieces when not in check, since a pinned piece can never capture a checker.
             let our_king = self.king(color);
             for piece in pieces & pinned {
