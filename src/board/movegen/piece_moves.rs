@@ -134,6 +134,7 @@ impl PieceMovesIter {
 
     // Helper function for a pawm to calculate the number of remaining board moves in `to`.
     // `to.len()` has already been calculated as `num_targets`.
+    #[inline(always)]
     fn len_for_pawn(&self, color: Color, from: Square, to: BitBoard, num_targets: usize) -> usize {
         let must_prom_zone = must_prom_zone(color, Piece::Pawn);
         let prom_zone = prom_zone(color);
@@ -154,6 +155,7 @@ impl PieceMovesIter {
     }
 
     // Helper to calculate the number of board moves for a knight.
+    #[inline(always)]
     fn len_for_knight(&self, color: Color, to: BitBoard, num_targets: usize) -> usize {
         let must_prom_zone = must_prom_zone(color, Piece::Knight);
         let prom_zone = prom_zone(color);
@@ -171,6 +173,7 @@ impl PieceMovesIter {
     }
 
     // Helper to calculate the number of board moves for a lance.
+    #[inline(always)]
     fn len_for_lance(&self, color: Color, to: BitBoard, num_targets: usize) -> usize {
         debug_assert!(num_targets == to.len() as usize);
         let prom_zone = prom_zone(color);
@@ -179,12 +182,12 @@ impl PieceMovesIter {
         if m > 0 {
             // we have some possible promotions left
             let must_prom_zone = must_prom_zone(color, Piece::Lance);
-            let n = (to & must_prom_zone).len() as usize; // required promotions (at most 1)
-            debug_assert!(n <= 1);
-            debug_assert!(m >= n);
-            num_targets + m - n
+            let n = (to & must_prom_zone).len() as usize;
+            debug_assert!(n <= 1); // at most one required promotion on last rank
+            debug_assert!(m >= n); // last rank is included in the promotion zone
+            num_targets + m - n // add the extra promotion moves
         } else {
-            num_targets
+            num_targets // no promotions possible
         }
     }
 }
@@ -216,7 +219,10 @@ impl Iterator for PieceMovesIter {
                 })
             }
             // Handle board moves
-            // Promotions (for a given (`from`, `to`) pair) are always returned first.
+            // When the piece can promote on a square, the promotion move is returned first.
+            // In this case we cache the `to` square in `self.to` to generate the corresponding
+            // non-promotion move on the next step. When a promotion is required, we do not
+            // set `self.to`. So, `set.to` signals a pending non-promotion.
             PieceMoves::BoardMoves {
                 color,
                 piece,
@@ -343,6 +349,9 @@ mod tests {
         }
     }
 
+    // Multiple test cases for Lance, since Lance turned out to be the most
+    // problematic piece; it took me several hours to debug a subtle bug the ExactSizeIterator.
+
     #[test]
     fn len_handles_promotions_black_lance() {
         let mv = PieceMoves::BoardMoves {
@@ -408,6 +417,50 @@ mod tests {
         assert_eq!(iter.len(), 9); // 2 promotion alternatives
 
         for len in (0..9).rev() {
+            iter.next();
+            assert_eq!(iter.len(), len);
+        }
+    }
+
+    #[test]
+    fn len_for_lance_handles_edge_cases() {
+        // Case 1: Lance completely blocked
+        let mv = PieceMoves::BoardMoves {
+            color: Color::Black,
+            piece: Piece::Lance,
+            from: Square::I1,
+            to: BitBoard::EMPTY, // No valid moves
+        };
+        assert_eq!(mv.len(), 0);
+        let iter = mv.into_iter();
+        assert_eq!(iter.len(), 0);
+
+        // Case 2: Lance with one valid move in the must-promote zone
+        let mv = PieceMoves::BoardMoves {
+            color: Color::Black,
+            piece: Piece::Lance,
+            from: Square::B1,
+            to: Square::A1.bitboard(), // Must-promote square
+        };
+        assert_eq!(mv.len(), 1);
+        let mut iter = mv.into_iter();
+        assert_eq!(iter.len(), 1);
+        iter.next();
+        assert_eq!(iter.len(), 0);
+
+        // Case 3: Lance already inside promotion zone
+        let mv = PieceMoves::BoardMoves {
+            color: Color::Black,
+            piece: Piece::Lance,
+            from: Square::C1,
+            to: Square::B1.bitboard() | Square::A1.bitboard(), // B1: may-promote, A1: must-promote
+        };
+        assert!(prom_zone(Color::Black).has(Square::C1));
+        assert_eq!(mv.len(), 2);
+        let mut iter = mv.into_iter();
+        assert_eq!(iter.len(), 3);
+
+        for len in (0..3).rev() {
             iter.next();
             assert_eq!(iter.len(), len);
         }
