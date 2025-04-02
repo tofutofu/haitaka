@@ -26,6 +26,9 @@ differences between Shogi and International Chess, I adapted many parts of the i
 ## Crate features
 - `std`: Enable features that require `std`. Currently only used for the `Error` trait.
 
+## Acknowledgments
+Portions of this library are derived from the [`cozy-chess`](https://github.com/analog-hors/cozy-chess) project by [`analog-hors`](https://github.com/analog-hors). The `cozy-chess` project is licensed under the MIT license, and its license text is included in this repository under `third_party/cozy-chess/LICENSE`.
+
 ## References
 - [cozy-chess](https://github.com/analog-hors/cozy-chess)
 - [Qugiy Appeal](https://www.apply.computer-shogi.org/wcsc31/appeal/Qugiy/appeal.pdf)

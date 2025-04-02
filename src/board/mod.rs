@@ -18,8 +18,10 @@ use zobrist::*;
 /// The current state of the game.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GameStatus {
-    /// The game ended in a win for side_to_
+    /// The game ended in a win for side_to_move
     Won,
+    /// The game is a loss for side_to_move
+    Loss,
     /// The game ended in a draw
     Drawn,
     /// The game is still ongoing.
@@ -536,15 +538,21 @@ impl Board {
             .expect("No king was found.")
     }
 
-    // TODO: Review how the `status` function is used/can be improved.
-    // I don't particularly like the cozy-chess impl.
-
     /// Get the status of the game.
     ///
-    /// Note that this game may still be drawn from threefold repetition.
-    /// The game may also be drawn from insufficient material cases such
-    /// as bare kings; This method does not detect such cases.
-    /// If the game is won, the loser is the current side to move.
+    /// - A player loses if they have no legal moves. This is either caused
+    ///   by checkmate or (never really seen in actual games) by not being
+    ///   able to move board piece without exposing the King to check (and
+    ///   not having any pieces in hand).
+    /// - A player also loses by causing the same position to reoccur for the
+    ///   fourth time by a sequence of perpetual checks.
+    /// - A player loses in jishogi (double entering Kings) if the player has
+    ///   less than 24 points, both players have entered the King, and the
+    ///   inferior player has no chance of either checkmating the opponent or of
+    ///   increasing their number of points.
+    /// - The game is a draw in jishogi, if both players have at least 24 points.
+    /// - The game is a draw by sennichite, if the same position occurs for the
+    ///   fourth time, and this was not caused by a sequence of continuous checks.
     ///
     /// # Examples
     ///
@@ -556,21 +564,14 @@ impl Board {
     ///
     /// ```
     pub fn status(&self) -> GameStatus {
-        /*
-        if self.generate_moves(|_| true) {
-            if self.halfmove_clock() < 100 {
-                GameStatus::Ongoing
-            } else {
-                GameStatus::Drawn
-            }
-        } else if self.checkers().is_empty() {
-            GameStatus::Drawn
+        if !self.generate_moves(|_| true) {
+            // if we don't have any moves, it's a loss
+            GameStatus::Loss
         } else {
-            GameStatus::Won
+            // we have some moves
+            // TODO sennichite and jishogi
+            GameStatus::Ongoing
         }
-        */
-
-        GameStatus::Ongoing
     }
 
     pub fn repetition_state(&self, _ply: usize) -> RepetitionStatus {
