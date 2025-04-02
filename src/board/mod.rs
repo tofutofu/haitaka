@@ -303,7 +303,8 @@ impl Board {
     /// assert_eq!(board.side_to_move(), Color::White);
     /// board.play("3c3d".parse().unwrap());
     /// assert_eq!(board.side_to_move(), Color::Black);
-    /// ```    
+    /// ```   
+    #[inline(always)]
     pub fn side_to_move(&self) -> Color {
         self.inner.side_to_move()
     }

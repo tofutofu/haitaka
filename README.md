@@ -4,8 +4,7 @@
 
 `sparrow` is a [Shogi](https://en.wikipedia.org/wiki/Shogi) move generation library written in Rust that aims to support fast move generation.
 It is inspired by the beautifully designed [`cozy-chess`](https://github.com/analog-hors/cozy-chess) library written by [`analog-hors`](https://github.com/analog-hors). 
-The layout of the modules is largely the same as the layout of `cozy-chess`. But since there are significant
-differences between Shogi and International Chess, I adapted many parts of the implementation. 
+The layout of the modules and the overall design is largely the same as in `cozy-chess`. Some low-level functions were also copied from `cozy-chess`, but since there are significant differences between Shogi and International Chess, I did modify or reimplement most of the higher-level functions.
 
 ## Overview
 - `no_std` compatible
@@ -18,10 +17,12 @@ differences between Shogi and International Chess, I adapted many parts of the i
 - Support for [USI - Universal Shogi Interface](http://hgm.nubati.net/usi.html) protocol
 
 ## Main differences with `cozy-chess`
+- No separate `types` crate
 - `BitBoard` uses `u128` instead of `u64` as backing to handle the 9x9 Shogi board
 - Move generation handles both board moves and drops
 - Move generation of sliders does not use Magic Bitboards, but is based on
-  the beautiful [Qugiy algorithm]() as also used in [YaneuraOu](https://github.com/yaneurao/YaneuraOu).
+  the beautiful [Qugiy algorithm]() which is also used in [YaneuraOu](https://github.com/yaneurao/YaneuraOu).
+- File-major ordering of squares to make move generation faster
 
 ## Crate features
 - `std`: Enable features that require `std`. Currently only used for the `Error` trait.

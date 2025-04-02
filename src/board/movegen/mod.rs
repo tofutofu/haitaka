@@ -312,8 +312,9 @@ impl Board {
     // Public API
 
     /// Is this move legal?
+    #[inline(always)]
     pub fn is_legal(&self, mv: Move) -> bool {
-        self.is_legal_drop(mv) || self.is_legal_board_move(mv)
+        self.is_legal_board_move(mv) || self.is_legal_drop(mv)
     }
 
     /// Is this move a legal drop?

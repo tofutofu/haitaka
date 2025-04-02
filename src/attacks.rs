@@ -7,6 +7,7 @@ use crate::*;
 macro_rules! define_pseudo_attack {
     ($name:ident, $src:expr, $black_pattern:expr, $white_pattern:expr) => {
         #[doc = concat!("Pseudo-attacks for [`", stringify!($name), "`] for `color` on `square`.")]
+        #[inline(always)]
         pub const fn $name(color: Color, square: Square) -> BitBoard {
             const TABLE: [[BitBoard; Square::NUM]; Color::NUM] = {
                 let mut table = [[BitBoard::EMPTY; Square::NUM]; Color::NUM];
