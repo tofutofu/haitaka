@@ -55,7 +55,3 @@ No contributor can revoke this license.
 without any warranty or condition, and no contributor
 will be liable to anyone for any damages related to this
 software or this license, under any kind of legal claim.***
-
-## Acknowledgments
-
-Portions of this software are derived from the `cozy-chess` project by `analog-hors` (https://github.com/analog-hors/cozy-chess), which is licensed under the MIT license. The original license text for `cozy-chess` is included in this repository under `third_party/cozy-chess/LICENSE`.
