@@ -9,49 +9,16 @@ pub use movegen::*;
 pub use parse::*;
 use zobrist::*;
 
-// TODO: Keep simple status of "Drawn" or distinguish "Sennichite" and "Jishogi"?
-//    /// The game ended in a draw by sennichite.
-//    DrawnBySennichite,
-//    /// The game ended in a draw by jishogi.
-//    DrawnByJishogi,
-
 /// The current state of the game.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GameStatus {
-    /// The game ended in a win for side_to_move
+    /// The game ended in a win for *the other side*
+    /// (not the current side_to_move, but see also [`Board::status`])
     Won,
-    /// The game is a loss for side_to_move
-    Loss,
     /// The game ended in a draw
     Drawn,
     /// The game is still ongoing.
     Ongoing,
-}
-
-// See YaneuraOu source/types.h
-//
-// https://en.wikipedia.org/wiki/Sennichite
-//
-// "If the same game position occurs four times with the same player to move
-// and the same pieces in hand for each player, then the game ends in sennichite
-//      iff
-// the positions are not due to perpetual check.
-// (Perpetual check is an illegal move, which ends the game in a loss in tournament play.)"
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum RepetitionStatus {
-    /// No repetitions so far
-    None,
-    /// Win because of continuous checks with sennichite
-    Win,
-    /// Loss becauss of continuus checks with sennichite
-    Loss,
-    /// Normal sennichite, without perpetual check
-    Draw,
-    /// YaneuraOu - on board same, but in hand better
-    Superior,
-    /// YaneuraOu - on board same, but in hand worse
-    Inferior,
 }
 
 helpers::simple_error! {
@@ -78,13 +45,16 @@ pub const SFEN_2PIECE_HANDICAP: &str =
 /// A Shogi board.
 ///
 /// This keeps about as much state as a SFEN string. It does not keep track of history.
+/// More in particular it also does not track the repetition status of positions.
+/// Keeping track of that is a concern of a game-playing engine; the Board is only
+/// concerned with representing, validating and modifying a position.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Board {
     inner: ZobristBoard,
     pinned: BitBoard,
     checkers: BitBoard,
     no_pawn_on_file: [BitBoard; Color::NUM],
-    move_number: u16, // TODO: change to usize?
+    move_number: u16,
 }
 
 /// Default only initializes an empty board.
@@ -556,43 +526,46 @@ impl Board {
 
     /// Get the status of the game.
     ///
+    /// This returns the current status of the game. If `GameStatus::Ongoing`
+    /// then the game may still actually be a draw by Sennichite or Jishogi.
+    /// If `GameStatus::Won` then the game is won by *the other side*, lost by
+    /// the current `side_to_move`... unless the last move was an illegal
+    /// checkmate by Pawn drop.
+    ///
+    /// Due to the rather complicated rules related to Sennichite and Jishogi
+    /// the Board cannot always determine what the actual game status is. So
+    /// this function has a pretty limited use. The final determination needs
+    /// to be made by a game playing engine.
+    ///
+    /// The rules for winning and losing in Shogi are:
+    ///
     /// - A player loses if they have no legal moves. This is either caused
-    ///   by checkmate or (never really seen in actual games) by not being
-    ///   able to move board piece without exposing the King to check (and
-    ///   not having any pieces in hand).
+    ///   by checkmate or (never seen in actual games) by not being able to
+    ///   move any board piece without exposing the King to check (combined
+    ///   with not having any pieces in hand).
     /// - A player also loses by causing the same position to reoccur for the
-    ///   fourth time by a sequence of perpetual checks.
-    /// - A player loses in jishogi (double entering Kings) if the player has
+    ///   fourth time by playing a sequence of continuous checks. The player
+    ///   who plays the checks loses.
+    /// - A player loses in Jishogi (double entering Kings) if the player has
     ///   less than 24 points, both players have entered the King, and the
-    ///   inferior player has no chance of either checkmating the opponent or of
+    ///   inferior player has no chance of either checkmating the opponent or
     ///   increasing their number of points.
-    /// - The game is a draw in jishogi, if both players have at least 24 points.
-    /// - The game is a draw by sennichite, if the same position occurs for the
+    /// - The game is a draw in Jishogi, if both players have at least 24 points.
+    /// - The game is a draw by Sennichite, if the same position occurs for the
     ///   fourth time, and this was not caused by a sequence of continuous checks.
-    ///
-    /// # Examples
-    ///
-    /// ## Checkmate
-    ///
-    /// ## Jishogi
-    ///
-    /// ## Sennichite Draw/Win/Loss
     ///
     /// ```
     pub fn status(&self) -> GameStatus {
-        if !self.generate_moves(|_| true) {
-            // if we don't have any moves, it's a loss
-            GameStatus::Loss
-        } else {
-            // we have some moves
-            // TODO sennichite and jishogi
+        if self.generate_moves(|_| true) {
             GameStatus::Ongoing
+        } else {
+            // if we don't have any moves, it's a loss for us
+            // (it doesn't matter if the position is checkmate)
+            // ... unless ...
+            // we were checkmated with an illegal Pawn drop,
+            // in which case it's also a Win, but a Win for us!
+            GameStatus::Won
         }
-    }
-
-    pub fn repetition_state(&self, _ply: usize) -> RepetitionStatus {
-        // TODO!
-        RepetitionStatus::None
     }
 
     /// Check if two positions are equivalent.
@@ -708,6 +681,7 @@ impl Board {
                 // take in hand
                 self.inner.take_in_hand(color, capture.unpromote());
 
+                // update pawn_on_file
                 if capture == Piece::Pawn {
                     self.no_pawn_on_file[!color as usize] |= to.file().bitboard();
                 }
@@ -720,7 +694,7 @@ impl Board {
             let final_piece = if promotion { piece.promote() } else { piece };
             self.inner.xor_square(final_piece, color, to);
 
-            // update nopawns
+            // update pawn_on_file
             if piece == Piece::Pawn && promotion {
                 self.no_pawn_on_file[color as usize] |= to.file().bitboard();
             }
@@ -728,6 +702,7 @@ impl Board {
             // update checkers and pins
             self.update_checkers_and_pins(color, final_piece, to);
         }
+
         // update move_number
         self.move_number += 1;
 
@@ -783,7 +758,7 @@ impl Board {
             let between = get_between_rays(attacker, their_king) & occupied;
             match between.len() {
                 0 => self.checkers |= attacker.bitboard(),
-                1 => self.pinned |= between, // note: this included pieces of both colors
+                1 => self.pinned |= between, // note: this includes pieces of both colors!
                 _ => {}
             }
         }
