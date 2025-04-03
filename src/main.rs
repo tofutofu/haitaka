@@ -12,6 +12,7 @@ fn main() {
 pub fn test12() {
     let mut board = Board::default(); // empty board
     board.unchecked_set_hand(Color::Black, Piece::Pawn, 5);
+    board.unchecked_put(Color::Black, Piece::Pawn, Square::G1);
     board.generate_drops(|moves| {
         for mv in moves {
             println!("Move: {:?}", mv);
@@ -36,7 +37,7 @@ fn perft(board: &Board, depth: u8, history: &mut Vec<Move>) -> u32 {
     } else {
         let mut nodes = 0;
         let mut err = 0;
-        board.generate_moves(|moves| {
+        board.generate_board_moves(|moves| {
             for mv in moves {
                 let mut board = board.clone();
                 if board.is_legal(mv) {
@@ -51,7 +52,7 @@ fn perft(board: &Board, depth: u8, history: &mut Vec<Move>) -> u32 {
                     }
                     println!("{}. {} <<< non-legal?", history.len() + 1, mv);
                     err += 1;
-                    if err >= 3 {
+                    if err >= 2 {
                         panic!("Err depth={} move={:?} history={:?}", depth, mv, history);
                     }
                 }

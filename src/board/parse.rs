@@ -34,6 +34,7 @@ impl Board {
             inner: ZobristBoard::empty(),
             pinned: BitBoard::EMPTY,
             checkers: BitBoard::EMPTY,
+            no_pawn_on_file: [BitBoard::FULL; Color::NUM],
             move_number: 0,
         };
 
@@ -105,7 +106,7 @@ impl Board {
                     file -= 1; // let it panic
                     let piece = piece.do_promote(prom);
                     let square = Square::new(File::try_index(file).ok_or(())?, rank);
-                    board.inner.xor_square(piece, color, square);
+                    board.unchecked_put(color, piece, square);
                     prom = false;
                 } else {
                     return Err(());

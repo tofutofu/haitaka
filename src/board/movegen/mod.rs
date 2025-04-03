@@ -278,8 +278,14 @@ impl Board {
             if target_squares.is_empty() {
                 return false;
             }
-            let permitted = drop_zone(color, piece);
-            let to = target_squares & permitted;
+            let mut to = target_squares & drop_zone(color, piece);
+            if piece == Piece::Pawn {
+                to &= self.no_pawn_on_file[color as usize];
+                // also still need to check that the drop doesn't cause illegal checkmate
+            }
+            if to.is_empty() {
+                return false;
+            }
             return listener(PieceMoves::Drops { color, piece, to });
         }
         false

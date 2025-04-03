@@ -18,6 +18,16 @@ categories = ["games", "no-std"]
 [dev-dependencies]
 criterion = { version = "0.3.5", features = ["html_reports"] }
 
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = "fat"
+
+[profile.bench]
+opt-level = 3
+codegen-units = 1
+lto = "fat"
+
 [[bench]]
 name = "legals"
 harness = false

@@ -338,14 +338,15 @@ pub const fn get_lance_moves(color: Color, square: Square, occ: BitBoard) -> Bit
     //
     let mut attacks = lance_pseudo_attacks(color, square).0;
     let mut occ = occ.0;
+    let aok = attacks & occ;
 
-    if (attacks & occ) == 0 {
-        // nothing is blocking the attacks (if there are any)
+    if aok == 0 {
+        // nothing is blocking the attacks
         return BitBoard(attacks);
     }
 
     match color {
-        Color::White => BitBoard((((attacks & occ) - 1) ^ occ) & attacks),
+        Color::White => BitBoard(((aok - 1) ^ occ) & attacks),
         Color::Black => {
             attacks = attacks.reverse_bits();
             occ = occ.reverse_bits();
