@@ -145,6 +145,11 @@ impl Board {
         self.inner.pieces(piece)
     }
 
+    #[inline(always)]
+    pub fn golds_and_promoted_pieces(&self) -> BitBoard {
+        self.inner.golds_and_promoted_pieces()
+    }
+
     // TODO: Review `pseudo_golds`
     // I think this will need to be called a _lot_, so it might be much better
     // to cache this.

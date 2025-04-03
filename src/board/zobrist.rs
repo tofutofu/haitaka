@@ -2,7 +2,7 @@ use crate::*;
 
 #[derive(Debug)]
 struct ColorZobristConstants {
-    pieces: [[u64; Square::NUM]; Piece::NUM],
+    pieces: [[u64; Square::NUM + 1]; Piece::NUM],
     hand: [[u64; 20]; Piece::NUM], // making room for counts
 }
 
@@ -45,10 +45,10 @@ const ZOBRIST: ZobristConstants = {
 
     macro_rules! color_zobrist_constant {
         () => {{
-            let mut pieces = [[0u64; Square::NUM]; Piece::NUM];
+            let mut pieces = [[0u64; Square::NUM + 1]; Piece::NUM];
             let mut hand = [[0u64; 20]; Piece::NUM];
             fill_array!(pieces: {
-                let mut squares = [0; Square::NUM];
+                let mut squares = [0; Square::NUM + 1];
                 fill_array!(squares: rand!());
                 squares
             });
@@ -79,7 +79,7 @@ const ZOBRIST: ZobristConstants = {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ZobristBoard {
     //
-    pieces: [BitBoard; Piece::NUM], // piece type => bit map of board locations
+    pieces: [BitBoard; Piece::NUM + 1], // piece type => bit map of board locations
     colors: [BitBoard; Color::NUM], // color => bit map of board locations
     hands: [[u8; Piece::NUM]; Color::NUM], // color => [number of pieces in hand, indexed by piece type]
     side_to_move: Color,
@@ -90,7 +90,7 @@ impl ZobristBoard {
     #[inline(always)]
     pub fn empty() -> Self {
         Self {
-            pieces: [BitBoard::EMPTY; Piece::NUM],
+            pieces: [BitBoard::EMPTY; Piece::NUM + 1],
             colors: [BitBoard::EMPTY; Color::NUM],
             hands: [[0; Piece::NUM]; Color::NUM],
             side_to_move: Color::Black,
@@ -101,6 +101,12 @@ impl ZobristBoard {
     #[inline(always)]
     pub fn pieces(&self, piece: Piece) -> BitBoard {
         self.pieces[piece as usize]
+    }
+
+    #[inline(always)]
+    pub fn golds_and_promoted_pieces(&self) -> BitBoard {
+        // also includes King actually, which should be fine
+        self.pieces[Piece::NUM]
     }
 
     #[inline(always)]
@@ -177,6 +183,9 @@ impl ZobristBoard {
         let square_bb = square.bitboard();
         self.pieces[piece as usize] ^= square_bb; // toggles
         self.colors[color as usize] ^= square_bb; // toggles
+        if piece as usize >= Piece::Gold as usize {
+            self.pieces[Piece::NUM] ^= square_bb;
+        }
         self.hash ^= ZOBRIST.color[color as usize].pieces[piece as usize][square as usize];
     }
 

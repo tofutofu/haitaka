@@ -66,7 +66,7 @@ impl Piece {
     /// Is this piece a promoted piece?
     #[inline(always)]
     pub const fn is_promoted(self) -> bool {
-        (self as usize) > Self::King as usize
+        (self as usize) >= Self::Tokin as usize
     }
 
     /// Is this piece a non-promoted piece?

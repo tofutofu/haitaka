@@ -186,15 +186,11 @@ impl Board {
         let their_pieces = self.colors(!color);
         let blockers =
             (self.occupied() ^ self.colored_pieces(color, Piece::King)) | square.bitboard();
+        // testing the sliders takes up about half of the test time;
+        // using lazy_and improves throughput by about 17%
         short_circuit! {
-            gold_attacks(color, square) & their_pieces & (
-                self.pieces(Piece::Gold) |
-                self.pieces(Piece::Tokin) |
-                self.pieces(Piece::PLance) |
-                self.pieces(Piece::PKnight) |
-                self.pieces(Piece::PSilver)
-            ),
-            silver_attacks(color, square) & their_pieces & self.pieces(Piece::Silver),
+            gold_attacks(color, square) & their_pieces & self.golds_and_promoted_pieces(), // includes King
+            silver_attacks(color, square) & their_pieces & (self.pieces(Piece::Silver) | self.pieces(Piece::King)),
             knight_attacks(color, square) & their_pieces & self.pieces(Piece::Knight),
             pawn_attacks(color, square) & their_pieces & self.pieces(Piece::Pawn),
             lazy_and! {
@@ -208,8 +204,7 @@ impl Board {
             lazy_and! {
                 self.pieces(Piece::Lance) & their_pieces,
                 get_lance_moves(color, square, blockers)
-            },
-            king_attacks(color, square) & their_pieces & self.pieces(Piece::King)
+            }
         }
     }
 

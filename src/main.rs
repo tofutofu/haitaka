@@ -10,10 +10,9 @@ fn main() {
 }
 
 pub fn test12() {
-
     let mut board = Board::default(); // empty board
     board.unchecked_set_hand(Color::Black, Piece::Pawn, 5);
-    board.generate_drops(|moves|{
+    board.generate_drops(|moves| {
         for mv in moves {
             println!("Move: {:?}", mv);
         }
@@ -25,9 +24,9 @@ pub fn test12() {
 pub fn test11() {
     let board = Board::startpos();
     let mut history = Vec::new();
-    for depth in 0..6 {        
-        let nodes = perft(&board, depth, &mut history); 
-        println!("depth={} nodes ={}", depth, nodes);      
+    for depth in 0..6 {
+        let nodes = perft(&board, depth, &mut history);
+        println!("depth={} nodes ={}", depth, nodes);
     }
 }
 
@@ -39,16 +38,16 @@ fn perft(board: &Board, depth: u8, history: &mut Vec<Move>) -> u32 {
         let mut err = 0;
         board.generate_moves(|moves| {
             for mv in moves {
-                let mut board = board.clone();  
+                let mut board = board.clone();
                 if board.is_legal(mv) {
                     board.play_unchecked(mv);
                     history.push(mv);
                     nodes += perft(&board, depth - 1, history);
-                    history.pop();    
+                    history.pop();
                 } else {
                     println!("Err History:");
                     for (i, &m) in history.iter().enumerate() {
-                        println!("{}. {}", i+1, m);
+                        println!("{}. {}", i + 1, m);
                     }
                     println!("{}. {} <<< non-legal?", history.len() + 1, mv);
                     err += 1;
@@ -63,7 +62,6 @@ fn perft(board: &Board, depth: u8, history: &mut Vec<Move>) -> u32 {
         nodes
     }
 }
-
 
 pub fn test10() {
     /*
