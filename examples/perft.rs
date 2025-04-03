@@ -1,48 +1,75 @@
-use std::time::Instant;
 use std::env::args;
+use std::time::Instant;
 
 // Copied from `cozy-chess` with only trivial modifications.
 // Note that bulk counting on leave nodes significantly speeds up the run.
 
 use sparrow::*;
 
-fn perft(board: &Board, depth: u8) -> u64 {
+fn perft<const DROPS: bool>(board: &Board, depth: u8) -> u64 {
     if depth == 0 {
         1
     } else {
         let mut nodes = 0;
-        board.generate_moves(|moves| {
+        board.generate_board_moves(|moves| {
             for mv in moves {
                 let mut board = board.clone();
                 board.play_unchecked(mv);
-                nodes += perft(&board, depth - 1);
+                nodes += perft::<DROPS>(&board, depth - 1);
             }
             false
         });
+        if DROPS {
+            board.generate_drops(|moves| {
+                for mv in moves {
+                    let mut board = board.clone();
+                    board.play_unchecked(mv);
+                    nodes += perft::<DROPS>(&board, depth - 1);
+                }
+                false
+            });
+        }
         nodes
     }
 }
 
-fn perft_bulk(board: &Board, depth: u8) -> u64 {
+fn perft_bulk<const DROPS: bool>(board: &Board, depth: u8) -> u64 {
     let mut nodes = 0;
     match depth {
         0 => nodes += 1,
         1 => {
-            board.generate_moves(|moves| {
-                nodes += moves.len() as u64;
+            board.generate_board_moves(|moves| {
+                nodes += moves.into_iter().len() as u64;
                 false
             });
+            if DROPS {
+                board.generate_drops(|moves| {
+                    nodes += moves.into_iter().len() as u64;
+                    false
+                });
+            }
         }
         _ => {
-            board.generate_moves(|moves| {
+            board.generate_board_moves(|moves| {
                 for mv in moves {
                     let mut board = board.clone();
                     board.play_unchecked(mv);
-                    let child_nodes = perft_bulk(&board, depth - 1);
+                    let child_nodes = perft_bulk::<DROPS>(&board, depth - 1);
                     nodes += child_nodes;
                 }
                 false
             });
+            if DROPS {
+                board.generate_drops(|moves| {
+                    for mv in moves {
+                        let mut board = board.clone();
+                        board.play_unchecked(mv);
+                        let child_nodes = perft_bulk::<DROPS>(&board, depth - 1);
+                        nodes += child_nodes;
+                    }
+                    false
+                });
+            }
         }
     }
     nodes
@@ -52,18 +79,24 @@ fn help_message() {
     eprintln!("USAGE: perft <depth> [<SFEN>] [--no-bulk] [--help]");
     eprintln!("  Defaults to the start position if no SFEN is specified.");
     eprintln!("  OPTIONS:");
-    eprintln!("    --no-bulk: Disable bulk counting on leaf node parents.");
-    eprintln!("    --help:    Print this message.");
+    eprintln!("    --no-drops: Do not count drops.");
+    eprintln!("    --no-bulk:  Disable bulk counting on leaf node parents.");
+    eprintln!("    --help:     Print this message.");
 }
 
 fn main() {
     let mut depth = None;
     let mut board = None;
     let mut bulk = true;
+    let mut drops = true;
     let mut help = false;
     for arg in args().skip(1) {
         if arg == "--no-bulk" {
             bulk = false;
+            continue;
+        }
+        if arg == "--no-drops" {
+            drops = false;
             continue;
         }
         if arg == "--help" {
@@ -104,16 +137,29 @@ fn main() {
         eprintln!("ERROR: Missing required argument 'depth'.");
         help_message();
         return;
-    };    
-    let board = if board.is_some() { board.unwrap() } else { Board::startpos() };
+    };
+    let board = if board.is_some() {
+        board.unwrap()
+    } else {
+        Board::startpos()
+    };
 
     let start = Instant::now();
     let nodes = if bulk {
-        perft_bulk(&board, depth)
+        if drops {
+            perft_bulk::<true>(&board, depth)
+        } else {
+            perft_bulk::<false>(&board, depth)
+        }
+    } else if drops {
+        perft::<true>(&board, depth)
     } else {
-        perft(&board, depth)
+        perft::<false>(&board, depth)
     };
     let elapsed = start.elapsed();
     let nps = nodes as f64 / elapsed.as_secs_f64();
-    println!("perft {}: {} nodes in {:.2?} ({:.0} nps)", depth, nodes, elapsed, nps);
+    println!(
+        "perft {}: {} nodes in {:.2?} ({:.0} nps)",
+        depth, nodes, elapsed, nps
+    );
 }

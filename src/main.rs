@@ -25,15 +25,21 @@ pub fn test12() {
 pub fn test11() {
     let board = Board::startpos();
     let mut history = Vec::new();
-    for depth in 0..6 {
-        let nodes = perft(&board, depth, &mut history);
-        println!("depth={} nodes ={}", depth, nodes);
-    }
+    let depth = 7;
+    let nodes = perft(&board, depth, &mut history);
+    println!("depth={} nodes ={}", depth, nodes);
 }
 
-fn perft(board: &Board, depth: u8, history: &mut Vec<Move>) -> u32 {
+fn perft(board: &Board, depth: u8, history: &mut Vec<Move>) -> u64 {
+    let mut nodes: u64 = 0;
     if depth == 0 {
         1
+    } else if depth == 1 {
+        board.generate_board_moves(|moves| {
+            nodes += moves.into_iter().len() as u64;
+            false
+        });
+        nodes
     } else {
         let mut nodes = 0;
         let mut err = 0;
@@ -59,7 +65,6 @@ fn perft(board: &Board, depth: u8, history: &mut Vec<Move>) -> u32 {
             }
             false
         });
-        // println!("Depth={}, nodes={}", depth, nodes);
         nodes
     }
 }

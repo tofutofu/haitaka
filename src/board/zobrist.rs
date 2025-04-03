@@ -80,7 +80,7 @@ const ZOBRIST: ZobristConstants = {
 pub struct ZobristBoard {
     //
     pieces: [BitBoard; Piece::NUM + 1], // piece type => bit map of board locations
-    colors: [BitBoard; Color::NUM], // color => bit map of board locations
+    colors: [BitBoard; Color::NUM],     // color => bit map of board locations
     hands: [[u8; Piece::NUM]; Color::NUM], // color => [number of pieces in hand, indexed by piece type]
     side_to_move: Color,
     hash: u64,
