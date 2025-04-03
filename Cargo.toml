@@ -22,6 +22,9 @@ criterion = { version = "0.3.5", features = ["html_reports"] }
 name = "legals"
 harness = false
 
+[[bench]]
+name = "slider_moves"
+harness = false
 
 [features]
 std = []
