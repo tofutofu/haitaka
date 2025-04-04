@@ -23,18 +23,13 @@ pub fn criterion_benchmark(criterion: &mut Criterion) {
         xsl.rotate_right(rot) as u128
     };
 
-    // x will have a bitcount of approx. 64 bits, randomly distributed.
-    // BitBoard::new will effectively ignore the top 47 bits, and only keep
-    // the lower 81 bits needed for the 9x9 Shogi board.
-    // So the board will have approx. 40 bits set, close to the total number
-    // of Shogi pieces, so no need to thin out the bitcount further by xor-ing
-    // the random numbers.
-    // let _rand128: impl Fn() -> u128 = || {
-    //    (rand() << 64) | rand()
-    // };
+    // By xor-ing rand() two times, we thin out the bit set.
+    // We expect to have about 64 bits set to start with, and end up
+    // with about 32 bits, distributed over 128 bit locations. So,
+    // the board should have about 20 bits set.
 
     let blockers = (0..1000)
-        .map(|_| BitBoard::new(rand() ^ rand() ^ rand()))
+        .map(|_| BitBoard::new(rand() ^ rand()))
         .collect::<Vec<_>>();
 
     bench(
