@@ -596,39 +596,27 @@ impl Board {
         let checkers = self.checkers();
         let num_checkers = checkers.len();
         if num_checkers == 0 {
-            let targets = !self.occupied();
+            let dst = !self.occupied();
             match piece {
-                Piece::Pawn => self.add_drops::<commoner::Pawn, _, false>(&mut listener, targets),
-                Piece::Lance => self.add_drops::<commoner::Lance, _, false>(&mut listener, targets),
-                Piece::Knight => {
-                    self.add_drops::<commoner::Knight, _, false>(&mut listener, targets)
-                }
-                Piece::Silver => {
-                    self.add_drops::<commoner::Silver, _, false>(&mut listener, targets)
-                }
-                Piece::Gold => self.add_drops::<commoner::Gold, _, false>(&mut listener, targets),
-                Piece::Rook => self.add_drops::<commoner::Rook, _, false>(&mut listener, targets),
-                Piece::Bishop => {
-                    self.add_drops::<commoner::Bishop, _, false>(&mut listener, targets)
-                }
+                Piece::Pawn => self.add_drops::<commoner::Pawn, _, false>(&mut listener, dst),
+                Piece::Lance => self.add_drops::<commoner::Lance, _, false>(&mut listener, dst),
+                Piece::Knight => self.add_drops::<commoner::Knight, _, false>(&mut listener, dst),
+                Piece::Silver => self.add_drops::<commoner::Silver, _, false>(&mut listener, dst),
+                Piece::Gold => self.add_drops::<commoner::Gold, _, false>(&mut listener, dst),
+                Piece::Rook => self.add_drops::<commoner::Rook, _, false>(&mut listener, dst),
+                Piece::Bishop => self.add_drops::<commoner::Bishop, _, false>(&mut listener, dst),
                 _ => false, // Other pieces cannot be dropped
             }
         } else if num_checkers == 1 {
-            let targets = self.target_drops::<true>();
+            let dst = self.target_drops::<true>();
             match piece {
-                Piece::Pawn => self.add_drops::<commoner::Pawn, _, true>(&mut listener, targets),
-                Piece::Lance => self.add_drops::<commoner::Lance, _, true>(&mut listener, targets),
-                Piece::Knight => {
-                    self.add_drops::<commoner::Knight, _, true>(&mut listener, targets)
-                }
-                Piece::Silver => {
-                    self.add_drops::<commoner::Silver, _, true>(&mut listener, targets)
-                }
-                Piece::Gold => self.add_drops::<commoner::Gold, _, true>(&mut listener, targets),
-                Piece::Rook => self.add_drops::<commoner::Rook, _, true>(&mut listener, targets),
-                Piece::Bishop => {
-                    self.add_drops::<commoner::Bishop, _, true>(&mut listener, targets)
-                }
+                Piece::Pawn => self.add_drops::<commoner::Pawn, _, true>(&mut listener, dst),
+                Piece::Lance => self.add_drops::<commoner::Lance, _, true>(&mut listener, dst),
+                Piece::Knight => self.add_drops::<commoner::Knight, _, true>(&mut listener, dst),
+                Piece::Silver => self.add_drops::<commoner::Silver, _, true>(&mut listener, dst),
+                Piece::Gold => self.add_drops::<commoner::Gold, _, true>(&mut listener, dst),
+                Piece::Rook => self.add_drops::<commoner::Rook, _, true>(&mut listener, dst),
+                Piece::Bishop => self.add_drops::<commoner::Bishop, _, true>(&mut listener, dst),
                 _ => false, // Other pieces cannot be dropped
             }
         } else {
