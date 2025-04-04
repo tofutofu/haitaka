@@ -11,8 +11,9 @@ fn bench(criterion: &mut Criterion, id: &str, elem: usize, mut routine: impl FnM
 }
 
 pub fn criterion_benchmark(criterion: &mut Criterion) {
-    // Simple Pcg64Mcg random number generator - copied from cozy-chess
-    // we don't need any strong randomness
+    // Simple Pcg64Mcg random number generator - Copied from cozy-chess.
+    // We don't need any strong randomness. We do always want to use the
+    // same random seed.
 
     let mut state = 0x6D696E75736B656C76696E2062616974u128 | 1;
     let mut rand = || {

@@ -3,18 +3,19 @@
 
 #![allow(missing_docs)]
 
-// Macros mostly based on the cozy-chess-types macros.
+// These macros are based on the cozy-chess-types macros.
 //
-// I added attribute `#[repr(usize)]` to the `simple_enum!` definition.
-// This makes enables the unsafe function `core::mem::transmute` in `try_index`.
+// Modifications:
+// - I added attribute `#[repr(u8)]` to the `simple_enum!` definition.
+//   This makes enables the unsafe function `core::mem::transmute` in `try_index`.
 //
-// Use of `transmute` is actually safe, since it's guaranteed that the enum
-// variants and usize are transmutable. The compiler allows this, even in
-// const functions, even in the stable tool chain. Use of `transmute` generally
-// improves performance significantly: the GenerateMoves bench was made 16% faster
-// (in cozy-chess).
+// - Use of `transmute` is actually safe, since it's guaranteed that the enum
+//   variants and usize are transmutable. The compiler allows this, even in
+//   const functions, even in the stable tool chain. Use of `transmute` generally
+//   improves performance significantly: it made the GenerateMoves bench 16% faster
+//   (in cozy-chess).
 //
-// The panics are justified since a panic always indicates a real code bug.
+// The panics are justified since a panic always indicates a basic code bug.
 //
 // Function `index_const`` is the version of `index` to be used in const functions
 // since those don't allow all the operations in `index`.
@@ -30,7 +31,7 @@ macro_rules! simple_enum {
         }
     ) => {
         $(#[$attr])*
-        #[repr(usize)]
+        #[repr(u8)]
         $vis enum $name {
             $(
                 $(#[$variant_attr])*
@@ -59,13 +60,14 @@ macro_rules! simple_enum {
                     _ => None
                 }
                 */
-                /* Using transmute improves the Generate Moves bench by 16%!
-                   It slightly regresses Play Moves by 4%. It improves get_pawn_quiets by almsto 4%.
+                /* Using transmute (in cozy-chess) improves the Generate Moves bench by 16%!
+                   It slightly regresses Play Moves by 4%.
+                   It improves get_pawn_quiets by almost 4%.
                    And improves legality queens by about 1.6%.
                 */
                 if index < Self::NUM {
                     #[allow(clippy::missing_transmute_annotations)]
-                    Some(unsafe { core::mem::transmute(index) })
+                    Some(unsafe { core::mem::transmute(index as u8) })
                 } else {
                     None
                 }

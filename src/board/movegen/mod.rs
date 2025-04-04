@@ -1,5 +1,4 @@
 // movegen
-//use crate::*;
 use super::*;
 
 mod piece_moves;
@@ -72,6 +71,7 @@ impl Board {
         let targets = if IN_CHECK {
             // when in check, we must block the checker or capture it
             // (or the King must run, but this function is not used for King moves)
+            debug_assert!(self.checkers().len() == 1);
             let checker = self.checkers().next_square().unwrap();
             let our_king = self.king(color);
             get_between_rays(checker, our_king) | checker.bitboard()
@@ -93,6 +93,7 @@ impl Board {
             // when in check, we must block the checker
             let checkers = self.checkers() & self.sliders(!color);
             if !checkers.is_empty() {
+                debug_assert!(checkers.len() == 1);
                 let checker = self.checkers().next_square().unwrap();
                 let our_king = self.king(color);
                 get_between_rays(checker, our_king) & !self.occupied()
@@ -156,10 +157,15 @@ impl Board {
 
     // Is the King (of the side-to-move) safe on this square?
     //
-    // This function seems a bit inefficient since it partially recomputes
+    // This function seems a bit inefficient since it basically recomputes the
     // opponent's attacks. But all those attacks have already been computed
     // on the preceding move (and could be precalculated for the first move),
-    // so if they were cached this function could be optimized a lot.
+    // so if they were cached this function could perhaps be optimized a lot.
+    // Problem is that when the opponent does a move, those attacks will no
+    // longer be valid for the moved piece, and also no longer for any sliders
+    // that is blocking. It might be cost-effective, just to update the attacks
+    // for the piece that moved again. But sliders are then still a bit of a
+    // problem.
 
     #[inline]
     fn king_safe_on(&self, square: Square) -> bool {
@@ -186,23 +192,27 @@ impl Board {
         let their_pieces = self.colors(!color);
         let blockers =
             (self.occupied() ^ self.colored_pieces(color, Piece::King)) | square.bitboard();
+
         // testing the sliders takes up about half of the test time;
         // using lazy_and improves throughput by about 17%
         short_circuit! {
-            gold_attacks(color, square) & their_pieces & self.golds_and_promoted_pieces(), // includes King
+            // attacks by the opponent's King are covered by the gold and silver attacks
+            gold_attacks(color, square) & their_pieces & self.golds_and_promoted_pieces(),
             silver_attacks(color, square) & their_pieces & (self.pieces(Piece::Silver) | self.pieces(Piece::King)),
             knight_attacks(color, square) & their_pieces & self.pieces(Piece::Knight),
             pawn_attacks(color, square) & their_pieces & self.pieces(Piece::Pawn),
             lazy_and! {
-                (self.pieces(Piece::Bishop) | self.pieces(Piece::PBishop)) & their_pieces,
+                // by first filtering on pseudo attacks, this whole function becomes almost twice as fast
+                // (which also suggests that switching to magic bitboards would generally be much more performant)
+                bishop_pseudo_attacks(square) & (self.pieces(Piece::Bishop) | self.pieces(Piece::PBishop)) & their_pieces,
                 get_bishop_moves(color, square, blockers)
             },
             lazy_and! {
-                (self.pieces(Piece::Rook) | self.pieces(Piece::PRook)) & their_pieces,
+                rook_pseudo_attacks(square) & (self.pieces(Piece::Rook) | self.pieces(Piece::PRook)) & their_pieces,
                 get_rook_moves(color, square, blockers)
             },
             lazy_and! {
-                self.pieces(Piece::Lance) & their_pieces,
+                lance_pseudo_attacks(color, square) & self.pieces(Piece::Lance) & their_pieces,
                 get_lance_moves(color, square, blockers)
             }
         }
@@ -269,15 +279,16 @@ impl Board {
     fn add_drops<P: commoner::Commoner, F: FnMut(PieceMoves) -> bool, const IN_CHECK: bool>(
         &self,
         listener: &mut F,
+        target_squares: BitBoard,
     ) -> bool {
         let color = self.side_to_move();
         let piece = P::PIECE;
 
+        if target_squares.is_empty() {
+            return false;
+        }
+
         if self.inner.hand(color)[piece as usize] > 0 {
-            let target_squares = self.target_drops::<IN_CHECK>();
-            if target_squares.is_empty() {
-                return false;
-            }
             let mut to = target_squares & drop_zone(color, piece);
             if piece == Piece::Pawn {
                 to &= self.no_pawn_on_file[color as usize];
@@ -294,18 +305,19 @@ impl Board {
     fn add_all_drops<F: FnMut(PieceMoves) -> bool, const IN_CHECK: bool>(
         &self,
         listener: &mut F,
+        targets: BitBoard,
     ) -> bool {
-        if self.is_hand_empty(self.side_to_move()) {
+        if targets.is_empty() && self.is_hand_empty(self.side_to_move()) {
             return false;
         }
         abort_if! {
-            self.add_drops::<commoner::Pawn, _, IN_CHECK>(listener),
-            self.add_drops::<commoner::Lance, _, IN_CHECK>(listener),
-            self.add_drops::<commoner::Knight, _, IN_CHECK>(listener),
-            self.add_drops::<commoner::Silver, _, IN_CHECK>(listener),
-            self.add_drops::<commoner::Gold, _, IN_CHECK>(listener),
-            self.add_drops::<commoner::Rook, _, IN_CHECK>(listener),
-            self.add_drops::<commoner::Bishop, _, IN_CHECK>(listener)
+            self.add_drops::<commoner::Pawn, _, IN_CHECK>(listener, targets),
+            self.add_drops::<commoner::Lance, _, IN_CHECK>(listener, targets),
+            self.add_drops::<commoner::Knight, _, IN_CHECK>(listener, targets),
+            self.add_drops::<commoner::Silver, _, IN_CHECK>(listener, targets),
+            self.add_drops::<commoner::Gold, _, IN_CHECK>(listener, targets),
+            self.add_drops::<commoner::Rook, _, IN_CHECK>(listener, targets),
+            self.add_drops::<commoner::Bishop, _, IN_CHECK>(listener, targets)
         }
         false
     }
@@ -468,6 +480,7 @@ impl Board {
     /// modify the `listener` object itself.
     ///
     /// # Examples
+    ///
     /// ```
     /// # use sparrow::*;
     /// let board = Board::startpos();
@@ -500,6 +513,7 @@ impl Board {
     /// Argument `mask` is used to select the subset of pieces.
     ///
     /// # Examples
+    ///
     /// ```
     /// # use sparrow::*;
     /// let board = Board::startpos();
@@ -530,6 +544,7 @@ impl Board {
     /// Generate all drops in no particular order.
     ///
     /// # Examples
+    ///
     /// ```
     /// use sparrow::*;
     /// let sfen: & str = "lnsgk2nl/1r4gs1/p1pppp1pp/1p4p2/7P1/2P6/PP1PPPP1P/1SG4R1/LN2KGSNL b Bb 11";
@@ -555,9 +570,19 @@ impl Board {
     /// assert_eq!(num_drops, empty_squares.len());
     /// ```
     pub fn generate_drops(&self, mut listener: impl FnMut(PieceMoves) -> bool) -> bool {
-        match self.checkers().len() {
-            0 => self.add_all_drops::<_, false>(&mut listener),
-            1 => self.add_all_drops::<_, true>(&mut listener),
+        let checkers = self.checkers();
+        match checkers.len() {
+            0 => {
+                let targets = !self.occupied();
+                self.add_all_drops::<_, false>(&mut listener, targets)
+            }
+            1 => {
+                let targets = self.target_drops::<true>();
+                if targets.is_empty() {
+                    return false;
+                }
+                self.add_all_drops::<_, true>(&mut listener, targets)
+            }
             _ => false,
         }
     }
@@ -568,31 +593,46 @@ impl Board {
         piece: Piece,
         mut listener: impl FnMut(PieceMoves) -> bool,
     ) -> bool {
-        let num_checkers = self.checkers.len();
+        let checkers = self.checkers();
+        let num_checkers = checkers.len();
         if num_checkers == 0 {
+            let targets = !self.occupied();
             match piece {
-                Piece::Pawn => self.add_drops::<commoner::Pawn, _, false>(&mut listener),
-                Piece::Lance => self.add_drops::<commoner::Lance, _, false>(&mut listener),
-                Piece::Knight => self.add_drops::<commoner::Knight, _, false>(&mut listener),
-                Piece::Silver => self.add_drops::<commoner::Silver, _, false>(&mut listener),
-                Piece::Gold => self.add_drops::<commoner::Gold, _, false>(&mut listener),
-                Piece::Rook => self.add_drops::<commoner::Rook, _, false>(&mut listener),
-                Piece::Bishop => self.add_drops::<commoner::Bishop, _, false>(&mut listener),
+                Piece::Pawn => self.add_drops::<commoner::Pawn, _, false>(&mut listener, targets),
+                Piece::Lance => self.add_drops::<commoner::Lance, _, false>(&mut listener, targets),
+                Piece::Knight => {
+                    self.add_drops::<commoner::Knight, _, false>(&mut listener, targets)
+                }
+                Piece::Silver => {
+                    self.add_drops::<commoner::Silver, _, false>(&mut listener, targets)
+                }
+                Piece::Gold => self.add_drops::<commoner::Gold, _, false>(&mut listener, targets),
+                Piece::Rook => self.add_drops::<commoner::Rook, _, false>(&mut listener, targets),
+                Piece::Bishop => {
+                    self.add_drops::<commoner::Bishop, _, false>(&mut listener, targets)
+                }
                 _ => false, // Other pieces cannot be dropped
             }
         } else if num_checkers == 1 {
+            let targets = self.target_drops::<true>();
             match piece {
-                Piece::Pawn => self.add_drops::<commoner::Pawn, _, true>(&mut listener),
-                Piece::Lance => self.add_drops::<commoner::Lance, _, true>(&mut listener),
-                Piece::Knight => self.add_drops::<commoner::Knight, _, true>(&mut listener),
-                Piece::Silver => self.add_drops::<commoner::Silver, _, true>(&mut listener),
-                Piece::Gold => self.add_drops::<commoner::Gold, _, true>(&mut listener),
-                Piece::Rook => self.add_drops::<commoner::Rook, _, true>(&mut listener),
-                Piece::Bishop => self.add_drops::<commoner::Bishop, _, true>(&mut listener),
+                Piece::Pawn => self.add_drops::<commoner::Pawn, _, true>(&mut listener, targets),
+                Piece::Lance => self.add_drops::<commoner::Lance, _, true>(&mut listener, targets),
+                Piece::Knight => {
+                    self.add_drops::<commoner::Knight, _, true>(&mut listener, targets)
+                }
+                Piece::Silver => {
+                    self.add_drops::<commoner::Silver, _, true>(&mut listener, targets)
+                }
+                Piece::Gold => self.add_drops::<commoner::Gold, _, true>(&mut listener, targets),
+                Piece::Rook => self.add_drops::<commoner::Rook, _, true>(&mut listener, targets),
+                Piece::Bishop => {
+                    self.add_drops::<commoner::Bishop, _, true>(&mut listener, targets)
+                }
                 _ => false, // Other pieces cannot be dropped
             }
         } else {
-            // move than one checker, so no drops are legal
+            // there is more than one checker, so no drops are legal
             false
         }
     }

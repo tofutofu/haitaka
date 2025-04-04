@@ -34,5 +34,9 @@ harness = false
 name = "slider_moves"
 harness = false
 
+[[bench]]
+name = "perft"
+harness = false
+
 [features]
 std = []
