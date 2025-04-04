@@ -218,6 +218,32 @@ impl Board {
         }
     }
 
+    fn is_illegal_mate_by_pawn_drop(&self, to: Square) -> bool {
+        let them = !self.side_to_move();
+        let our_pawn_rank = to.rank() as usize;
+        let their_king_rank = self.king(them).rank() as usize;
+
+        if (them == Color::White && their_king_rank != our_pawn_rank - 1)
+            || (them == Color::Black && their_king_rank != our_pawn_rank + 1)
+        {
+            return false;
+        }
+
+        // (1) if to square is not attacked by them (apart from by their King), and
+        // (2) to square is defended by at least one of ours, and
+        // (3) King can not move (to square was the only remaining free square of the King)
+        // then it is an illegal Pawn drop mate
+        //
+        // (Note that this function is only called if _we_ are not in check since it's
+        // impossible to simultaneously drop a pawn as interposing piece against check AND
+        // give checkmate with that pawn: this is a funny edge case we should test for. In
+        // this case the dropped pawn could always at least be captured by the slider.)
+
+        // TODO
+
+        false
+    }
+
     fn add_king_legals<F: FnMut(PieceMoves) -> bool, const IN_CHECK: bool>(
         &self,
         mask: BitBoard,
@@ -290,13 +316,23 @@ impl Board {
 
         if self.inner.hand(color)[piece as usize] > 0 {
             let mut to = target_squares & drop_zone(color, piece);
+
             if piece == Piece::Pawn {
+                // prevent creating a double-pawn (nifu)
                 to &= self.no_pawn_on_file[color as usize];
-                // also still need to check that the drop doesn't cause illegal checkmate
+                if to.is_empty() {
+                    return false;
+                }
+                // check that the drop doesn't cause illegal checkmate
+                let to_square = to.next_square().unwrap();
+                if !IN_CHECK && self.is_illegal_mate_by_pawn_drop(to_square) {
+                    return false;
+                }
             }
             if to.is_empty() {
                 return false;
             }
+
             return listener(PieceMoves::Drops { color, piece, to });
         }
         false
