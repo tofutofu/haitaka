@@ -240,11 +240,17 @@ impl Board {
 
         // For now, adding a slow version
         let mut board = self.clone();
-        board.play_unchecked(Move::Drop { piece: Piece::Pawn, to });
+        board.play_unchecked(Move::Drop {
+            piece: Piece::Pawn,
+            to,
+        });
 
         // don't call generate_moves (which could cause recursion!)
         let mut has_legal_moves = false;
-        board.generate_board_moves(|_| { has_legal_moves = true; true });
+        board.generate_board_moves(|_| {
+            has_legal_moves = true;
+            true
+        });
 
         !has_legal_moves
     }

@@ -46,10 +46,13 @@ crate::helpers::enum_char_conv! {
 }
 
 impl File {
-    /// Flip the file.
+    /// Flip the file horizontally around the central file File::Five.
     ///
-    /// This mirrors the file in the central file (file 5).
+    /// This mirrors the file in the central file. It maps File::One to
+    /// File::Nine, and vice-versa, and similar for all other files.
+    ///
     /// # Examples
+    ///
     /// ```
     /// # use sparrow::*;
     /// assert_eq!(File::Five.flip(), File::Five);
@@ -87,6 +90,7 @@ impl File {
     /// Get a bitboard with all squares to the West of this file set.
     ///
     /// # Examples
+    ///
     /// ```
     /// use sparrow::*;
     /// assert_eq!(File::Nine.west(), BitBoard::EMPTY);
@@ -105,8 +109,7 @@ impl File {
     /// ```
     #[inline(always)]
     pub const fn west(self) -> BitBoard {
-        let v: u128 = (1 << Square::NUM) - 1;
-        BitBoard::new(v << (9 * (self as usize + 1)))
+        BitBoard::new(BitBoard::FULL.0 << (9 * (self as usize + 1)))
     }
 
     /// Get a bitboard with all squares to the East of this file set.
@@ -131,68 +134,6 @@ impl File {
     /// ```
     #[inline(always)]
     pub const fn east(self) -> BitBoard {
-        let v: u128 = (1 << Square::NUM) - 1;
-        BitBoard::new(v >> (9 * (9 - self as usize)))
+        BitBoard::new(BitBoard::FULL.0 >> (9 * (9 - self as usize)))
     }
-
-    /*
-    /// Get a bitboard with all squares on adjacent files set.
-    /// # Examples
-    /// ```
-    /// # use sparrow::*;
-    /// assert_eq!(File::Seven.adjacent(), bitboard! {
-    ///     . X . X . . . . .
-    ///     . X . X . . . . .
-    ///     . X . X . . . . .
-    ///     . X . X . . . . .
-    ///     . X . X . . . . .
-    ///     . X . X . . . . .
-    ///     . X . X . . . . .
-    ///     . X . X . . . . .
-    ///     . X . X . . . . .
-    /// });
-    /// assert_eq!(File::Nine.adjacent(), bitboard! {
-    ///     . X . . . . . . .
-    ///     . X . . . . . . .
-    ///     . X . . . . . . .
-    ///     . X . . . . . . .
-    ///     . X . . . . . . .
-    ///     . X . . . . . . .
-    ///     . X . . . . . . .
-    ///     . X . . . . . . .
-    ///     . X . . . . . . .
-    /// });
-    /// assert_eq!(File::One.adjacent(), bitboard! {
-    ///     . . . . . . . X .
-    ///     . . . . . . . X .
-    ///     . . . . . . . X .
-    ///     . . . . . . . X .
-    ///     . . . . . . . X .
-    ///     . . . . . . . X .
-    ///     . . . . . . . X .
-    ///     . . . . . . . X .
-    ///     . . . . . . . X .
-    /// });
-    /// ```
-    #[inline(always)]
-    pub const fn adjacent(self) -> BitBoard {
-        const TABLE: [BitBoard; File::NUM] = {
-            let mut table = [BitBoard::EMPTY; File::NUM];
-            let mut i = 0;
-            while i < table.len() {
-                if i > 0 {
-                    table[i].0 |= File::index_const(i - 1)
-                        .bitboard().0;
-                }
-                if i < (table.len() - 1) {
-                    table[i].0 |= File::index_const(i + 1)
-                        .bitboard().0;
-                }
-                i += 1;
-            }
-            table
-        };
-        TABLE[self as usize]
-    }
-    */
 }

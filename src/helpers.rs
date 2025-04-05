@@ -97,6 +97,14 @@ macro_rules! simple_enum {
                     panic!("Index is out of range")
                 }
             }
+
+            #[doc = concat!(
+                "Cast [`", stringify!($name), "`] as usize.\n"
+            )]
+            #[inline(always)]
+            pub const fn to_index(self) -> usize {
+                self as usize
+            }
         }
     };
 }
