@@ -219,6 +219,8 @@ impl Board {
     }
 
     fn is_illegal_mate_by_pawn_drop(&self, to: Square) -> bool {
+        debug_assert!(self.checkers.is_empty());
+
         let them = !self.side_to_move();
         let our_pawn_rank = to.rank() as usize;
         let their_king_rank = self.king(them).rank() as usize;
@@ -229,19 +231,22 @@ impl Board {
             return false;
         }
 
-        // (1) if to square is not attacked by them (apart from by their King), and
+        // We know that our Pawn on `to` square attacks their King.
+        //
+        // (1) If to square is not attacked by them (apart from by their King), and
         // (2) to square is defended by at least one of ours, and
         // (3) King can not move (to square was the only remaining free square of the King)
         // then it is an illegal Pawn drop mate
-        //
-        // (Note that this function is only called if _we_ are not in check since it's
-        // impossible to simultaneously drop a pawn as interposing piece against check AND
-        // give checkmate with that pawn: this is a funny edge case we should test for. In
-        // this case the dropped pawn could always at least be captured by the slider.)
 
-        // TODO
+        // For now, adding a slow version
+        let mut board = self.clone();
+        board.play_unchecked(Move::Drop { piece: Piece::Pawn, to });
 
-        false
+        // don't call generate_moves (which could cause recursion!)
+        let mut has_legal_moves = false;
+        board.generate_board_moves(|_| { has_legal_moves = true; true });
+
+        !has_legal_moves
     }
 
     fn add_king_legals<F: FnMut(PieceMoves) -> bool, const IN_CHECK: bool>(
