@@ -1,4 +1,4 @@
-//! This module defines the Rank enum which represents the ranks (rows) on a Shogi board.
+//! The [`Rank`] enum represents the ranks (rows) on a Shogi board
 //!
 //! Shogi ranks are indicated by the letters abdefghi or by Kanji numerals 一二三四五六七八九.
 //! Here we use capital letters to indicate the ranks: Rank::A .. Rank::I.
@@ -10,8 +10,8 @@ crate::helpers::simple_enum! {
     /// A rank (row) on a shogi board.
     ///
     /// Ranks are indicated by letters or by Kanji numerals.
-    /// Rank 'a' ("一") is the top-most rank board diagrams which are
-    /// always shown from the perspective of the Sente player.
+    /// Rank 'a' ("一") is the top-most rank in board diagrams which are
+    /// always shown from the perspective of the Black (Sente) player.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub enum Rank {
         /// The first rank.
@@ -151,7 +151,7 @@ pub const fn prom_zone(color: Color) -> BitBoard {
 ///
 /// # Examples
 /// ```
-/// use sparrow::*;
+/// use haitaka::*;
 /// let no_drops = no_fly_zone(Color::White, Piece::Pawn);
 /// let proms = prom_zone(Color::White);
 /// assert_eq!(must_prom_zone(Color::White, Piece::Pawn), proms & no_drops);
@@ -185,12 +185,12 @@ impl Rank {
         RANK_A, RANK_B, RANK_C, RANK_D, RANK_E, RANK_F, RANK_G, RANK_H, RANK_I,
     ];
 
-    /// Cover all ranks "SOUTH" a given rank.
+    /// Cover all ranks "SOUTH" of a given rank.
     /// "SOUTH" given the usual board diagrams.
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert_eq!(Rank::SOUTH[2], bitboard! {
     ///     . . . . . . . . .
     ///     . . . . . . . . .
@@ -207,12 +207,12 @@ impl Rank {
         SOUTH_A, SOUTH_B, SOUTH_C, SOUTH_D, SOUTH_E, SOUTH_F, SOUTH_G, SOUTH_H, SOUTH_I,
     ];
 
-    /// Cover all ranks "NORTH" a given rank.
+    /// Cover all ranks "NORTH" of a given rank.
     /// "NORTH" from the point of view of Gote.
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert_eq!(Rank::NORTH[2], bitboard! {
     ///     X X X X X X X X X
     ///     X X X X X X X X X
@@ -232,7 +232,7 @@ impl Rank {
     /// Get a bitboard with all squares on this rank set.
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert_eq!(Rank::A as usize, 0);
     /// assert_eq!(Rank::H.bitboard(), bitboard! {
     ///     . . . . . . . . .
@@ -256,7 +256,7 @@ impl Rank {
     /// This mirrors the rank in the fifth E rank.
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert_eq!(Rank::A.flip(), Rank::I);
     /// ```
     #[inline(always)]
@@ -268,7 +268,7 @@ impl Rank {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert_eq!(Rank::A.north(), BitBoard::EMPTY);
     /// assert_eq!(Rank::C.north(), bitboard!{
     ///     X X X X X X X X X
@@ -291,7 +291,7 @@ impl Rank {
     ///  
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert_eq!(Rank::I.south(), BitBoard::EMPTY);
     /// assert_eq!(Rank::G.south(), bitboard!{
     ///     . . . . . . . . .
@@ -315,7 +315,7 @@ impl Rank {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert_eq!(Rank::A.relative_to(Color::White), Rank::A);
     /// assert_eq!(Rank::A.relative_to(Color::Black), Rank::I);
     /// ```

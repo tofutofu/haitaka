@@ -1,3 +1,4 @@
+//! [`Piece`] representation
 use crate::*;
 
 //use std::str::*;
@@ -86,7 +87,7 @@ impl Piece {
     /// # Examples
     ///
     /// ```
-    /// use sparrow::*;
+    /// use haitaka::*;
     /// assert!(Piece::Pawn.can_promote(Color::Black, Square::C1));
     /// assert!(Piece::Pawn.can_promote(Color::White, Square::G1));
     /// assert!(! Piece::Pawn.can_promote(Color::Black, Square::H7));

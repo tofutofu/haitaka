@@ -1,3 +1,4 @@
+//! The [`Color`] enum
 crate::helpers::simple_enum! {
     /// A side to move.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

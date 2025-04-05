@@ -1,5 +1,5 @@
+//! The Shogi [`Board`] representation and move generation functions
 use crate::*;
-
 mod movegen;
 mod parse;
 mod validate;
@@ -26,7 +26,7 @@ helpers::simple_error! {
     pub struct IllegalMoveError = "The move played was illegal.";
 }
 
-/// SFEN string representing the start position.
+/// SFEN string representing the start position
 pub const SFEN_STARTPOS: &str = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1";
 
 // TODO: In handicap games is white's first move numbered 1 or 2? For now, to be consistent, I label it '2'.
@@ -78,7 +78,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let sfen: &str = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1";
     /// assert_eq!(Board::startpos(), sfen.parse().unwrap());
     /// ```
@@ -171,7 +171,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let board = Board::startpos();
     /// let white_pawns = board.colored_pieces(Color::White, Piece::Pawn);
     /// assert_eq!(white_pawns, bitboard! {
@@ -220,7 +220,7 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// use sparrow::*;
+    /// use haitaka::*;
     /// let board = Board::startpos();
     /// assert_eq!(board.sliders(Color::White), bitboard! {
     ///     X . . . . . . . X
@@ -258,7 +258,7 @@ impl Board {
     /// Get a [`BitBoard`] of all the pieces on the board.
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let board = Board::startpos();
     /// assert_eq!(board.occupied(), bitboard! {
     ///     X X X X X X X X X
@@ -281,7 +281,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let mut board = Board::startpos();
     /// assert_eq!(board.side_to_move(), Color::Black);
     /// board.play("2g2f".parse().unwrap());
@@ -300,7 +300,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let mut board = Board::startpos();
     /// board.play("2g2f".parse().unwrap());
     /// board.play("8c8d".parse().unwrap());
@@ -326,7 +326,7 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// use sparrow::*;
+    /// use haitaka::*;
     /// let sfen: &str = "ln3gsn1/7kl/3+B1p1p1/p4s2p/2P6/P2B3PP/1PNP+rPP2/2G3SK1/L4G1NL b G3Prs3p 65";
     /// let mut board = Board::from_sfen(sfen).unwrap();
     /// // Since it's Black's turn, the Silver on D4 is not yet pinned
@@ -347,7 +347,7 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// use sparrow::*;
+    /// use haitaka::*;
     /// let sfen: &str = "ln3gsn1/7kl/3+B1p1p1/p4s2p/2P6/P2B3PP/1PNP+rPP2/2G3SK1/L4G1NL b G3Prs3p 65";
     /// let mut board = Board::from_sfen(sfen).unwrap();
     /// assert_eq!(board.checkers(), BitBoard::EMPTY);
@@ -374,7 +374,7 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let mut board = Board::startpos();
     /// assert_eq!(board.move_number(), 1);
     /// board.play("2g2f".parse().unwrap());
@@ -399,7 +399,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let mut board = Board::startpos();
     /// assert_eq!(board.move_number(), 1);
     /// board.set_move_number(20);
@@ -421,7 +421,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let board = Board::startpos();
     /// assert_eq!(board.piece_on(Square::E5), None);
     /// assert_eq!(board.piece_on(Square::A5), Some(Piece::King));
@@ -439,7 +439,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let board = Board::startpos();
     /// assert_eq!(board.color_on(Square::E5), None);
     /// assert_eq!(board.color_on(Square::A5), Some(Color::White));
@@ -462,7 +462,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let board = Board::startpos();
     /// let piece = ColoredPiece { piece: Piece::King, color: Color::Black };
     /// assert_eq!(board.color_on(Square::I5), Some(Color::Black));
@@ -486,7 +486,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// use sparrow::*;
+    /// use haitaka::*;
     /// let board = Board::default();
     /// for &square in Square::ALL.iter() {
     ///     let bok = board.pawn_drop_ok(Color::Black, square);
@@ -512,7 +512,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let board = Board::startpos();
     /// assert_eq!(board.king(Color::White), Square::A5);
     /// assert_eq!(board.king(Color::Black), Square::I5);
@@ -577,7 +577,7 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// use sparrow::*;
+    /// use haitaka::*;
     /// let board1 = Board::startpos();
     /// let board2: Board = SFEN_STARTPOS.parse().unwrap();
     /// assert!(board1.same_position(&board2));
@@ -596,7 +596,7 @@ impl Board {
     /// # Examples
     /// ## Legal moves
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let sfen: &str = "lnsgkgsnl/1r5b1/p1ppppppp/9/1p5P1/9/PPPPPPP1P/1B5R1/LNSGKGSNL b - 5";
     /// let mut board = Board::startpos();
     /// board.play("2g2f".parse().unwrap());
@@ -637,7 +637,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let mut board = Board::startpos();
     /// board.play_unchecked("2g2f".parse().unwrap());
     /// board.play_unchecked("8c8d".parse().unwrap());

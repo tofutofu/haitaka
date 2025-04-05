@@ -4,7 +4,7 @@ use std::time::Instant;
 // Copied from `cozy-chess` with only trivial modifications.
 // Note that bulk counting on leave nodes significantly speeds up the run.
 
-use sparrow::*;
+use haitaka::*;
 
 fn perft<const DROPS: bool>(board: &Board, depth: u8) -> u64 {
     if depth == 0 {

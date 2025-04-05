@@ -1,4 +1,4 @@
-// This module defines the pseudo-attacks for non-sliding pieces.
+//! Pseudo-attacks for non-sliding pieces
 // The macro could actually also be used to set up the attack tables for sliders,
 // but at the moment this is done differently (see: sliders.rs).
 use crate::*;

@@ -1,13 +1,13 @@
 [package]
-name = "sparrow"
+name = "haitaka"
 version = "0.1.0"
 edition = "2024"
 authors = ["tofutofu <tofutofu@users.noreply.github.com>"]
 
 license = "MIT"
 description = "Rust Shogi move generation library"
-homepage = "https://github.com/tofutofu/sparrow"
-repository = "https://github.com/tofutofu/sparrow"
+homepage = "https://github.com/tofutofu/haitaka"
+repository = "https://github.com/tofutofu/haitaka"
 keywords = ["shogi", "no_std"]
 categories = ["games", "no-std"]
 

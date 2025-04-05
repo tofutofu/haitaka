@@ -1,9 +1,7 @@
 use criterion::{Criterion, Throughput, black_box, criterion_group, criterion_main};
 use std::time::Duration;
 
-use sparrow::{
-    //get_lance_moves, get_rook_moves, get_bishop_moves,
-    //BitBoard,
+use haitaka::{
     Board,
     Move,
     Piece,

@@ -1,4 +1,4 @@
-//! This module defines the File enum which represents the files (columns) on a Shogi board.
+//! The [`File`] enum represents the files (columns) on a Shogi board
 //!
 //! Shogi files are indicated by arabic numerals. In diagrams file 1 (File::One) is the east-most column, at the westhand-side of the Gote
 //! (White) player. File 9 (File::Nine) is the west-most column, at the westhand side of the Sente (Black) player.
@@ -54,7 +54,7 @@ impl File {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert_eq!(File::Five.flip(), File::Five);
     /// assert_eq!(File::One.flip(), File::Nine);
     /// ```
@@ -69,7 +69,7 @@ impl File {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert_eq!(File::Eight.bitboard(), bitboard! {
     ///     . X . . . . . . .
     ///     . X . . . . . . .
@@ -92,7 +92,7 @@ impl File {
     /// # Examples
     ///
     /// ```
-    /// use sparrow::*;
+    /// use haitaka::*;
     /// assert_eq!(File::Nine.west(), BitBoard::EMPTY);
     /// assert_eq!(File::Eight.west(), File::Nine.bitboard());
     /// assert_eq!(File::Two.west(), bitboard!{
@@ -117,7 +117,7 @@ impl File {
     /// # Examples
     ///
     /// ```
-    /// use sparrow::*;
+    /// use haitaka::*;
     /// assert_eq!(File::One.east(), BitBoard::EMPTY);
     /// assert_eq!(File::Two.east(), File::One.bitboard());
     /// assert_eq!(File::Seven.east(), bitboard!{

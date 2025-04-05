@@ -1,4 +1,4 @@
-//! This module implements a simple Move enum to represent moves.
+//! A simple [`Move`] enum to represent moves
 //!
 //! References:
 //! - [wiki: Shogi Notation](https://en.wikipedia.org/wiki/Shogi_notation)
@@ -118,7 +118,7 @@ impl Move {
     ///
     /// # Examples
     /// ```
-    /// use sparrow::{Move, Square, Piece};
+    /// use haitaka::{Move, Square, Piece};
     ///
     /// let mv = Move::parse("P*7b").unwrap();
     /// assert!(mv.is_drop());
@@ -210,7 +210,7 @@ impl FromStr for Move {
     /// # Examples
     ///
     /// ```
-    /// use sparrow::*;
+    /// use haitaka::*;
     /// use core::str::FromStr;
     ///
     /// let mv = Move::from_str("P*7b").unwrap();

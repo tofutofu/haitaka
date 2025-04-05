@@ -1,4 +1,4 @@
-// Sliders pseudo-attacks
+//! Sliders pseudo-attack functions
 
 use crate::*;
 
@@ -94,7 +94,7 @@ pub const fn get_lance_moves_slow(square: Square, blockers: BitBoard, color: Col
 ///
 /// # Examples
 /// ```
-/// use sparrow::*;
+/// use haitaka::*;
 /// assert_eq!(rook_pseudo_attacks(Square::E5), bitboard! {
 ///     . . . . X . . . .
 ///     . . . . X . . . .
@@ -141,7 +141,7 @@ pub const fn rook_pseudo_attacks(square: Square) -> BitBoard {
 ///
 /// # Examples
 /// ```
-/// use sparrow::*;
+/// use haitaka::*;
 /// assert_eq!(bishop_pseudo_attacks(Square::E5), bitboard! {
 ///     X . . . . . . . X
 ///     . X . . . . . X .
@@ -187,7 +187,7 @@ pub const fn bishop_pseudo_attacks(square: Square) -> BitBoard {
 /// # Examples
 ///
 /// ```
-/// use sparrow::*;
+/// use haitaka::*;
 /// assert_eq!(lance_pseudo_attacks(Color::Black, Square::A1), BitBoard::EMPTY);
 /// assert_eq!(lance_pseudo_attacks(Color::White, Square::I1), BitBoard::EMPTY);
 /// assert_eq!(lance_pseudo_attacks(Color::Black, Square::A9), BitBoard::EMPTY);
@@ -291,7 +291,7 @@ pub const fn lance_pseudo_attacks(color: Color, square: Square) -> BitBoard {
 ///
 /// # Example
 /// ```
-/// use sparrow::*;
+/// use haitaka::*;
 /// let occ = bitboard! {
 ///      . . . . . X X X X
 ///      . . . . . . . X .
@@ -359,7 +359,7 @@ pub const fn get_lance_moves(color: Color, square: Square, occ: BitBoard) -> Bit
 ///
 /// # Examples
 /// ```
-/// use sparrow::*;
+/// use haitaka::*;
 /// let occ = bitboard! {
 ///     . . . . . . . . .
 ///     . . . . X . . X .
@@ -421,7 +421,7 @@ const ROOK_RANK_MASKS: [(u128, u128); Square::NUM] = {
 ///
 /// # Examples
 /// ```
-/// use sparrow::*;
+/// use haitaka::*;
 /// let occ = bitboard! {
 ///     . . . . . . . . .
 ///     . . . . X . . X .
@@ -467,7 +467,7 @@ pub const fn get_rook_rank_moves(square: Square, occ: BitBoard) -> BitBoard {
 ///
 /// # Examples
 /// ```
-/// use sparrow::*;
+/// use haitaka::*;
 /// let occ = bitboard! {
 ///     . . . . . . . . .
 ///     . . . . X . . X .
@@ -575,7 +575,7 @@ const BISHOP_RAY_MASKS: [(u128, u128, u128, u128); Square::NUM] = {
 ///
 /// # Examples
 /// ```
-/// use sparrow::*;
+/// use haitaka::*;
 /// let occ = bitboard! {
 ///     . . . . . . . . .
 ///     . . . . X . . X .
@@ -656,7 +656,7 @@ pub const fn get_bishop_moves(_color: Color, square: Square, occ: BitBoard) -> B
 ///
 /// # Examples
 /// ```
-/// # use sparrow::*;
+/// # use haitaka::*;
 /// let rays = get_between_rays(Square::E2, Square::E7);
 /// assert_eq!(rays, bitboard! {
 ///     . . . . . . . . .
@@ -715,7 +715,7 @@ pub const fn get_between_rays(from: Square, to: Square) -> BitBoard {
 ///
 /// # Examples
 /// ```
-/// # use sparrow::*;
+/// # use haitaka::*;
 /// let rays = line_ray(Square::B1, Square::I8);
 /// assert_eq!(rays, bitboard! {
 ///     . . . . . . . . .

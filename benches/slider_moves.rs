@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use criterion::{Criterion, Throughput, black_box, criterion_group, criterion_main};
-use sparrow::*;
+use haitaka::*;
 
 fn bench(criterion: &mut Criterion, id: &str, elem: usize, mut routine: impl FnMut()) {
     criterion

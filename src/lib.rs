@@ -1,3 +1,4 @@
+#![doc = include_str!("../README.md")]
 pub mod attacks;
 pub mod bitboard;
 pub mod color;

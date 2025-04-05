@@ -1,3 +1,4 @@
+//! A [`BitBoard`] implementation
 use crate::{File, Rank, Square};
 use core::ops::*;
 
@@ -9,7 +10,7 @@ use core::ops::*;
 /// # Examples
 ///  
 /// ```
-/// # use sparrow::*;
+/// # use haitaka::*;
 /// let a1 = Square::A1.bitboard();
 /// let b1 = Square::B1.bitboard();
 /// let c1 = Square::C1.bitboard();
@@ -151,7 +152,7 @@ impl BitBoard {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert_eq!(BitBoard::EMPTY.dec(), BitBoard::FULL);
     /// assert_eq!(Square::A1.bitboard().dec(), BitBoard::EMPTY);
     /// assert_eq!(Square::A2.bitboard().dec(), BitBoard(0x1FF));
@@ -165,7 +166,7 @@ impl BitBoard {
     ///
     /// # Example
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let bb1 = bitboard! {
     ///     . . . . . . X X X
     ///     . . . . . . X . X
@@ -206,7 +207,7 @@ impl BitBoard {
     /// # Example
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let bb1 = bitboard! {
     ///     . . . . . . X X X
     ///     . . . . . . X . X
@@ -307,7 +308,7 @@ impl BitBoard {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let bb1 = bitboard! {
     ///     . . . . . . X X X
     ///     . . . . . . X . X
@@ -346,7 +347,7 @@ impl BitBoard {
     /// # Example
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let bb1 = bitboard! {
     ///     . . . . . . X X X
     ///     . . . . . . X . X
@@ -383,7 +384,7 @@ impl BitBoard {
     /// # Examples
     ///
     /// ```
-    /// use sparrow::*;
+    /// use haitaka::*;
     /// let bb = Square::A1.bitboard();
     /// let shifted = bb.shift(Square::B1, Square::G2);
     /// assert_eq!(shifted, Square::F2.bitboard());
@@ -423,7 +424,7 @@ impl BitBoard {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert_eq!(BitBoard::EMPTY, bitboard! {
     ///     . . . . . . . . .
     ///     . . . . . . . . .
@@ -443,7 +444,7 @@ impl BitBoard {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert_eq!(BitBoard::FULL, bitboard! {
     ///     X X X X X X X X X
     ///     X X X X X X X X X
@@ -463,7 +464,7 @@ impl BitBoard {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert_eq!(BitBoard::EDGES, bitboard! {
     ///     X X X X X X X X X
     ///     X . . . . . . . X
@@ -508,7 +509,7 @@ impl BitBoard {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert_eq!(BitBoard::CORNERS, bitboard! {
     ///     X . . . . . . . X
     ///     . . . . . . . . .
@@ -544,7 +545,7 @@ impl BitBoard {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let bb = bitboard! {
     ///     . . . . . . . . .
     ///     . . . . . . . . .
@@ -601,7 +602,7 @@ impl BitBoard {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let bb = bitboard! {
     ///     . . . . . . . . .
     ///     . . . . . . . . .
@@ -661,7 +662,7 @@ impl BitBoard {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let bb = bitboard! {
     ///     X . . . . . . . .
     ///     . . . . . . . . .
@@ -707,7 +708,7 @@ impl BitBoard {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert_eq!(BitBoard::EMPTY.len(), 0);
     /// let bb = bitboard! {
     ///     . . . . . . . . .
@@ -732,7 +733,7 @@ impl BitBoard {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let bb = bitboard! {
     ///     . . . . . . . . .
     ///     . . . . . . . . .
@@ -765,7 +766,7 @@ impl BitBoard {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let bb_a = bitboard! {
     ///     X X X . . . . . .
     ///     X . X X . . . . .
@@ -800,7 +801,7 @@ impl BitBoard {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let big = bitboard! {
     ///     . . . . . . . . .
     ///     . X X X X X . . .
@@ -837,7 +838,7 @@ impl BitBoard {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let bb = bitboard! {
     ///     . . . . . . . . .
     ///     . . . . . . . . .
@@ -871,7 +872,7 @@ impl BitBoard {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert!(BitBoard::EMPTY.is_empty());
     /// let bb = bitboard! {
     ///     . . . . . . . . .
@@ -898,7 +899,7 @@ impl BitBoard {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// assert!(BitBoard::EMPTY.next_square().is_none());
     /// let bb = bitboard! {
     ///     . . . . . . . . .
@@ -930,7 +931,7 @@ impl BitBoard {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let bb = BitBoard::FULL;
     /// let squares = &Square::ALL;
     /// for (s1, &s2) in bb.iter().zip(squares) {
@@ -947,7 +948,7 @@ impl BitBoard {
     /// Subsets are produced in lexicographic order. Each subset is greater than the last.
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let bb = bitboard! {
     ///     . . . . . . . . .
     ///     . . . . . . . . .
@@ -1065,7 +1066,7 @@ impl Iterator for BitBoardSubsetIter {
 /// # Example
 ///
 /// ```
-/// # use sparrow::*;
+/// # use haitaka::*;
 /// let bb = bitboard! {
 ///     . . . X . . . . .
 ///     . . . X . . . . .

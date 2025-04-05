@@ -4,7 +4,7 @@
 use std::time::Duration;
 
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
-use sparrow::Board;
+use haitaka::Board;
 
 const POSITIONS: &[&str] = &[
     "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1",

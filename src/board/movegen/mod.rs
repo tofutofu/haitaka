@@ -1,4 +1,3 @@
-// movegen
 use super::*;
 
 mod piece_moves;
@@ -529,7 +528,7 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let board = Board::startpos();
     /// let mut total_moves = 0;
     /// board.generate_moves(|moves| {
@@ -562,7 +561,7 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let board = Board::startpos();
     /// let pawns = board.pieces(Piece::Pawn);
     /// let mut pawn_moves = 0;
@@ -593,7 +592,7 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// use sparrow::*;
+    /// use haitaka::*;
     /// let sfen: & str = "lnsgk2nl/1r4gs1/p1pppp1pp/1p4p2/7P1/2P6/PP1PPPP1P/1SG4R1/LN2KGSNL b Bb 11";
     /// let board = Board::from_sfen(sfen).unwrap();
     /// assert_eq!(board.side_to_move(), Color::Black);

@@ -1,4 +1,3 @@
-// use core::convert::TryInto;
 use core::fmt::{Display, Formatter};
 use core::str::FromStr;
 
@@ -22,7 +21,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// const STARTPOS: &str = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1";
     /// let board = Board::from_sfen(STARTPOS).unwrap();
     /// assert_eq!(format!("{}", board), STARTPOS);
@@ -191,7 +190,7 @@ impl FromStr for Board {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// const STARTPOS: &str = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1";
     /// let board: Board = STARTPOS.parse().unwrap();
     /// assert_eq!(format!("{}", board), STARTPOS);
@@ -209,7 +208,7 @@ impl Display for Board {
     ///
     /// # Examples
     /// ```
-    /// # use sparrow::*;
+    /// # use haitaka::*;
     /// let mut board: Board = SFEN_6PIECE_HANDICAP.parse().unwrap();
     /// assert_eq!(format!("{}", board), SFEN_6PIECE_HANDICAP);
     /// board = SFEN_4PIECE_HANDICAP.parse().unwrap();

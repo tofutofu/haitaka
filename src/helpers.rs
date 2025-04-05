@@ -1,3 +1,4 @@
+//! Macros
 // Note: The macros in this module are not exported in lib.rs.
 // All imports need to explicitly `use helpers::{macro}`.`
 
