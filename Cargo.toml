@@ -3,6 +3,7 @@ name = "haitaka"
 version = "0.1.0"
 edition = "2024"
 authors = ["tofutofu <tofutofu@users.noreply.github.com>"]
+readme = "README.md"
 
 license = "MIT"
 description = "Rust Shogi move generation library"

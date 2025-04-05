@@ -34,7 +34,7 @@ rise in tumult._<br>
 - `BitBoard` uses `u128` instead of `u64` as backing to handle the 9x9 Shogi board
 - Move generation handles both board moves and drops
 - Move generation of sliders does not use Magic Bitboards, but is based on
-  the [Qugiy algorithm]() which is also used in [YaneuraOu](https://github.com/yaneurao/YaneuraOu).
+  the [Qugiy algorithm]() which is also used in [YaneuraOu](https://github.com/yaneurao/YaneuraOu)
 - File-major ordering of squares to make move generation faster
 
 ## Crate features
