@@ -40,6 +40,10 @@ rise in tumult._<br>
 ## Crate features
 - `std`: Enable features that require `std`. Currently only used for the `Error` trait.
 
+## Testing
+
+This code has only been tested yet on an Apple M2, using the stable-aarch64-apple-darwin toolchain.
+
 ## Acknowledgments
 Portions of this library are derived from the [`cozy-chess`](https://github.com/analog-hors/cozy-chess) project by [`analog-hors`](https://github.com/analog-hors). The `cozy-chess` project is licensed under the MIT license, and its license text is included in this repository under `third_party/cozy-chess/LICENSE`.
 
