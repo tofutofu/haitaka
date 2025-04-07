@@ -3,6 +3,9 @@ use super::*;
 mod piece_moves;
 pub use piece_moves::*;
 
+#[cfg(test)]
+mod tests;
+
 // The private `commoner` module defines the private Commoner trait.
 // This streamlines the implementation of move generation for all pieces apart from King.
 
@@ -431,7 +434,9 @@ impl Board {
                 if !(zone.has(to) || zone.has(from)) {
                     return false;
                 }
-            }
+             } else if piece.must_promote(color, to) {
+                return false;
+             }
 
             // pinned piece are not allowed to move off the attack ray
             // but are allowed to move along that ray (when not in check)
@@ -551,7 +556,7 @@ impl Board {
 
     /// Generate all legal board moves.
     pub fn generate_board_moves(&self, listener: impl FnMut(PieceMoves) -> bool) -> bool {
-        self.generate_board_moves_for(BitBoard::FULL, listener)
+        self.inner.hash() != 0 && self.generate_board_moves_for(BitBoard::FULL, listener)
     }
 
     /// Generates moves for a subset of pieces.
