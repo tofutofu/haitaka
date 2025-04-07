@@ -1,6 +1,6 @@
 // Movegenerator tests
-use std::collections::HashSet;
 use super::*;
+use std::collections::HashSet;
 
 // Tests the generation of board moves based on giving a subset of squares
 // TODO: There is still a bug lurking at deeper depths.
@@ -47,8 +47,7 @@ fn subset_movegen_habu_position() {
     visit(&board, 2);
 }
 
-
-fn test_is_legal(board: Board) { 
+fn test_is_legal(board: Board) {
     // both board_moves and drops are included
     let mut legals = HashSet::new();
     board.generate_moves(|mvs| {
@@ -59,7 +58,7 @@ fn test_is_legal(board: Board) {
     for from in Square::ALL {
         for to in Square::ALL {
             for promotion in [true, false] {
-                let mv = Move::BoardMove { 
+                let mv = Move::BoardMove {
                     from,
                     to,
                     promotion,
@@ -79,12 +78,12 @@ fn test_forbidden_drops(board: &Board) {
 
     let forbidden = match board.side_to_move() {
         Color::White => Rank::I.bitboard(),
-        Color::Black => Rank::A.bitboard() 
+        Color::Black => Rank::A.bitboard(),
     };
 
     let forbidden_for_knight = match board.side_to_move() {
         Color::White => Rank::H.bitboard(),
-        Color::Black => Rank::B.bitboard() 
+        Color::Black => Rank::B.bitboard(),
     };
 
     for to in forbidden {
@@ -95,7 +94,10 @@ fn test_forbidden_drops(board: &Board) {
     }
 
     for to in forbidden_for_knight {
-        let mv = Move::Drop { piece: Piece::Knight, to };
+        let mv = Move::Drop {
+            piece: Piece::Knight,
+            to,
+        };
         assert!(!legals.contains(&mv));
     }
 }
@@ -110,6 +112,18 @@ fn test_nifu(board: &Board) {
         }
         false
     });
+
+    let pawns = board.colored_pieces(color, Piece::Pawn);
+    for square in pawns {
+        let forbidden = square.file().bitboard() & !board.occupied();
+        for to in forbidden {
+            let mv = Move::Drop {
+                piece: Piece::Pawn,
+                to,
+            };
+            assert!(!board.is_legal_drop(mv));
+        }
+    }
 }
 
 #[test]

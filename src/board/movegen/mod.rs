@@ -434,9 +434,9 @@ impl Board {
                 if !(zone.has(to) || zone.has(from)) {
                     return false;
                 }
-             } else if piece.must_promote(color, to) {
+            } else if piece.must_promote(color, to) {
                 return false;
-             }
+            }
 
             // pinned piece are not allowed to move off the attack ray
             // but are allowed to move along that ray (when not in check)
