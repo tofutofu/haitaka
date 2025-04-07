@@ -55,7 +55,7 @@ impl Move {
 
     /// Get the piece involved in the move.
     ///
-    /// For `Move::Drop`, this directly returns the piece being dropped.
+    /// For `Move::Drop`, this directly returns the piece being dropped (wrapped in Some).
     /// For `Move::BoardMove`, this requires additional context (the board state)
     /// to infer the piece, so it returns `None` by default.
     pub fn piece(&self) -> Option<Piece> {

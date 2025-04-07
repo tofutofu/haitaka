@@ -1,6 +1,6 @@
 [package]
 name = "haitaka"
-version = "0.2.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["tofutofu <tofutofu@users.noreply.github.com>"]
 readme = "README.md"
@@ -9,7 +9,7 @@ license = "MIT"
 description = "Rust Shogi move generation library"
 homepage = "https://github.com/tofutofu/haitaka"
 repository = "https://github.com/tofutofu/haitaka"
-keywords = ["shogi", "no_std"]
+keywords = ["shogi", "chess", "no_std"]
 categories = ["games", "no-std"]
 
 [dependencies]
