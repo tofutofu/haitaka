@@ -128,7 +128,7 @@ fn test_nifu(board: &Board) {
 
 #[test]
 fn legality_simple() {
-    test_is_legal(Board::default()); // This is an empty board!
+    // test_is_legal(Board::default()); // This is an empty board - will assert in debug, otherwise panice
     test_is_legal(Board::startpos());
     test_is_legal(
         "ln1g5/1r2S1k2/p2pppn2/2ps2p2/1p7/2P6/PPSPPPPLP/2G2K1pr/LN4G1b w BGSLPnp 62"

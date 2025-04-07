@@ -556,7 +556,8 @@ impl Board {
 
     /// Generate all legal board moves.
     pub fn generate_board_moves(&self, listener: impl FnMut(PieceMoves) -> bool) -> bool {
-        self.inner.hash() != 0 && self.generate_board_moves_for(BitBoard::FULL, listener)
+        debug_assert!(self.inner.hash() != 0);
+        self.generate_board_moves_for(BitBoard::FULL, listener)
     }
 
     /// Generates moves for a subset of pieces.
