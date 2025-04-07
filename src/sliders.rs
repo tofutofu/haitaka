@@ -5,11 +5,13 @@ use crate::*;
 /// Returns the Rook blocker mask for the given square.
 ///
 /// The Rook blocker mask is the bitboard in which all bits corresponding
-/// to Rook rays are set, excluding bits for the edges and excluding the square.
+/// to Rook rays are set, _excluding_ bits for the edges (unless the Rook is
+/// on that edge) and excluding the Rook square.
 pub const fn get_rook_relevant_blockers(square: Square) -> BitBoard {
-    let rank_moves = square.rank().bitboard().0;
-    let file_moves = square.file().bitboard().0;
-    BitBoard((rank_moves ^ file_moves) & BitBoard::INNER.0)
+    let rank_moves =
+        square.rank().bitboard().0 & !(File::One.bitboard().0 | File::Nine.bitboard().0);
+    let file_moves = square.file().bitboard().0 & !(Rank::A.bitboard().0 | Rank::I.bitboard().0);
+    BitBoard::new(rank_moves ^ file_moves)
 }
 
 /// Get Lance blocker mask.
