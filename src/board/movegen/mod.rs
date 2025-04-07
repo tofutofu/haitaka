@@ -356,7 +356,7 @@ impl Board {
         listener: &mut F,
         targets: BitBoard,
     ) -> bool {
-        if targets.is_empty() && self.is_hand_empty(self.side_to_move()) {
+        if targets.is_empty() || self.is_hand_empty(self.side_to_move()) {
             return false;
         }
         abort_if! {
