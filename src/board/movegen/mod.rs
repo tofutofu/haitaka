@@ -323,11 +323,9 @@ impl Board {
         let color = self.side_to_move();
         let piece = P::PIECE;
 
-        if target_squares.is_empty() {
-            return false;
-        }
+        debug_assert!(!target_squares.is_empty());
 
-        if self.inner.hand(color)[piece as usize] > 0 {
+        if self.has_in_hand(color, piece) {
             let mut to = target_squares & drop_zone(color, piece);
 
             if piece == Piece::Pawn {
@@ -337,6 +335,7 @@ impl Board {
                     return false;
                 }
                 // check that the drop doesn't cause illegal checkmate
+                // if we're in check, this situation cannot occur
                 let to_square = to.next_square().unwrap();
                 if !IN_CHECK && self.is_illegal_mate_by_pawn_drop(to_square) {
                     return false;
@@ -356,17 +355,29 @@ impl Board {
         listener: &mut F,
         targets: BitBoard,
     ) -> bool {
-        if targets.is_empty() || self.is_hand_empty(self.side_to_move()) {
+        let color = self.side_to_move();
+        if targets.is_empty() || self.is_hand_empty(color) {
             return false;
         }
         abort_if! {
             self.add_drops::<commoner::Pawn, _, IN_CHECK>(listener, targets),
             self.add_drops::<commoner::Lance, _, IN_CHECK>(listener, targets),
             self.add_drops::<commoner::Knight, _, IN_CHECK>(listener, targets),
+
+            self.has_in_hand(color, Piece::Silver) &&
+                listener(PieceMoves::Drops { color, piece: Piece::Silver, to: targets }),
+            self.has_in_hand(color, Piece::Gold) &&
+                listener(PieceMoves::Drops { color, piece: Piece::Gold, to: targets }),
+            self.has_in_hand(color, Piece::Rook) &&
+                listener(PieceMoves::Drops { color, piece: Piece::Rook, to: targets }),
+            self.has_in_hand(color, Piece::Bishop) &&
+                listener(PieceMoves::Drops { color, piece: Piece::Bishop, to: targets })
+            /*
             self.add_drops::<commoner::Silver, _, IN_CHECK>(listener, targets),
             self.add_drops::<commoner::Gold, _, IN_CHECK>(listener, targets),
             self.add_drops::<commoner::Rook, _, IN_CHECK>(listener, targets),
             self.add_drops::<commoner::Bishop, _, IN_CHECK>(listener, targets)
+            */
         }
         false
     }
@@ -630,9 +641,6 @@ impl Board {
             }
             1 => {
                 let targets = self.target_drops::<true>();
-                if targets.is_empty() {
-                    return false;
-                }
                 self.add_all_drops::<_, true>(&mut listener, targets)
             }
             _ => false,

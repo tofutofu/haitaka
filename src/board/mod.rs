@@ -97,6 +97,12 @@ impl Board {
         self.inner.is_hand_empty(color)
     }
 
+    /// Does color have the given piece in hand?
+    #[inline(always)]
+    pub fn has_in_hand(&self, color: Color, piece: Piece) -> bool {
+        self.inner.hand(color)[piece as usize] > 0
+    }
+
     /// Set the count of a piece in hand for color.
     ///
     /// This function performs no checks in the validity of count!
