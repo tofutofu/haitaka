@@ -1,9 +1,7 @@
 //! Pseudo-attacks for non-sliding pieces
-// The macro could actually also be used to set up the attack tables for sliders,
-// but at the moment this is done differently (see: sliders.rs).
 use crate::*;
 
-// Macro to set up the attack vectors for non-sliding pieces.
+// Macro to set up the attack vectors `{piece}_attacks` for non-sliding pieces.
 macro_rules! define_pseudo_attack {
     ($name:ident, $src:expr, $black_pattern:expr, $white_pattern:expr) => {
         #[doc = concat!("Pseudo-attacks for [`", stringify!($name), "`] for `color` on `square`.")]

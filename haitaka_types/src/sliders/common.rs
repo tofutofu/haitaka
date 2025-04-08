@@ -464,36 +464,6 @@ pub const fn get_rook_rank_moves(square: Square, occ: BitBoard) -> BitBoard {
     BitBoard::new(west_attacks | east_attacks.reverse_bits())
 }
 
-// Bishop attack rays
-//
-//  NW    NE
-//     sq
-//  SW    SE
-//
-#[cfg(feature = "qugiy")]
-const BISHOP_RAY_MASKS: [(u128, u128, u128, u128); Square::NUM] = {
-    let mut masks = [(0u128, 0u128, 0u128, 0u128); Square::NUM];
-    let mut index = 0;
-    while index < Square::NUM {
-        let square = Square::index_const(index);
-        let file = square.file();
-        let rank = square.rank();
-
-        let up = square.up_diagonal(); // forward slashing '/'
-        let down = square.down_diagonal(); // back slashing '\'      
-
-        let nw = down.bitand(rank.north().bitand(file.west())).0;
-        let ne = up.bitand(rank.north().bitand(file.east())).0;
-        let sw = up.bitand(rank.south().bitand(file.west())).0;
-        let se = down.bitand(rank.south().bitand(file.east())).0;
-
-        masks[index] = (nw, ne.reverse_bits(), sw, se.reverse_bits());
-
-        index += 1;
-    }
-    masks
-};
-
 /// Get all squares between two squares, if reachable via a ray.
 /// The `from` and `to` square are not included in the returns [`BitBoard`].
 ///

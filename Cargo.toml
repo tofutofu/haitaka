@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "haitaka",
+    "haitaka_types"
+]
+resolver = "2"
+
+[profile.bench]
+lto = "fat"
+codegen-units = 1
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
