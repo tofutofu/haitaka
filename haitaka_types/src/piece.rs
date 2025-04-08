@@ -1,7 +1,16 @@
 //! [`Piece`] representation
 use crate::*;
 
-//use std::str::*;
+// TODO: remove this and move the String-related parsing to haitaka_types?
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+
+#[cfg(feature = "std")]
+use std::string::String;
+
 use core::fmt::*;
 
 crate::helpers::simple_enum! {
@@ -87,7 +96,7 @@ impl Piece {
     /// # Examples
     ///
     /// ```
-    /// use haitaka::*;
+    /// use haitaka_types::*;
     /// assert!(Piece::Pawn.can_promote(Color::Black, Square::C1));
     /// assert!(Piece::Pawn.can_promote(Color::White, Square::G1));
     /// assert!(! Piece::Pawn.can_promote(Color::Black, Square::H7));
@@ -268,7 +277,7 @@ impl Piece {
         if color == Color::Black {
             s.to_uppercase()
         } else {
-            s.to_string()
+            String::from(s)
         }
     }
 }

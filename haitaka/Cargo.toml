@@ -1,0 +1,48 @@
+[package]
+name = "haitaka"
+version = "0.1.1"
+edition = "2024"
+authors = ["tofutofu <tofutofu@users.noreply.github.com>"]
+readme = "README.md"
+
+license = "MIT"
+description = "Rust Shogi move generation library"
+homepage = "https://github.com/tofutofu/haitaka"
+repository = "https://github.com/tofutofu/haitaka"
+keywords = ["shogi", "chess", "no_std"]
+categories = ["games", "no-std"]
+
+[dependencies]
+haitaka-types = { path = "../haitaka_types", version = "0.1.0" }
+
+[build-dependencies]
+haitaka-types = { path = "../haitaka_types", version = "0.1.0" }
+
+[dev-dependencies]
+criterion = { version = "0.3.5", features = ["html_reports"] }
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = "fat"
+
+[profile.bench]
+opt-level = 3
+codegen-units = 1
+lto = "fat"
+
+[[bench]]
+name = "legals"
+harness = false
+
+[[bench]]
+name = "slider_moves"
+harness = false
+
+[[bench]]
+name = "perft"
+harness = false
+
+[features]
+std = ["haitaka-types/std"]
+qugiy = ["haitaka-types/qugiy"]

@@ -1,15 +1,16 @@
 //! Sliders pseudo-attack functions
-
 use crate::*;
 
 /// Returns the Rook blocker mask for the given square.
 ///
 /// The Rook blocker mask is the bitboard in which all bits corresponding
-/// to Rook rays are set, excluding bits for the edges and excluding the square.
+/// to Rook rays are set, _excluding_ bits for the edges (unless the Rook is
+/// on that edge) and excluding the Rook square.
 pub const fn get_rook_relevant_blockers(square: Square) -> BitBoard {
-    let rank_moves = square.rank().bitboard().0;
-    let file_moves = square.file().bitboard().0;
-    BitBoard((rank_moves ^ file_moves) & BitBoard::INNER.0)
+    let rank_moves =
+        square.rank().bitboard().0 & !(File::One.bitboard().0 | File::Nine.bitboard().0);
+    let file_moves = square.file().bitboard().0 & !(Rank::A.bitboard().0 | Rank::I.bitboard().0);
+    BitBoard::new(rank_moves ^ file_moves)
 }
 
 /// Get Lance blocker mask.
@@ -94,7 +95,7 @@ pub const fn get_lance_moves_slow(square: Square, blockers: BitBoard, color: Col
 ///
 /// # Examples
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// assert_eq!(rook_pseudo_attacks(Square::E5), bitboard! {
 ///     . . . . X . . . .
 ///     . . . . X . . . .
@@ -141,7 +142,7 @@ pub const fn rook_pseudo_attacks(square: Square) -> BitBoard {
 ///
 /// # Examples
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// assert_eq!(bishop_pseudo_attacks(Square::E5), bitboard! {
 ///     X . . . . . . . X
 ///     . X . . . . . X .
@@ -187,7 +188,7 @@ pub const fn bishop_pseudo_attacks(square: Square) -> BitBoard {
 /// # Examples
 ///
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// assert_eq!(lance_pseudo_attacks(Color::Black, Square::A1), BitBoard::EMPTY);
 /// assert_eq!(lance_pseudo_attacks(Color::White, Square::I1), BitBoard::EMPTY);
 /// assert_eq!(lance_pseudo_attacks(Color::Black, Square::A9), BitBoard::EMPTY);
@@ -291,7 +292,7 @@ pub const fn lance_pseudo_attacks(color: Color, square: Square) -> BitBoard {
 ///
 /// # Example
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// let occ = bitboard! {
 ///      . . . . . X X X X
 ///      . . . . . . . X .
@@ -359,7 +360,7 @@ pub const fn get_lance_moves(color: Color, square: Square, occ: BitBoard) -> Bit
 ///
 /// # Examples
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// let occ = bitboard! {
 ///     . . . . . . . . .
 ///     . . . . X . . X .
@@ -421,7 +422,7 @@ const ROOK_RANK_MASKS: [(u128, u128); Square::NUM] = {
 ///
 /// # Examples
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// let occ = bitboard! {
 ///     . . . . . . . . .
 ///     . . . . X . . X .
@@ -463,200 +464,12 @@ pub const fn get_rook_rank_moves(square: Square, occ: BitBoard) -> BitBoard {
     BitBoard::new(west_attacks | east_attacks.reverse_bits())
 }
 
-/// Get rook moves.
-///
-/// # Examples
-/// ```
-/// use haitaka::*;
-/// let occ = bitboard! {
-///     . . . . . . . . .
-///     . . . . X . . X .
-///     . . X . . . . . .
-///     . . . . . . . . .
-///     X X . . X . . X .
-///     . . . . . . . . .
-///     . . . . . . X . .
-///     . X . . X . . . .
-///     . . . . . . . . .
-/// };
-/// let e5_attacks = bitboard! {
-///     . . . . . . . . .
-///     . . . . X . . . .
-///     . . . . X . . . .
-///     . . . . X . . . .
-///     . X X X . X X X .
-///     . . . . X . . . .
-///     . . . . X . . . .
-///     . . . . X . . . .
-///     . . . . . . . . .
-/// };
-/// assert_eq!(get_rook_moves(Color::White, Square::E5, occ), e5_attacks);
-///
-/// let h5_attacks = bitboard! {
-///     . . . . . . . . .
-///     . . . . . . . . .
-///     . . . . . . . . .
-///     . . . . . . . . .
-///     . . . . X . . . .
-///     . . . . X . . . .
-///     . . . . X . . . .
-///     . X X X * X X X X
-///     . . . . X . . . .
-/// };
-/// assert_eq!(get_rook_moves(Color::White, Square::H5, occ), h5_attacks);
-///
-/// let c7_attacks = bitboard! {
-///     . . X . . . . . .
-///     . . X . . . . . .
-///     X X * X X X X X X
-///     . . X . . . . . .
-///     . . X . . . . . .
-///     . . X . . . . . .
-///     . . X . . . . . .
-///     . . X . . . . . .
-///     . . X . . . . . .
-/// };
-/// assert_eq!(get_rook_moves(Color::White, Square::C7, occ), c7_attacks);
-/// ```
-#[inline(always)]
-pub const fn get_rook_moves(_color: Color, square: Square, occ: BitBoard) -> BitBoard {
-    // The _color argument is not used, but added for consistency in function signatures.
-    let bb1 = get_rook_rank_moves(square, occ);
-    let bb2 = get_rook_file_moves(square, occ);
-    bb1.bitor(bb2)
-}
-
-// Bishop attack rays
-//
-//  NW    NE
-//     sq
-//  SW    SE
-//
-const BISHOP_RAY_MASKS: [(u128, u128, u128, u128); Square::NUM] = {
-    let mut masks = [(0u128, 0u128, 0u128, 0u128); Square::NUM];
-    let mut index = 0;
-    while index < Square::NUM {
-        let square = Square::index_const(index);
-        let file = square.file();
-        let rank = square.rank();
-
-        let up = square.up_diagonal(); // forward slashing '/'
-        let down = square.down_diagonal(); // back slashing '\'      
-
-        let nw = down.bitand(rank.north().bitand(file.west())).0;
-        let ne = up.bitand(rank.north().bitand(file.east())).0;
-        let sw = up.bitand(rank.south().bitand(file.west())).0;
-        let se = down.bitand(rank.south().bitand(file.east())).0;
-
-        masks[index] = (nw, ne.reverse_bits(), sw, se.reverse_bits());
-
-        index += 1;
-    }
-    masks
-};
-
-// Layout
-//
-//  NW    NE
-//     +
-//  SW    SE
-//
-
-/// Get bishop moves.
-///
-/// This applies the Qugiy algorithm to calculate the Bishop pseudo-legal moves, given a position.
-/// ```text
-/// # occ = occupancy bits
-/// # attacks = ray attack bits (with bit indices greater than square index)
-/// BitBoard((((attacks & occ) - 1) ^ occ) & attacks)
-/// ```
-/// This algorithm can only apply to attack rays with bit indices greater than the square index.
-/// So, the east-wards (right-wards) rays are reversed during the calculation.
-///
-/// # Examples
-/// ```
-/// use haitaka::*;
-/// let occ = bitboard! {
-///     . . . . . . . . .
-///     . . . . X . . X .
-///     . . X . . . . . .
-///     . . . . . . . . .
-///     X X . . X . . X .
-///     . . . . . . . . .
-///     . . . . . . X . .
-///     . X . . X . . . .
-///     . . . . . . . . .
-/// };
-/// let e5_attacks = bitboard! {
-///     . . . . . . . . .
-///     . . . . . . . X .
-///     . . X . . . X . .
-///     . . . X . X . . .
-///     . . . . * . . . .
-///     . . . X . X . . .
-///     . . X . . . X . .
-///     . X . . . . . . .
-///     . . . . . . . . .
-/// };
-/// let h8_attacks = bitboard! {
-///     . . . . . . . . .
-///     . . . . . . . . .
-///     . . . . . . . . .
-///     . . . . . . . . .
-///     . . . . X . . . .
-///     . . . X . . . . .
-///     X . X . . . . . .
-///     . * . . . . . . .
-///     X . X . . . . . .
-/// };
-/// let g3_attacks = bitboard! {
-///     . . . . . . . . .
-///     . . . . . . . . .
-///     . . . . . . . . .
-///     . . . . . . . . .
-///     . . . . X . . . X
-///     . . . . . X . X .
-///     . . . . . . * . .
-///     . . . . . X . X .
-///     . . . . X . . . X
-/// };
-/// assert_eq!(get_bishop_moves(Color::White, Square::E5, occ), e5_attacks);
-/// ```
-#[inline(always)]
-pub const fn get_bishop_moves(_color: Color, square: Square, occ: BitBoard) -> BitBoard {
-    // The _color argument is not used, but added for consistency in function signatures.
-    let (mut nw, mut ne_rev, mut sw, mut se_rev) = BISHOP_RAY_MASKS[square as usize];
-
-    let occ = occ.0;
-    let occ_rev = occ.reverse_bits();
-
-    // Rust panics on arithmetic under/overflows ...
-    // TODO: Should I switch to an i128 base type to be able to skip these tests? :/
-    if (nw & occ) != 0 {
-        nw = (((nw & occ) - 1) ^ occ) & nw;
-    }
-
-    if (sw & occ) != 0 {
-        sw = (((sw & occ) - 1) ^ occ) & sw;
-    }
-
-    if (ne_rev & occ_rev) != 0 {
-        ne_rev = (((ne_rev & occ_rev) - 1) ^ occ_rev) & ne_rev;
-    }
-
-    if (se_rev & occ_rev) != 0 {
-        se_rev = (((se_rev & occ_rev) - 1) ^ occ_rev) & se_rev;
-    }
-
-    BitBoard(nw | sw | ne_rev.reverse_bits() | se_rev.reverse_bits())
-}
-
 /// Get all squares between two squares, if reachable via a ray.
 /// The `from` and `to` square are not included in the returns [`BitBoard`].
 ///
 /// # Examples
 /// ```
-/// # use haitaka::*;
+/// # use haitaka_types::*;
 /// let rays = get_between_rays(Square::E2, Square::E7);
 /// assert_eq!(rays, bitboard! {
 ///     . . . . . . . . .
@@ -715,7 +528,7 @@ pub const fn get_between_rays(from: Square, to: Square) -> BitBoard {
 ///
 /// # Examples
 /// ```
-/// # use haitaka::*;
+/// # use haitaka_types::*;
 /// let rays = line_ray(Square::B1, Square::I8);
 /// assert_eq!(rays, bitboard! {
 ///     . . . . . . . . .

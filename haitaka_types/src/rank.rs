@@ -151,7 +151,7 @@ pub const fn prom_zone(color: Color) -> BitBoard {
 ///
 /// # Examples
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// let no_drops = no_fly_zone(Color::White, Piece::Pawn);
 /// let proms = prom_zone(Color::White);
 /// assert_eq!(must_prom_zone(Color::White, Piece::Pawn), proms & no_drops);
@@ -190,7 +190,7 @@ impl Rank {
     ///
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Rank::SOUTH[2], bitboard! {
     ///     . . . . . . . . .
     ///     . . . . . . . . .
@@ -212,7 +212,7 @@ impl Rank {
     ///
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Rank::NORTH[2], bitboard! {
     ///     X X X X X X X X X
     ///     X X X X X X X X X
@@ -232,7 +232,7 @@ impl Rank {
     /// Get a bitboard with all squares on this rank set.
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Rank::A as usize, 0);
     /// assert_eq!(Rank::H.bitboard(), bitboard! {
     ///     . . . . . . . . .
@@ -256,7 +256,7 @@ impl Rank {
     /// This mirrors the rank in the fifth E rank.
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Rank::A.flip(), Rank::I);
     /// ```
     #[inline(always)]
@@ -268,7 +268,7 @@ impl Rank {
     ///
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Rank::A.north(), BitBoard::EMPTY);
     /// assert_eq!(Rank::C.north(), bitboard!{
     ///     X X X X X X X X X
@@ -291,7 +291,7 @@ impl Rank {
     ///  
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Rank::I.south(), BitBoard::EMPTY);
     /// assert_eq!(Rank::G.south(), bitboard!{
     ///     . . . . . . . . .
@@ -315,7 +315,7 @@ impl Rank {
     ///
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Rank::A.relative_to(Color::White), Rank::A);
     /// assert_eq!(Rank::A.relative_to(Color::Black), Rank::I);
     /// ```

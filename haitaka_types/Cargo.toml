@@ -1,0 +1,19 @@
+[package]
+name = "haitaka-types"
+version = "0.1.0"
+edition = "2024"
+authors = ["tofutofu <tofutofu@users.noreply.github.com>"]
+readme = "README.md"
+
+license = "MIT"
+description = "Internal data types library for haitaka"
+homepage = "https://github.com/tofutofu/haitaka"
+repository = "https://github.com/tofutofu/haitaka"
+keywords = ["shogi", "chess", "no_std"]
+categories = ["games", "no-std"]
+
+[dependencies]
+
+[features]
+std = []
+qugiy = []

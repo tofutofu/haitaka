@@ -54,7 +54,7 @@ impl File {
     /// # Examples
     ///
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(File::Five.flip(), File::Five);
     /// assert_eq!(File::One.flip(), File::Nine);
     /// ```
@@ -69,7 +69,7 @@ impl File {
     ///
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(File::Eight.bitboard(), bitboard! {
     ///     . X . . . . . . .
     ///     . X . . . . . . .
@@ -92,7 +92,7 @@ impl File {
     /// # Examples
     ///
     /// ```
-    /// use haitaka::*;
+    /// use haitaka_types::*;
     /// assert_eq!(File::Nine.west(), BitBoard::EMPTY);
     /// assert_eq!(File::Eight.west(), File::Nine.bitboard());
     /// assert_eq!(File::Two.west(), bitboard!{
@@ -117,7 +117,7 @@ impl File {
     /// # Examples
     ///
     /// ```
-    /// use haitaka::*;
+    /// use haitaka_types::*;
     /// assert_eq!(File::One.east(), BitBoard::EMPTY);
     /// assert_eq!(File::Two.east(), File::One.bitboard());
     /// assert_eq!(File::Seven.east(), bitboard!{
