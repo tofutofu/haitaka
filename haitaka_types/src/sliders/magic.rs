@@ -195,11 +195,20 @@ const BISHOP_MAGICS: &[MagicEntry; Square::NUM] = &[
 pub const SLIDING_MOVE_TABLE_SIZE: usize = 540416;
 
 // Fold the 17 bits of the hi quadword (the last 17 squares) into the lo quadword
-// in such a way that this never overwrites any bits that are already set to 1!
-// Here the simple right shift by 63 is safe for blocker boards. (Other shifts would
-// generally not be suitable or safe!) I saw this trick in the Apery Shogi code.
-// It enables us to use a 64-bit hash multiplier, exactly as in Western Chess
-// magic bitboards.
+// in such a way that this never overwrites any bits that are already set to 1.
+// In general this method would of course overwrite bits in the lower u64, but
+// if the inputs are restricted to Rook rays or Bishop rays, then a simple,
+// deterministic right shift by 63 is always safe! (Other simple shifts would
+// cause problems for Rook rays, essentially causing some bits to awlays be lost!)
+//
+// I saw this trick in the Apery source code.  It enables sticking to a 64-bit hash
+// multiplier, so we can use the exact same hash function as used for Western Chess.
+//
+// Note that Apery does use a 64-bit shift. This works for them because their
+// board layout -- how squares are mapped to bits -- differs from ours. For some
+// reason bit 63 in their lo quadword is deliberately never used. This seems to be
+// an awkard relic from a past in which an array of two ulongs, instead of a __m128si,
+// were needed to represent the board. (YaneuraOu also uses that funky layout.)
 #[inline(always)]
 const fn merge(x: u128) -> u64 {
     ((x >> 63) | x) as u64
