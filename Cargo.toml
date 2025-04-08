@@ -41,3 +41,4 @@ harness = false
 
 [features]
 std = []
+qugiy = []

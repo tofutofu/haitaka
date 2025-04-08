@@ -1,6 +1,8 @@
 //! Sliders pseudo-attack functions
-
 use crate::*;
+
+#[cfg(not(feature = "qugiy"))]
+include!(concat!(env!("OUT_DIR"), "/sliding_moves.rs"));
 
 /// Returns the Rook blocker mask for the given square.
 ///
@@ -520,6 +522,7 @@ pub const fn get_rook_rank_moves(square: Square, occ: BitBoard) -> BitBoard {
 /// };
 /// assert_eq!(get_rook_moves(Color::White, Square::C7, occ), c7_attacks);
 /// ```
+#[cfg(feature = "qugiy")]
 #[inline(always)]
 pub const fn get_rook_moves(_color: Color, square: Square, occ: BitBoard) -> BitBoard {
     // The _color argument is not used, but added for consistency in function signatures.
@@ -527,6 +530,13 @@ pub const fn get_rook_moves(_color: Color, square: Square, occ: BitBoard) -> Bit
     let bb2 = get_rook_file_moves(square, occ);
     bb1.bitor(bb2)
 }
+
+#[cfg(not(feature = "qugiy"))]
+#[inline(always)]
+pub fn get_rook_moves(_color: Color, square: Square, blockers: BitBoard) -> BitBoard {
+    BitBoard(SLIDING_MOVES[get_rook_moves_index(square, blockers)])
+}
+
 
 // Bishop attack rays
 //
@@ -624,6 +634,7 @@ const BISHOP_RAY_MASKS: [(u128, u128, u128, u128); Square::NUM] = {
 /// };
 /// assert_eq!(get_bishop_moves(Color::White, Square::E5, occ), e5_attacks);
 /// ```
+#[cfg(feature = "qugiy")]
 #[inline(always)]
 pub const fn get_bishop_moves(_color: Color, square: Square, occ: BitBoard) -> BitBoard {
     // The _color argument is not used, but added for consistency in function signatures.
@@ -652,6 +663,13 @@ pub const fn get_bishop_moves(_color: Color, square: Square, occ: BitBoard) -> B
 
     BitBoard(nw | sw | ne_rev.reverse_bits() | se_rev.reverse_bits())
 }
+
+#[cfg(not(feature = "qugiy"))]
+#[inline(always)]
+pub fn get_bishop_moves(_color: Color, square: Square, blockers: BitBoard) -> BitBoard {
+    BitBoard(SLIDING_MOVES[get_bishop_moves_index(square, blockers)])
+}
+
 
 /// Get all squares between two squares, if reachable via a ray.
 /// The `from` and `to` square are not included in the returns [`BitBoard`].
