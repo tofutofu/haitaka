@@ -113,7 +113,7 @@ const POSD: BitBoard = BitBoard::new(POS_MASK);
 ///
 /// # Examples
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// assert_eq!(POS_DIA[8], bitboard! {
 ///     X . . . . . . . .
 ///     . X . . . . . . .
@@ -186,7 +186,7 @@ pub const POS_DIA: [BitBoard; 17] = [
 ///
 /// # Examples
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// assert_eq!(NEG_DIA[8], bitboard! {
 ///     . . . . . . . . X
 ///     . . . . . . . X .
@@ -245,7 +245,7 @@ impl Square {
     /// Make a square from a file and a rank.
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Square::new(File::One, Rank::A), Square::A1);
     /// assert_eq!(Square::new(File::Two, Rank::B), Square::B2);
     /// ```
@@ -257,7 +257,7 @@ impl Square {
     /// Get the file of this square.
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Square::A1.file(), File::One);
     /// assert_eq!(Square::B2.file(), File::Two);
     /// ```
@@ -269,7 +269,7 @@ impl Square {
     /// Get the rank of this square.
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Square::A1.rank(), Rank::A);
     /// assert_eq!(Square::B2.rank(), Rank::B);
     /// ```
@@ -280,7 +280,7 @@ impl Square {
 
     /// Get a bitboard with this square set.
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Square::G8.bitboard(), bitboard! {
     ///     . . . . . . . . .
     ///     . . . . . . . . .
@@ -302,7 +302,7 @@ impl Square {
     ///
     /// # Examples
     /// ```
-    /// use haitaka::*;
+    /// use haitaka_types::*;
     /// assert_eq!(Square::E5.up_diagonal(), bitboard! {
     ///     . . . . . . . . X
     ///     . . . . . . . X .
@@ -329,7 +329,7 @@ impl Square {
     ///
     /// # Examples
     /// ```
-    /// use haitaka::*;
+    /// use haitaka_types::*;
     /// assert_eq!(Square::E5.down_diagonal(), bitboard! {
     ///     X . . . . . . . .
     ///     . X . . . . . . .
@@ -364,7 +364,7 @@ impl Square {
     ///
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Square::A1.offset(2, 1), Square::B3);
     /// assert_eq!(Square::B3.offset(-2, -1), Square::A1);  
     /// assert_eq!(Square::H1.offset(0, 1), Square::I1);
@@ -385,7 +385,7 @@ impl Square {
     ///
     /// # Examples
     /// ```
-    /// use haitaka::*;
+    /// use haitaka_types::*;
     /// assert_eq!(Square::A1.try_offset(1, 1), Some(Square::B2));
     /// assert_eq!(Square::E5.try_offset(-1, -1), Some(Square::D4));
     /// assert_eq!(Square::H9.try_offset(0, -1), Some(Square::G9));
@@ -415,7 +415,7 @@ impl Square {
     ///
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Square::A1.flip_file(), Square::A9);
     /// ```
     #[inline(always)]
@@ -429,7 +429,7 @@ impl Square {
     ///
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Square::A1.flip_rank(), Square::I1);
     /// ```
     #[inline(always)]
@@ -443,7 +443,7 @@ impl Square {
     ///
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Square::A1.flip(), Square::I9);
     /// assert_eq!(Square::E5.flip(), Square::E5);
     /// ```
@@ -463,7 +463,7 @@ impl Square {
     ///   
     /// # Examples
     /// ```
-    /// # use haitaka::*;
+    /// # use haitaka_types::*;
     /// assert_eq!(Square::A1.relative_to(Color::White), Square::I9);
     /// assert_eq!(Square::E5.relative_to(Color::White), Square::E5);
     /// assert_eq!(Square::A1.relative_to(Color::Black), Square::A1);

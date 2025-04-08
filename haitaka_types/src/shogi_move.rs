@@ -65,6 +65,7 @@ impl Move {
         }
     }
 
+    /*
     /// Get the piece involved in the move, using the board state for context.
     pub fn piece_on(&self, board: &Board) -> Option<Piece> {
         match self {
@@ -72,6 +73,7 @@ impl Move {
             Move::BoardMove { from, .. } => board.piece_on(*from),
         }
     }
+    */
 
     /// Get the source square of the move, if applicable.
     pub fn from(&self) -> Option<Square> {
@@ -92,7 +94,7 @@ impl Move {
     // Helper function to parse a square.
     fn parse_square_range(
         s: &str,
-        range: std::ops::Range<usize>,
+        range: core::ops::Range<usize>,
     ) -> Result<Square, MoveParseError> {
         s.get(range)
             .ok_or(MoveParseError::InvalidSquare)?
@@ -118,7 +120,7 @@ impl Move {
     ///
     /// # Examples
     /// ```
-    /// use haitaka::{Move, Square, Piece};
+    /// use haitaka_types::{Move, Square, Piece};
     ///
     /// let mv = Move::parse("P*7b").unwrap();
     /// assert!(mv.is_drop());
@@ -210,7 +212,7 @@ impl FromStr for Move {
     /// # Examples
     ///
     /// ```
-    /// use haitaka::*;
+    /// use haitaka_types::*;
     /// use core::str::FromStr;
     ///
     /// let mv = Move::from_str("P*7b").unwrap();

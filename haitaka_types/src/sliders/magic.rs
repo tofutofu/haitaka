@@ -8,8 +8,6 @@ struct MagicEntry {
     offset: u32,
 }
 
-
-
 #[rustfmt::skip]
 const ROOK_MAGICS: &[MagicEntry; Square::NUM] = &[
     MagicEntry { mask: 0x80402010080402FE, magic: 0x2140000212485100, shift: 50, offset: 0 },
@@ -101,7 +99,7 @@ const ROOK_MAGICS: &[MagicEntry; Square::NUM] = &[
     MagicEntry { mask: 0xFE804020100804020000, magic: 0x0C9820000AA08102, shift: 50, offset: 499712 },
 ];
 
-// const ROOK_TABLE_SIZE: usize = 516096; 
+// const ROOK_TABLE_SIZE: usize = 516096;
 // more than 5x the length of a Rook table in chess, so more than 10x memory foot print
 
 #[rustfmt::skip]
@@ -196,19 +194,22 @@ const BISHOP_MAGICS: &[MagicEntry; Square::NUM] = &[
 
 pub const SLIDING_MOVE_TABLE_SIZE: usize = 540416;
 
-
 // Fold the 17 bits of the hi quadword (the last 17 squares) into the lo quadword
 // in such a way that this never overwrites any bits that are already set to 1!
 // Here the simple right shift by 63 is safe for blocker boards. (Other shifts would
 // generally not be suitable or safe!) I saw this trick in the Apery Shogi code.
-// It enables us to use a 64-bit hash multiplier, exactly as in Western Chess 
+// It enables us to use a 64-bit hash multiplier, exactly as in Western Chess
 // magic bitboards.
 #[inline(always)]
 const fn merge(x: u128) -> u64 {
-    ((x >> 63) | x) as u64    
+    ((x >> 63) | x) as u64
 }
 
-const fn get_magic_index(magics: &[MagicEntry; Square::NUM], square: Square, blockers: BitBoard) -> usize {
+const fn get_magic_index(
+    magics: &[MagicEntry; Square::NUM],
+    square: Square,
+    blockers: BitBoard,
+) -> usize {
     let magic = &magics[square as usize];
     let blockers = merge(blockers.0 & magic.mask);
     let hash = blockers.wrapping_mul(magic.magic);
@@ -222,4 +223,3 @@ pub const fn get_rook_moves_index(square: Square, blockers: BitBoard) -> usize {
 pub const fn get_bishop_moves_index(square: Square, blockers: BitBoard) -> usize {
     get_magic_index(BISHOP_MAGICS, square, blockers)
 }
-

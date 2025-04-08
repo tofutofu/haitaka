@@ -1,8 +1,8 @@
 //! Sliders pseudo-attack functions
 use crate::*;
 
-#[cfg(not(feature = "qugiy"))]
-include!(concat!(env!("OUT_DIR"), "/sliding_moves.rs"));
+// #[cfg(not(feature = "qugiy"))]
+// include!(concat!(env!("OUT_DIR"), "/sliding_moves.rs"));
 
 /// Returns the Rook blocker mask for the given square.
 ///
@@ -98,7 +98,7 @@ pub const fn get_lance_moves_slow(square: Square, blockers: BitBoard, color: Col
 ///
 /// # Examples
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// assert_eq!(rook_pseudo_attacks(Square::E5), bitboard! {
 ///     . . . . X . . . .
 ///     . . . . X . . . .
@@ -145,7 +145,7 @@ pub const fn rook_pseudo_attacks(square: Square) -> BitBoard {
 ///
 /// # Examples
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// assert_eq!(bishop_pseudo_attacks(Square::E5), bitboard! {
 ///     X . . . . . . . X
 ///     . X . . . . . X .
@@ -191,7 +191,7 @@ pub const fn bishop_pseudo_attacks(square: Square) -> BitBoard {
 /// # Examples
 ///
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// assert_eq!(lance_pseudo_attacks(Color::Black, Square::A1), BitBoard::EMPTY);
 /// assert_eq!(lance_pseudo_attacks(Color::White, Square::I1), BitBoard::EMPTY);
 /// assert_eq!(lance_pseudo_attacks(Color::Black, Square::A9), BitBoard::EMPTY);
@@ -295,7 +295,7 @@ pub const fn lance_pseudo_attacks(color: Color, square: Square) -> BitBoard {
 ///
 /// # Example
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// let occ = bitboard! {
 ///      . . . . . X X X X
 ///      . . . . . . . X .
@@ -363,7 +363,7 @@ pub const fn get_lance_moves(color: Color, square: Square, occ: BitBoard) -> Bit
 ///
 /// # Examples
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// let occ = bitboard! {
 ///     . . . . . . . . .
 ///     . . . . X . . X .
@@ -425,7 +425,7 @@ const ROOK_RANK_MASKS: [(u128, u128); Square::NUM] = {
 ///
 /// # Examples
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// let occ = bitboard! {
 ///     . . . . . . . . .
 ///     . . . . X . . X .
@@ -467,11 +467,12 @@ pub const fn get_rook_rank_moves(square: Square, occ: BitBoard) -> BitBoard {
     BitBoard::new(west_attacks | east_attacks.reverse_bits())
 }
 
+/*
 /// Get rook moves.
 ///
 /// # Examples
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// let occ = bitboard! {
 ///     . . . . . . . . .
 ///     . . . . X . . X .
@@ -536,7 +537,7 @@ pub const fn get_rook_moves(_color: Color, square: Square, occ: BitBoard) -> Bit
 pub fn get_rook_moves(_color: Color, square: Square, blockers: BitBoard) -> BitBoard {
     BitBoard(SLIDING_MOVES[get_rook_moves_index(square, blockers)])
 }
-
+*/
 
 // Bishop attack rays
 //
@@ -544,6 +545,7 @@ pub fn get_rook_moves(_color: Color, square: Square, blockers: BitBoard) -> BitB
 //     sq
 //  SW    SE
 //
+#[cfg(feature = "qugiy")]
 const BISHOP_RAY_MASKS: [(u128, u128, u128, u128); Square::NUM] = {
     let mut masks = [(0u128, 0u128, 0u128, 0u128); Square::NUM];
     let mut index = 0;
@@ -574,6 +576,7 @@ const BISHOP_RAY_MASKS: [(u128, u128, u128, u128); Square::NUM] = {
 //  SW    SE
 //
 
+/*
 /// Get bishop moves.
 ///
 /// This applies the Qugiy algorithm to calculate the Bishop pseudo-legal moves, given a position.
@@ -587,7 +590,7 @@ const BISHOP_RAY_MASKS: [(u128, u128, u128, u128); Square::NUM] = {
 ///
 /// # Examples
 /// ```
-/// use haitaka::*;
+/// use haitaka_types::*;
 /// let occ = bitboard! {
 ///     . . . . . . . . .
 ///     . . . . X . . X .
@@ -669,14 +672,14 @@ pub const fn get_bishop_moves(_color: Color, square: Square, occ: BitBoard) -> B
 pub fn get_bishop_moves(_color: Color, square: Square, blockers: BitBoard) -> BitBoard {
     BitBoard(SLIDING_MOVES[get_bishop_moves_index(square, blockers)])
 }
-
+*/
 
 /// Get all squares between two squares, if reachable via a ray.
 /// The `from` and `to` square are not included in the returns [`BitBoard`].
 ///
 /// # Examples
 /// ```
-/// # use haitaka::*;
+/// # use haitaka_types::*;
 /// let rays = get_between_rays(Square::E2, Square::E7);
 /// assert_eq!(rays, bitboard! {
 ///     . . . . . . . . .
@@ -735,7 +738,7 @@ pub const fn get_between_rays(from: Square, to: Square) -> BitBoard {
 ///
 /// # Examples
 /// ```
-/// # use haitaka::*;
+/// # use haitaka_types::*;
 /// let rays = line_ray(Square::B1, Square::I8);
 /// assert_eq!(rays, bitboard! {
 ///     . . . . . . . . .
