@@ -173,15 +173,17 @@ pub const POS_DIA: [BitBoard; 17] = [
 /// A square (file, rank) is on up-slanting diagonal NEG_DIA[8 + rank - file].
 /// The upslanting diagonals are indexed as
 /// ```text
-///     0  1  2  3  4  5  6  7  8
-///     1  2  3  4  5  6  7  8  9
-///     2  3  4  5  6  7  8  9 10
-///     3  4  5  6  7  8  9 10 11
-///     4  5  6  7  8  9 10 11 12
-///     5  6  7  8  9 10 11 12 13
-///     6  7  8  9 10 11 12 13 14
-///     7  8  9 10 11 12 13 14 15
-///     8  9 10 11 12 13 14 15 16
+///     8  7  6  5  4  3  2  1  0 |  
+///     --------------------------+---
+///     0  1  2  3  4  5  6  7  8 | 0  
+///     1  2  3  4  5  6  7  8  9 | 1
+///     2  3  4  5  6  7  8  9 10 | 2
+///     3  4  5  6  7  8  9 10 11 | 3
+///     4  5  6  7  8  9 10 11 12 | 4
+///     5  6  7  8  9 10 11 12 13 | 5
+///     6  7  8  9 10 11 12 13 14 | 6
+///     7  8  9 10 11 12 13 14 15 | 7
+///     8  9 10 11 12 13 14 15 16 | 8
 /// ```
 ///
 /// # Examples
@@ -234,7 +236,7 @@ pub const NEG_DIA: [BitBoard; 17] = [
     NEGD.shl(1),
     NEGD.shl(2),
     NEGD.shl(3),
-    NEGD.shr(4),
+    NEGD.shl(4),
     NEGD.shl(5),
     NEGD.shl(6),
     NEGD.shl(7),
@@ -314,6 +316,17 @@ impl Square {
     ///     . X . . . . . . .
     ///     X . . . . . . . .
     /// });
+    /// assert_eq!(Square::G3.up_diagonal(), bitboard! {
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . X
+    ///     . . . . . . . X .
+    ///     . . . . . . X . .
+    ///     . . . . . X . . .
+    ///     . . . . X . . . .
+    /// });
     /// assert_eq!(Square::A1.up_diagonal(), Square::I9.up_diagonal());
     /// assert_eq!(Square::A9.up_diagonal(), Square::A9.bitboard());
     /// assert_eq!(Square::I1.up_diagonal(), Square::I1.bitboard());
@@ -341,6 +354,17 @@ impl Square {
     ///     . . . . . . . X .
     ///     . . . . . . . . X
     /// });
+    /// assert_eq!(Square::A6.down_diagonal(), bitboard! {
+    ///     . . . X . . . . .
+    ///     . . . . X . . . .
+    ///     . . . . . X . . .
+    ///     . . . . . . X . .
+    ///     . . . . . . . X .
+    ///     . . . . . . . . X
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    ///     . . . . . . . . .
+    /// });    
     /// assert_eq!(Square::A9.down_diagonal(), Square::I1.down_diagonal());
     /// assert_eq!(Square::A1.down_diagonal(), Square::A1.bitboard());
     /// assert_eq!(Square::I9.down_diagonal(), Square::I9.bitboard());
