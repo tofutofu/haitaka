@@ -10,7 +10,7 @@ pub const fn get_rook_relevant_blockers(square: Square) -> BitBoard {
     let rank_moves =
         square.rank().bitboard().0 & !(File::One.bitboard().0 | File::Nine.bitboard().0);
     let file_moves = square.file().bitboard().0 & !(Rank::A.bitboard().0 | Rank::I.bitboard().0);
-    BitBoard::new(rank_moves ^ file_moves)
+    BitBoard::new((rank_moves ^ file_moves) & !square.bitboard().0)
 }
 
 /// Get Lance blocker mask.
