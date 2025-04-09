@@ -16,8 +16,8 @@ const ZOBRIST: ZobristConstants = {
     // Simple Pcg64Mcg impl
     // Copied from cozy-chess - who copied it from the Rust `rand` crate.
     //
-    // The initial seed is an odd number, seed > 2**127, with bit count 63.
-    // The multiplier, mult > 2 ** 125 has bit count 65.
+    // The initial seed is an odd number with bit count 63.
+    // The multiplier (> 2 ** 125) has bit count 65.
     //
     // The seed state is deliberately hard-coded to ensure consistency
     // in different program runs.
