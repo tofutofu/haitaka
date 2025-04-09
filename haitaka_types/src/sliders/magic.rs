@@ -99,7 +99,7 @@ const ROOK_MAGICS: &[MagicEntry; Square::NUM] = &[
     MagicEntry { mask: 0xFE804020100804020000, magic: 0x0C9820000AA08102, shift: 50, offset: 499712 },
 ];
 
-// const ROOK_TABLE_SIZE: usize = 516096;
+pub const ROOK_TABLE_SIZE: usize = 516096;
 // more than 5x the length of a Rook table in chess, so more than 10x memory foot print
 
 #[rustfmt::skip]
@@ -189,7 +189,7 @@ const BISHOP_MAGICS: &[MagicEntry; Square::NUM] = &[
     MagicEntry { mask: 0x401004010040100400, magic: 0x0101010260031002, shift: 57, offset: 24192 },
 ];
 
-// const BISHOP_TABLE_SIZE: usize = 24320;
+pub const BISHOP_TABLE_SIZE: usize = 24320;
 // also about 5x as long as the table in chess
 
 pub const SLIDING_MOVE_TABLE_SIZE: usize = 540416;
