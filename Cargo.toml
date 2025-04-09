@@ -5,10 +5,12 @@ members = [
 ]
 resolver = "2"
 
-[profile.bench]
-lto = "fat"
-codegen-units = 1
-
 [profile.release]
-lto = "fat"
+opt-level = 3
 codegen-units = 1
+lto = "fat"
+
+[profile.bench]
+opt-level = 3
+codegen-units = 1
+lto = "fat"
