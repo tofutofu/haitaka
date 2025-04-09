@@ -1,59 +1,95 @@
 // Build script for the large SLIDING_MOVES table
 // Code adapted from the cozy-chess code.
-use std::path::PathBuf;
-use std::io::prelude::*;
-use std::io::BufWriter;
 use std::fs::File;
+use std::io::BufWriter;
+use std::io::prelude::*;
+use std::path::PathBuf;
 
 use haitaka_types::*;
 
 // Stats for the currently generated SLIDING_MOVES table:
 // - table len: 540416
 // - total zeros: 64752
-// - num of zero stretches: 9105  
+// - num of zero stretches: 9105
 // - average length of zero stretches: 12
 
 const GENERATED_FILE_NAME: &str = "sliding_moves_table.rs";
 
 fn write_moves(
-    table: &mut [BitBoard],
+    table: &mut [u128],
     relevant_blockers: impl Fn(Square) -> BitBoard,
     table_index: impl Fn(Square, BitBoard) -> usize,
-    slider_moves: impl Fn(Square, BitBoard) -> BitBoard
+    slider_moves: impl Fn(Square, BitBoard) -> BitBoard,
 ) {
+    let mut zeros: usize = 0;
     for &square in &Square::ALL {
         let mask = relevant_blockers(square);
         for blockers in mask.iter_subsets() {
-            table[table_index(square, blockers)] = slider_moves(square, blockers);
+            let moves: u128 = slider_moves(square, blockers).0;
+            table[table_index(square, blockers)] = moves;
+            if moves == 0 {
+                zeros += 1;
+            }
         }
     }
+    assert!(table.len() != zeros, "write_moves only generated zeros!");
 }
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
 
-    let mut table: Vec<BitBoard> = vec![BitBoard::EMPTY; SLIDING_MOVE_TABLE_SIZE];
+    let mut rook_table: Vec<u128> = vec![0u128; ROOK_TABLE_SIZE];
+    let mut bishop_table: Vec<u128> = vec![0u128; BISHOP_TABLE_SIZE];
+
     write_moves(
-        &mut table,
+        &mut rook_table,
         get_rook_relevant_blockers,
         get_rook_moves_index,
-        get_rook_moves_slow
+        get_rook_moves_slow,
     );
+
     write_moves(
-        &mut table,
+        &mut bishop_table,
         get_bishop_relevant_blockers,
         get_bishop_moves_index,
-        get_bishop_moves_slow
+        get_bishop_moves_slow,
     );
 
     let mut out_file: PathBuf = std::env::var("OUT_DIR").unwrap().into();
     out_file.push(GENERATED_FILE_NAME);
 
     let mut out_file = BufWriter::new(File::create(out_file).unwrap());
-    write!(&mut out_file, "const SLIDING_MOVES: &[u128; {}] = &[", table.len()).unwrap();
-    for magic in &table {
-        write!(&mut out_file, "0x{:x},", magic.0).unwrap();
+    let mut num = 0;
+    write!(
+        &mut out_file,
+        "const ROOK_MOVES: &[u128; {}] = &[",
+        rook_table.len()
+    )
+    .unwrap();
+    for &magic in &rook_table {
+        write!(&mut out_file, "0x{:x},", magic).unwrap();
+        num += 1;
+        if num == 4 {
+            writeln!(&mut out_file).unwrap();
+            num = 0;
+        }
     }
-    write!(&mut out_file, "];").unwrap();
-}
+    writeln!(&mut out_file, "];").unwrap();
 
+    num = 0;
+    write!(
+        &mut out_file,
+        "const BISHOP_MOVES: &[u128; {}] = &[",
+        bishop_table.len()
+    )
+    .unwrap();
+    for magic in &bishop_table {
+        write!(&mut out_file, "0x{:x},", magic).unwrap();
+        num += 1;
+        if num == 4 {
+            writeln!(&mut out_file).unwrap();
+            num = 0;
+        }
+    }
+    writeln!(&mut out_file, "];").unwrap();
+}
