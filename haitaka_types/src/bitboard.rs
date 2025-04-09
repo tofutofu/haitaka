@@ -705,6 +705,8 @@ impl BitBoard {
 
     /// Return the count of bits set to 1.
     ///
+    /// This is an alias for [`BitBoard::count_ones`].
+    ///
     /// # Examples
     ///
     /// ```
@@ -726,6 +728,21 @@ impl BitBoard {
     #[inline(always)]
     pub const fn len(self) -> u32 {
         self.0.count_ones()
+    }
+
+    /// Returns the number of ones in the binary representation of `self`.
+    #[inline(always)]
+    pub const fn count_ones(self) -> u32 {
+        self.0.count_ones()
+    }
+
+    /// Returns the number of zeros in the binary representation of `self``.
+    ///
+    /// Warning: This discounts the upper 47 bits of the backing `u128` which
+    /// are assumed to be zero.
+    #[inline(always)]
+    pub const fn count_zeros(self) -> u32 {
+        self.0.count_zeros() - 47
     }
 
     /// Check if a [`Square`] is set.
