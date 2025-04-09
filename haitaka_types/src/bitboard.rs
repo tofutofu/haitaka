@@ -759,6 +759,24 @@ impl BitBoard {
         self.0 & (1u128 << square as usize) != 0
     }
 
+    /// Remove a square from this [`BitBoard`].
+    ///
+    /// If the bitboard doesn't contain the square, this
+    /// simply returns a copy of the original bitboard.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use haitaka_types::*;
+    /// let bb = Square::E5.bitboard();
+    /// let ff = bb.rm(Square::E5);
+    /// assert_eq!(ff, BitBoard::EMPTY);
+    /// ```
+    #[inline(always)]
+    pub const fn rm(self, square: Square) -> Self {
+        self.bitand(square.bitboard().not())
+    }
+
     /// Check if a bitboard contains no squares in common with another.
     ///
     /// Returns true iff the intersection of the two bitboards is empty.
