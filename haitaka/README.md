@@ -55,7 +55,7 @@ board.generate_moves(|moves| {
     move_list.extend(moves);
     false
 });
-assert_eq!(move_list.len(), 20);
+assert_eq!(move_list.len(), 30);
 ```
 
 ### Perft
