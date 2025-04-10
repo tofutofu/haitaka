@@ -8,7 +8,7 @@ The layout of the modules and the overall design is largely the same as in `cozy
 
 ## Name
 
-'Haitaka' means 'sparrowhawk' in Japanese, a small bird of prey. 'Taka' is a haiku _kigo_ (season word) associated with　winter.
+"Haitaka" or "taka" means "sparrowhawk" in Japanese. "Taka" is a haiku _kigo_ (season word) associated with　winter.
 
    鷹の眼​にこぼれて雁のたち騒ぐ<br>
    _Taka no me ni koborete kari no tachisawagu_
