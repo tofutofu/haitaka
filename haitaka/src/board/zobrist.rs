@@ -13,10 +13,11 @@ struct ZobristConstants {
 }
 
 const ZOBRIST: ZobristConstants = {
-    // Simple Pcg64Mcg impl -- Copied from cozy-chess
+    // Simple Pcg64Mcg impl
+    // Copied from cozy-chess - who copied it from the Rust `rand` crate.
     //
-    // The initial seed is an odd number, seed > 2**127, with bit count 63.
-    // The multiplier, mult > 2 ** 125 has bit count 65.
+    // The initial seed is an odd number with bit count 63.
+    // The multiplier (> 2 ** 125) has bit count 65.
     //
     // The seed state is deliberately hard-coded to ensure consistency
     // in different program runs.
@@ -24,7 +25,6 @@ const ZOBRIST: ZobristConstants = {
     let mut state = 0x7369787465656E2062797465206E756Du128 | 1;
     macro_rules! rand {
         () => {{
-            // TODO: Shouldn't we make sure again that state remains odd?
             state = state.wrapping_mul(0x2360ED051FC65DA44385DF649FCCF645);
             let rot = (state >> 122) as u32;
             let xsl = ((state >> 64) as u64 ^ state as u64).rotate_right(rot);

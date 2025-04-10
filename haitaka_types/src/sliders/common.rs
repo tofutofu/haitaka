@@ -10,7 +10,7 @@ pub const fn get_rook_relevant_blockers(square: Square) -> BitBoard {
     let rank_moves =
         square.rank().bitboard().0 & !(File::One.bitboard().0 | File::Nine.bitboard().0);
     let file_moves = square.file().bitboard().0 & !(Rank::A.bitboard().0 | Rank::I.bitboard().0);
-    BitBoard::new(rank_moves ^ file_moves)
+    BitBoard::new((rank_moves ^ file_moves) & !square.bitboard().0)
 }
 
 /// Get Lance blocker mask.
@@ -46,17 +46,14 @@ pub const fn get_bishop_relevant_blockers(square: Square) -> BitBoard {
 }
 
 /// Returns a BitBoard with the slider moves, given an array of deltas.
-const fn get_slider_moves(
-    square: Square,
-    mut blockers: BitBoard,
-    deltas: &[(i8, i8); 4],
-) -> BitBoard {
-    blockers.0 &= !square.bitboard().0;
+const fn get_slider_moves(square: Square, blockers: BitBoard, deltas: &[(i8, i8); 4]) -> BitBoard {
+    let blockers = blockers.rm(square);
     let mut moves = BitBoard::EMPTY;
     let mut i = 0;
     while i < deltas.len() {
         let (dx, dy) = deltas[i];
-        if dx == dy {
+        if dx == 0 && dy == 0 {
+            // sentinel for the Lance
             break;
         }
         let mut square = square;
@@ -88,8 +85,6 @@ pub const fn get_lance_moves_slow(square: Square, blockers: BitBoard, color: Col
     };
     get_slider_moves(square, blockers, &[(0, dy), (0, 0), (0, 0), (0, 0)])
 }
-
-// TODO: Should the TABLE arrays be lifted out of the function defs to avoid code bloat?
 
 /// Rook pseudo-attacks from square.
 ///
@@ -164,6 +159,17 @@ pub const fn rook_pseudo_attacks(square: Square) -> BitBoard {
 ///     . . X . . . . . .
 ///     . X . . . . . . .
 ///     X . . . . . . . .
+/// });
+/// assert_eq!(bishop_pseudo_attacks(Square::G3), bitboard! {
+///     X . . . . . . . .
+///     . X . . . . . . .
+///     . . X . . . . . .
+///     . . . X . . . . .
+///     . . . . X . . . X
+///     . . . . . X . X .
+///     . . . . . . * . .
+///     . . . . . X . X .
+///     . . . . X . . . X
 /// });
 /// ```
 #[inline]

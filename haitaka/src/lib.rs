@@ -13,9 +13,9 @@ pub use sliders::*;
 pub use square::*;
 
 pub mod attacks;
-pub mod slider_moves;
 pub mod board;
+pub mod slider_moves;
 
 pub use attacks::*;
-pub use slider_moves::*;
 pub use board::*;
+pub use slider_moves::*;

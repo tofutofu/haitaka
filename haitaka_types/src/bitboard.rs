@@ -705,6 +705,8 @@ impl BitBoard {
 
     /// Return the count of bits set to 1.
     ///
+    /// This is an alias for [`BitBoard::count_ones`].
+    ///
     /// # Examples
     ///
     /// ```
@@ -726,6 +728,21 @@ impl BitBoard {
     #[inline(always)]
     pub const fn len(self) -> u32 {
         self.0.count_ones()
+    }
+
+    /// Returns the number of ones in the binary representation of `self`.
+    #[inline(always)]
+    pub const fn count_ones(self) -> u32 {
+        self.0.count_ones()
+    }
+
+    /// Returns the number of zeros in the binary representation of `self``.
+    ///
+    /// Warning: This discounts the upper 47 bits of the backing `u128` which
+    /// are assumed to be zero.
+    #[inline(always)]
+    pub const fn count_zeros(self) -> u32 {
+        self.0.count_zeros() - 47
     }
 
     /// Check if a [`Square`] is set.
@@ -757,6 +774,24 @@ impl BitBoard {
         // which relies on the file-major mapping of squares to bits.
         // Changing that layout will break this function.
         self.0 & (1u128 << square as usize) != 0
+    }
+
+    /// Remove a square from this [`BitBoard`].
+    ///
+    /// If the bitboard doesn't contain the square, this
+    /// simply returns a copy of the original bitboard.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use haitaka_types::*;
+    /// let bb = Square::E5.bitboard();
+    /// let ff = bb.rm(Square::E5);
+    /// assert_eq!(ff, BitBoard::EMPTY);
+    /// ```
+    #[inline(always)]
+    pub const fn rm(self, square: Square) -> Self {
+        self.bitand(square.bitboard().not())
     }
 
     /// Check if a bitboard contains no squares in common with another.
