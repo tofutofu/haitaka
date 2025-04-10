@@ -3,8 +3,8 @@
 //! Move generation of slider moves uses the Qugiy algoritm (introduced for WCSC31 by Mori Taikei)
 //! if the `qugiy` feature flag is set. If this flag is not set we use Magic Bitboard tables to
 //! generate Bishop and Rook moves.
-//! 
-//! The Qugiy algorithm uses a trick very similar to the [carry rippler](https://www.chessprogramming.org/Traversing_Subsets_of_a_Set#All_Subsets_of_any_Set) 
+//!
+//! The Qugiy algorithm uses a trick very similar to the [carry rippler](https://www.chessprogramming.org/Traversing_Subsets_of_a_Set#All_Subsets_of_any_Set)
 //! to determine which squares up to the first blocker are unoccupied on Rook or Bishop rays. It amounts to the
 //! following operations
 //! ```text
@@ -13,11 +13,11 @@
 //!     BitBoard((((attacks & occ) - 1) ^ occ) & attacks)
 //! ```
 //! This algorithm can only be applied to attack rays in which all square have bit indices greater than
-//! the index of the square on which the slider stands. For rays in the opposite direction, we first need 
+//! the index of the square on which the slider stands. For rays in the opposite direction, we first need
 //! to reverse the bitsets. The current implementation doesn't use intrinsics, so there may still be some
 //! room to make it faster by using intrinsics with implicit data parallellism. As it stands, our qugiy
 //! implementation is about 3x as slow as the default implementation using Magic BitBoards. On the other
-//! hand, it doesn't need to allocate a huge amount of extra memory for the moves tables (see 
+//! hand, it doesn't need to allocate a huge amount of extra memory for the moves tables (see
 //! `SLIDING_MOVES_TABLE_SIZE` in `haitaka_types/src/sliders/magic.rs`).
 //!
 

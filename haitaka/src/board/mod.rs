@@ -560,7 +560,6 @@ impl Board {
     /// - The game is a draw by Sennichite, if the same position occurs for the
     ///   fourth time, and this was not caused by a sequence of continuous checks.
     ///
-    /// ```
     pub fn status(&self) -> GameStatus {
         if self.generate_moves(|_| true) {
             GameStatus::Ongoing
@@ -777,11 +776,8 @@ impl Board {
     /// But during the search we can attempt a null move to see if this leaves the King
     /// in check. If the King is in check, this function returns None.
     ///
-    /// # Examples
+    /// This function is not yet implemented. Always returns None.
     ///
-    /// TODO!
-    ///
-    /// ```
     pub fn null_move(&self) -> Option<Board> {
         None
         /*
