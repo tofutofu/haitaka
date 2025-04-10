@@ -25,7 +25,7 @@ The layout of the modules and the overall design is largely the same as in `cozy
 - Performant legal move generation
 - Incrementally updated zobrist hash for quickly obtaining a hash of a board
 - Supporting both Magic Bitboards and the [Qugiy](https://www.apply.computer-shogi.org/wcsc31/appeal/Qugiy/appeal.pdf) algorithm for slider move generation
-- Support for parsing [SFEN] strings
+- Support for parsing [SFEN](https://en.wikipedia.org/wiki/Shogi_notation#SFEN) strings
 
 ## Main differences with `cozy-chess`
 - `BitBoard` uses `u128` instead of `u64` as backing to handle the 9x9 Shogi board
