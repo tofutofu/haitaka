@@ -47,6 +47,7 @@ haitaka = "0.2.0"   # or use the latest version on crates.io
 
 ### Basic 
 ```rust
+use haitaka::*;
 // Start position
 let board = Board::startpos();
 let mut move_list = Vec::new();

@@ -1,6 +1,6 @@
 [package]
 name = "haitaka"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 authors = ["tofutofu <tofutofu@users.noreply.github.com>"]
 readme = "README.md"
