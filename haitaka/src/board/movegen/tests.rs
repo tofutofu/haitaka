@@ -145,3 +145,11 @@ fn legality_drops() {
     test_forbidden_drops(&board);
     test_nifu(&board);
 }
+
+#[test]
+fn non_check() {
+    let sfen: &str = "lnsgk1snl/1r4gb1/p1pppp2p/6pR1/1p7/2P6/PP1PPPP1P/1BG6/LNS1KGSNL w Pp 12";
+    let board: Board = sfen.parse().unwrap();
+    let checkers = board.checkers();
+    assert!(checkers.is_empty());
+}
