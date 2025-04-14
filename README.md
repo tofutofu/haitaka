@@ -52,7 +52,7 @@ use haitaka::*;
 let board = Board::startpos();
 let mut move_list = Vec::new();
 board.generate_moves(|moves| {
-    // Unpack dense move set into move list
+    // Unpack into move list
     move_list.extend(moves);
     false
 });
@@ -69,7 +69,7 @@ cargo run --release --example perft -- 5
 This code has been tested on an Apple M2, using the stable-aarch64-apple-darwin toolchain. In
 GitHub workflows it has also been tested on Ubuntu.
 
-The code should has not yet been stress tested yet or used in an actual Shogi engine.
+The code has not yet been stress tested yet or used in an actual Shogi engine.
 
 To run all tests use:
 ```bash
