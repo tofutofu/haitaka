@@ -772,49 +772,57 @@ impl Board {
         }
     }
 
-    /// Attempt to play a [null move](https://www.chessprogramming.org/Null_Move),
-    /// returning a new board if successful.
+    /// Attempt to play a [null move](https://www.chessprogramming.org/Null_Move).
+    /// Returns a new board if successful. Returns None if side-to-move is in check.
     ///
     /// A null move is a pass. A pass is not legal in Shogi (unless it means you resign).
-    /// But during the search we can attempt a null move to see if this leaves the King
-    /// in check. If the King is in check, this function returns None.
+    /// We can attempt a null move during the search, however, to see if this has an
+    /// effect on the evaluation. If it doesn't significantly change the evaluation,
+    /// we either already have a very bad position, or we are in a Zugzwang position
+    /// (which is extremely rare in Shogi).
+    /// If the King is in check, this function returns None. In that case a null
+    /// move would make no sense (it would immediately lose).
     ///
-    /// This function is not yet implemented. Always returns None.
+    /// # Examples
     ///
+    /// ```
+    /// # use haitaka::*;
+    /// let sfen1: &str = "lnsgkgsnl/1r5b1/p1ppppppp/9/1p5P1/9/PPPPPPP1P/1B5R1/LNSGKGSNL b - 5";
+    /// let sfen2: &str = "lnsgkgsnl/1r5b1/p1ppppppp/9/1p5P1/9/PPPPPPP1P/1B5R1/LNSGKGSNL w - 6";
+    /// let board1: Board = sfen1.parse().unwrap();
+    /// let board2 = board1.null_move().unwrap();
+    /// let sfen_out = format!("{}", board2);
+    /// assert_eq!(sfen_out, sfen2);
+    /// ```
     pub fn null_move(&self) -> Option<Board> {
-        None
-        /*
-        if self.checkers.is_empty() {
+        if self.checkers().is_empty() {
             let mut board = self.clone();
+            let color = board.side_to_move();
+
+            // update move number and switch side-to-move
             board.move_number += 1;
             board.inner.toggle_side_to_move();
 
-            // recalculate board.pinned
+            // we only need to update pinned
             board.pinned = BitBoard::EMPTY;
-
-            let color = board.side_to_move();
             let our_king = board.king(color);
-            let their_attackers = board.colors(!color) & (
-                (get_bishop_rays(our_king) & (
-                    board.pieces(Piece::Bishop) |
-                    board.pieces(Piece::Queen)
-                )) |
-                (get_rook_rays(our_king) & (
-                    board.pieces(Piece::Rook) |
-                    board.pieces(Piece::Queen)
-                ))
-            );
-
+            let them = board.colors(color);
+            let their_attackers = them
+                & (
+                    bishop_pseudo_attacks(our_king) | rook_pseudo_attacks(our_king)
+                    // already includes Lance attacks
+                );
+            let occ = board.occupied();
             for square in their_attackers {
-                let between = get_between_rays(square, our_king) & board.occupied();
+                let between = get_between_rays(our_king, square) & occ;
                 if between.len() == 1 {
                     board.pinned |= between;
                 }
             }
+
             Some(board)
         } else {
             None
         }
-        */
     }
 }
