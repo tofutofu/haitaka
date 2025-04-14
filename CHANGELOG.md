@@ -5,6 +5,7 @@
 - Fixed SFEN display of pieces in hand. This now conforms to the USI format.
 - Fixed a bug in calculate_checkers_and_pinned (Rook was treated as Bishop) which led to hallucinated checks.
 - Added null-move implementation.
+- Added support and instructions in haitaka/build.rs for building with `qugiy` feature flag.
 
 ## v0.2.0
 
