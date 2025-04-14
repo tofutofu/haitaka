@@ -1,8 +1,10 @@
 # Changelog
 
-## v0.1.0
+## v0.2.1
 
-Initial release to crates.io.
+- Fixed SFEN display of pieces in hand. This now conforms to the USI format.
+- Fixed a bug in calculate_checkers_and_pinned (Rook was treated as Bishop) which led to hallucinated checks.
+- Added null-move implementation.
 
 ## v0.2.0
 
@@ -14,3 +16,7 @@ Initial release to crates.io.
 
 ### Fixed
 - Fixed several bugs in move creation. See git log for details.
+
+## v0.1.0
+
+Initial release to crates.io.
