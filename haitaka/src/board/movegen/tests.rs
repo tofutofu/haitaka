@@ -153,3 +153,34 @@ fn non_check() {
     let checkers = board.checkers();
     assert!(checkers.is_empty());
 }
+
+#[test]
+fn pawn_push_mate_is_valid() {
+    // White King on 1e is almost mate
+    let sfen = "lns4+Rl/1r1g5/p1p1pSp1p/1p1p1p3/8k/7N1/PPPPPPP1P/1B7/LNSGKGSNL b BG2p 25";
+    let board: Board = sfen.parse().unwrap();
+    assert!(board.checkers().is_empty());
+
+    assert_eq!(board.side_to_move(), Color::Black);
+    let mv = Move::Drop {
+        piece: Piece::Gold,
+        to: Square::F1,
+    };
+    assert!(board.is_legal_drop(mv));
+    assert!(board.is_legal(mv));
+
+    let mv = Move::Drop {
+        piece: Piece::Gold,
+        to: Square::E2,
+    };
+    assert!(board.is_legal_drop(mv));
+    assert!(board.is_legal(mv));
+
+    let mv = Move::BoardMove {
+        from: Square::G1,
+        to: Square::F1,
+        promotion: false,
+    };
+    assert!(board.is_legal_board_move(mv));
+    assert!(board.is_legal(mv));
+}
