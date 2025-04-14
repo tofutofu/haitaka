@@ -1,7 +1,7 @@
 use core::fmt::{Display, Formatter};
 use core::str::FromStr;
 
-use super::ZobristBoard;
+use super::{Piece, ZobristBoard};
 use crate::*;
 
 helpers::simple_error! {
@@ -248,14 +248,29 @@ impl Display for Board {
             write!(f, " -")?;
         } else {
             write!(f, " ")?;
-            for &color in Color::ALL.iter().rev() {
-                // TODO: Probably need to change the order of pieces in hand
-                for (piece, &count) in self.hand(color).iter().enumerate() {
+            // http://hgm.nubati.net/usi.html
+            // "The pieces are always listed in the order rook, bishop, gold, silver, knight, lance, pawn;
+            // and with all black pieces before all white pieces."
+            let pieces: [Piece; 7] = [
+                Piece::Rook,
+                Piece::Bishop,
+                Piece::Gold,
+                Piece::Silver,
+                Piece::Knight,
+                Piece::Lance,
+                Piece::Pawn,
+            ];
+
+            for color in [Color::Black, Color::White] {
+                let hand = self.hand(color);
+                for piece in pieces {
+                    let count = hand[piece as usize];
                     if count > 0 {
+                        let piece_str = piece.to_str(color);
                         if count > 1 {
-                            write!(f, "{}{}", count, piece)?;
+                            write!(f, "{}{}", count, piece_str)?;
                         } else {
-                            write!(f, "{}", piece)?;
+                            write!(f, "{}", piece_str)?;
                         }
                     }
                 }
