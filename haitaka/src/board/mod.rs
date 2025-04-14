@@ -516,6 +516,9 @@ impl Board {
 
     /// Get the king square of the given side.
     ///
+    /// # Panics
+    /// This function panics if `color` has no King.
+    ///
     /// # Examples
     /// ```
     /// # use haitaka::*;
@@ -722,7 +725,7 @@ impl Board {
 
         // update for non-sliders
         let them = !color;
-        let their_king = self.king(them);
+        let their_king = self.king(them); // may panic
 
         match piece {
             Piece::Pawn => {
@@ -735,11 +738,11 @@ impl Board {
                 self.checkers |= silver_attacks(them, their_king) & to.bitboard();
             }
             Piece::Gold
-            | Piece::PBishop
             | Piece::Tokin
             | Piece::PLance
             | Piece::PKnight
-            | Piece::PSilver => {
+            | Piece::PSilver
+            | Piece::PBishop => {
                 self.checkers |= gold_attacks(them, their_king) & to.bitboard();
             }
             _ => {}
@@ -754,7 +757,7 @@ impl Board {
         let lances = self.pieces(Piece::Lance);
 
         let bishop_attacks = bishop_pseudo_attacks(their_king) & bishops;
-        let rook_attacks = bishop_pseudo_attacks(their_king) & rooks;
+        let rook_attacks = rook_pseudo_attacks(their_king) & rooks;
         let lance_attacks = lance_pseudo_attacks(color, their_king) & lances;
 
         let our_slider_attackers = our_pieces & (bishop_attacks | rook_attacks | lance_attacks);

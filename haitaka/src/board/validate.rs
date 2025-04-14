@@ -106,6 +106,10 @@ impl Board {
     //
 
     /// Calculate checkers and pins.
+    ///
+    /// # Panics
+    /// This function panics if `color` has no King on the board.
+    ///
     pub(super) fn calculate_checkers_and_pins(&self, color: Color) -> (BitBoard, BitBoard) {
         let mut checkers = BitBoard::EMPTY;
         let mut pinned = BitBoard::EMPTY;
@@ -118,7 +122,7 @@ impl Board {
         let lances = self.pieces(Piece::Lance);
 
         let bishop_attacks = bishop_pseudo_attacks(our_king) & bishops;
-        let rook_attacks = bishop_pseudo_attacks(our_king) & rooks;
+        let rook_attacks = rook_pseudo_attacks(our_king) & rooks;
         let lance_attacks = lance_pseudo_attacks(color, our_king) & lances;
 
         let their_slider_attackers = their_pieces & (bishop_attacks | rook_attacks | lance_attacks);

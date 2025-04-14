@@ -8,7 +8,7 @@ The layout of the modules and the overall design is largely the same as in `cozy
 
 ## Name
 
-"Haitaka" or "taka" means "sparrowhawk" in Japanese. "Taka" is a haiku _kigo_ (season word) associated with　winter.
+"Haitaka" or "taka" means "sparrowhawk" in Japanese. "Taka" is a haiku _kigo_ (season word) associated with winter.
 
    鷹の眼​にこぼれて雁のたち騒ぐ<br>
    _Taka no me ni koborete kari no tachisawagu_
@@ -52,7 +52,7 @@ use haitaka::*;
 let board = Board::startpos();
 let mut move_list = Vec::new();
 board.generate_moves(|moves| {
-    // Unpack dense move set into move list
+    // Unpack into move list
     move_list.extend(moves);
     false
 });
@@ -66,10 +66,10 @@ cargo run --release --example perft -- 5
 
 ## Testing
 
-This code has been tested yet on an Apple M2, using the stable-aarch64-apple-darwin toolchain. In
+This code has been tested on an Apple M2, using the stable-aarch64-apple-darwin toolchain. In
 GitHub workflows it has also been tested on Ubuntu.
 
-The code should still be seen as experimental since it has not yet been stress tested or used in an actual Shogi engine. I'm also still working on experimental optimizations.
+The code has not yet been stress tested yet or used in an actual Shogi engine.
 
 To run all tests use:
 ```bash
