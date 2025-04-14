@@ -1,5 +1,15 @@
 // Build script for the large SLIDING_MOVES table
 // Code adapted from the cozy-chess code.
+//
+// There is still a chicken-and-egg problem in building with special features,
+// since build.rs doesn't know about those features at compile time. So
+// to build with the `qugiy` feature, the feature also needs to be made known
+// to the compiler, for instance by setting RUSTCFLAGS. So run with:
+// ```
+// RUSTFLAGS="--cfg feature=\"qugiy\"" cargo build -v -p haitaka --features qugiy
+// ```
+
+#![allow(unused_imports)]
 use std::fs::File;
 use std::io::BufWriter;
 use std::io::prelude::*;
@@ -13,8 +23,10 @@ use haitaka_types::*;
 // - num of zero stretches: 9105
 // - average length of zero stretches: 12
 
+#[cfg(not(feature = "qugiy"))]
 const GENERATED_FILE_NAME: &str = "sliding_moves_table.rs";
 
+#[cfg(not(feature = "qugiy"))]
 fn write_moves(
     table: &mut [u128],
     relevant_blockers: impl Fn(Square) -> BitBoard,
@@ -35,8 +47,22 @@ fn write_moves(
     assert!(table.len() != zeros, "write_moves only generated zeros!");
 }
 
+#[cfg(feature = "qugiy")]
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:warning=INFO: The 'qugiy' feature is active in build.rs.");
+    return; // Exit early, do nothing
+}
+
+#[cfg(not(feature = "qugiy"))]
+fn main() {
+    println!("cargo:rerun-if-changed=build.rs");
+
+    if std::env::var("CARGO_FEATURE_QUGIY").is_ok() {
+        println!("cargo:warning=INFO: The 'qugiy' feature is active in build.rs.");
+        return; // Exit early, do nothing
+    }
+    println!("cargo:warning=INFO: Building Rook and Bishop move tables.");
 
     let mut rook_table: Vec<u128> = vec![0u128; ROOK_TABLE_SIZE];
     let mut bishop_table: Vec<u128> = vec![0u128; BISHOP_TABLE_SIZE];
