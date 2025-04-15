@@ -1,3 +1,4 @@
+benchmarks/
 target/
 .vscode/
 Cargo.lock

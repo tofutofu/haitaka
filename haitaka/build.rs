@@ -57,11 +57,6 @@ fn main() {
 #[cfg(not(feature = "qugiy"))]
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
-
-    if std::env::var("CARGO_FEATURE_QUGIY").is_ok() {
-        println!("cargo:warning=INFO: The 'qugiy' feature is active in build.rs.");
-        return; // Exit early, do nothing
-    }
     println!("cargo:warning=INFO: Building Rook and Bishop move tables.");
 
     let mut rook_table: Vec<u128> = vec![0u128; ROOK_TABLE_SIZE];

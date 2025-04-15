@@ -1,4 +1,5 @@
-// Find magics
+// Find magic numbers to set up slider move hash tables.
+//
 // Run with: cargo run --release --example find_magics
 // Expected total run time is about 150s.
 use std::env::args;
@@ -6,14 +7,17 @@ use std::time::Instant;
 
 use haitaka_types::*;
 
-// This file is designed to generate "magic numbers" for Rook and Bishop moves on a Shogi board.
-// These magic numbers are used to create perfect hash tables for move generation. The code is
+// This file generates "magic numbers" for Rook and Bishop moves on a Shogi board.
+// These numbers are used to create perfect hash tables for slider move generation. The code is
 // adapted from analog-hors's magic bitboard demo (https://github.com/analog-hors/magic-bitboards-demo),
-// with modifications for Shogi's larger board size (using u128 instead of u64 as backing for bitsets).
+// with modifications for Shogi's larger board size (using u128 instead of u64 as backing for bitsets)
+// and with some extra optimizations (that turned out to be really required).
 //
-// Analog-hors's blog post about Magic Bitboards (https://analog-hors.github.io/site/magic-bitboards/)
-// gives a very clear explanation of how Magic Bitboards work and how to find the magic numbers. My code
-// makes several adaptations to make the  original code suitable for use with Shogi boards.
+// Three good overview of how "Magic Bitboards" work and how to find the "magic numbers" are:
+// - [Chess programming: Magic Bitboards](https://www.chessprogramming.org/Magic_Bitboards)
+// - [Magical Bitboards and How to Find Them](https://analog-hors.github.io/site/magic-bitboards/) by Analog-hors
+// - [Magic Move-Bitboard Generation in Computer Chess](http://pradu.us/old/Nov27_2008/Buzz/research/magic/Bitboards.pdf)
+// by Pradyumna Kannan
 
 // Simple Pcg64Mcg impl (Mcg128Xsl64) - essentially the same as in the `rand` crate.
 // See the `rand` documentation for background info.
