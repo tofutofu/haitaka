@@ -199,12 +199,61 @@ fn discount_pawn_drop_mate_in_perft() {
 
     let mut num_moves = 0;
     board.generate_moves(|mvs| {
-        for _mv in mvs {
-            num_moves += 1;
-        }
+        // remember that the listener may be called back multiple times
+        num_moves += mvs.into_iter().len();
         false
     });
     assert_eq!(num_moves, 85);
+}
+
+#[test]
+fn donot_move_into_check() {
+    let sfen: &str = "7lk/9/8S/9/9/9/9/7L1/8K b P 1";
+    let mut board: Board = sfen.parse().unwrap();
+    assert_eq!(board.side_to_move(), Color::Black);
+
+    // Ki1-h1
+    let mv = Move::BoardMove {
+        from: Square::I1,
+        to: Square::H1,
+        promotion: false,
+    };
+    assert!(board.is_legal(mv));
+
+    board.play_unchecked(mv);
+    assert_eq!(board.side_to_move(), Color::White);
+    assert_eq!(board.checkers, BitBoard::EMPTY);
+
+    // L2ax2g+
+    let mv = Move::BoardMove {
+        from: Square::A2,
+        to: Square::H2,
+        promotion: true,
+    };
+    assert!(board.is_legal(mv));
+    board.play_unchecked(mv);
+
+    assert_eq!(board.side_to_move(), Color::Black);
+    assert_eq!(board.checkers.len(), 1);
+    assert!(board.checkers.has(Square::H2));
+    assert_eq!(board.piece_on(Square::H2).unwrap(), Piece::PLance);
+    assert_eq!(board.color_on(Square::H2).unwrap(), Color::White);
+
+    let mv = Move::Drop {
+        piece: Piece::Pawn,
+        to: Square::E5,
+    };
+    assert!(!board.is_legal(mv));
+
+    board.generate_moves(|mvs| {
+        for mv in mvs {
+            assert!(mv.is_board_move());
+            let from: Square = mv.from().unwrap();
+            let piece = board.piece_on(from).unwrap();
+            assert_eq!(piece, Piece::King);
+        }
+        false
+    });
 }
 
 #[test]
@@ -220,4 +269,39 @@ fn no_drop_on_top() {
         }
         false
     });
+}
+
+#[test]
+fn checkers_are_updated() {
+    let sfen: &str = "7lk/9/8S/9/9/9/9/7L1/8K b P 1";
+    let mut board: Board = sfen.parse().unwrap();
+
+    // After K1i2i L2ax2h the Black King should be in check
+    // and only King moves should be legal
+
+    let mv1 = Move::BoardMove {
+        from: Square::I1,
+        to: Square::I2,
+        promotion: false,
+    };
+    let mv2 = Move::BoardMove {
+        from: Square::A2,
+        to: Square::H2,
+        promotion: false,
+    };
+    let mv3 = Move::BoardMove {
+        from: Square::C1,
+        to: Square::D2,
+        promotion: true,
+    };
+
+    board.play_unchecked(mv1);
+    assert_eq!(board.side_to_move(), Color::White);
+    assert_eq!(board.checkers().len(), 0);
+
+    board.play_unchecked(mv2);
+    assert_eq!(board.side_to_move(), Color::Black);
+    assert_eq!(board.checkers().len(), 1);
+    assert!(board.checkers.has(Square::H2));
+    assert!(!board.is_legal(mv3));
 }

@@ -758,7 +758,7 @@ impl Board {
 
         let bishop_attacks = bishop_pseudo_attacks(their_king) & bishops;
         let rook_attacks = rook_pseudo_attacks(their_king) & rooks;
-        let lance_attacks = lance_pseudo_attacks(color, their_king) & lances;
+        let lance_attacks = lance_pseudo_attacks(them, their_king) & lances;
 
         let our_slider_attackers = our_pieces & (bishop_attacks | rook_attacks | lance_attacks);
 

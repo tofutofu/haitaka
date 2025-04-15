@@ -101,7 +101,8 @@ impl Board {
                 let our_king = self.king(color);
                 get_between_rays(checker, our_king) & open_squares
             } else {
-                open_squares
+                // check is not by a sliding piece, all drops are illegal!
+                BitBoard::EMPTY
             }
         } else {
             open_squares
@@ -518,6 +519,8 @@ impl Board {
     /// Generate all legal board moves and drops given a position in no particular order.
     ///
     /// To retrieve moves, a `listener` callback must be passed that receives [`PieceMoves`].
+    /// If you use the listener to update local state, then please remember that it may be
+    /// called back several times by this function.
     ///
     /// The listener will be called max 1 time for the King of the side that is to move,
     /// max 2 times for every other piece on the board, and max 1 time for every piece type

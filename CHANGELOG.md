@@ -3,6 +3,8 @@
 ## v0.2.2 (Unreleased)
 - Fixed a bug in the generation of Pawn drops (if the first candidate drop was an 
 illegal mate, then all Pawn drops would be skipped).
+- Fixed a bug in calculating checkers and pins after playing a move (checks with lance were
+not updated).
 
 ## v0.2.1
 

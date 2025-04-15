@@ -48,7 +48,8 @@ impl PieceMoves {
     ///
     /// The PieceMovesIter will generate _at least_ this number of moves,
     /// but may generate up to twice as many, depending on whether a piece can promote or not.
-    ///
+    /// To get the accurate number of moves, do not use this function, but use
+    /// `moves.into_iter()` on a PieceMoves instance.
     pub fn len(&self) -> usize {
         match self {
             PieceMoves::Drops { to, .. } | PieceMoves::BoardMoves { to, .. } => to.len() as usize,
