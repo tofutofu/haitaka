@@ -1,6 +1,6 @@
 [package]
 name = "haitaka"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2024"
 authors = ["tofutofu <tofutofu@users.noreply.github.com>"]
 readme = "README.md"
@@ -13,10 +13,10 @@ keywords = ["shogi", "chess", "no_std"]
 categories = ["games", "no-std"]
 
 [dependencies]
-haitaka-types = { path = "../haitaka_types", version = "0.1.1" }
+haitaka-types = { path = "../haitaka_types", version = "0.1.2" }
 
 [build-dependencies]
-haitaka-types = { path = "../haitaka_types", version = "0.1.1" }
+haitaka-types = { path = "../haitaka_types", version = "0.1.2" }
 
 [dev-dependencies]
 criterion = { version = "0.3.5", features = ["html_reports"] }
