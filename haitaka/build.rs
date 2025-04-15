@@ -57,7 +57,6 @@ fn main() {
 #[cfg(not(feature = "qugiy"))]
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:warning=INFO: Building Rook and Bishop move tables.");
 
     let mut rook_table: Vec<u128> = vec![0u128; ROOK_TABLE_SIZE];
     let mut bishop_table: Vec<u128> = vec![0u128; BISHOP_TABLE_SIZE];
