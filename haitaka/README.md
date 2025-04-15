@@ -40,7 +40,7 @@ The layout of the modules and the overall design is largely the same as in `cozy
 Add `haitaka` to your `Cargo.toml`:
 ```toml
 [dependencies]
-haitaka = "0.2.0"   # or use the latest version on crates.io
+haitaka = "0.2.1"   # or use the latest version on crates.io
 ```
 
 ## Usage

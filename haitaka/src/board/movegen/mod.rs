@@ -90,6 +90,7 @@ impl Board {
     //
     fn target_drops<const IN_CHECK: bool>(&self) -> BitBoard {
         let color = self.side_to_move();
+        let open_squares = !self.occupied();
 
         if IN_CHECK {
             // when in check, we must block the checker
@@ -98,12 +99,12 @@ impl Board {
                 debug_assert!(checkers.len() == 1);
                 let checker = self.checkers().next_square().unwrap();
                 let our_king = self.king(color);
-                get_between_rays(checker, our_king) & !self.occupied()
+                get_between_rays(checker, our_king) & open_squares
             } else {
-                BitBoard::EMPTY
+                open_squares
             }
         } else {
-            !self.occupied()
+            open_squares
         }
     }
 
@@ -326,7 +327,8 @@ impl Board {
         debug_assert!(!target_squares.is_empty());
 
         if self.has_in_hand(color, piece) {
-            let mut to = target_squares & drop_zone(color, piece);
+            // limit targets to squares where piece may be dropped
+            let mut to: BitBoard = target_squares & drop_zone(color, piece);
 
             if piece == Piece::Pawn {
                 // prevent creating a double-pawn (nifu)
@@ -335,10 +337,10 @@ impl Board {
                     return false;
                 }
                 // check that the drop doesn't cause illegal checkmate
-                // if we're in check, this situation cannot occur
+                // note: if we're in check, this situation cannot occur
                 let to_square = to.next_square().unwrap();
                 if !IN_CHECK && self.is_illegal_mate_by_pawn_drop(to_square) {
-                    return false;
+                    to = to.rm(to_square);
                 }
             }
             if to.is_empty() {
@@ -372,12 +374,6 @@ impl Board {
                 listener(PieceMoves::Drops { color, piece: Piece::Rook, to: targets }),
             self.has_in_hand(color, Piece::Bishop) &&
                 listener(PieceMoves::Drops { color, piece: Piece::Bishop, to: targets })
-            /*
-            self.add_drops::<commoner::Silver, _, IN_CHECK>(listener, targets),
-            self.add_drops::<commoner::Gold, _, IN_CHECK>(listener, targets),
-            self.add_drops::<commoner::Rook, _, IN_CHECK>(listener, targets),
-            self.add_drops::<commoner::Bishop, _, IN_CHECK>(listener, targets)
-            */
         }
         false
     }

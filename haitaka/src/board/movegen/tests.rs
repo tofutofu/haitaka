@@ -184,3 +184,40 @@ fn pawn_push_mate_is_valid() {
     assert!(board.is_legal_board_move(mv));
     assert!(board.is_legal(mv));
 }
+
+#[test]
+fn discount_pawn_drop_mate_in_perft() {
+    // See old discussion at: https://www.talkchess.com/forum3/viewtopic.php?f=7&t=71550
+    //
+    // Testing this SFEN did expose a bug in the haitaka 0.2.1 code:
+    // When generating Pawn drops, all drops would be skipped if the first drop we looked
+    // at happened to be an illegal checkmate.
+    let sfen: &str = "7lk/9/8S/9/9/9/9/7L1/8K b P 1";
+    let board: Board = sfen.parse().unwrap();
+    assert_eq!(board.side_to_move(), Color::Black);
+    assert!(board.has_in_hand(Color::Black, Piece::Pawn));
+
+    let mut num_moves = 0;
+    board.generate_moves(|mvs| {
+        for _mv in mvs {
+            num_moves += 1;
+        }
+        false
+    });
+    assert_eq!(num_moves, 85);
+}
+
+#[test]
+fn no_drop_on_top() {
+    let board: Board = "ln1g5/1r4k2/p2pppn2/2ps2p2/1p7/2P6/PPSPPPPLP/2G2K1pr/LN4G1b b BG2SLPnp 61"
+        .parse()
+        .unwrap();
+    assert_eq!(board.side_to_move(), Color::Black);
+    let open_squares = !board.occupied();
+    board.generate_drops(|mvs| {
+        for mv in mvs {
+            assert!(open_squares.has(mv.to()));
+        }
+        false
+    });
+}

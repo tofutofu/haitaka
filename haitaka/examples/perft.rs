@@ -75,6 +75,23 @@ fn perft_bulk<const DROPS: bool>(board: &Board, depth: u8) -> u64 {
     nodes
 }
 
+fn format_with_underscores(num: u64) -> String {
+    let num_str = num.to_string();
+    let mut formatted = String::new();
+    let mut count = 0;
+
+    for c in num_str.chars().rev() {
+        if count == 3 {
+            formatted.push('_');
+            count = 0;
+        }
+        formatted.push(c);
+        count += 1;
+    }
+
+    formatted.chars().rev().collect()
+}
+
 fn help_message() {
     eprintln!("USAGE: perft <depth> [<SFEN>] [--no-bulk] [--help]");
     eprintln!("  Defaults to the start position if no SFEN is specified.");
@@ -159,7 +176,10 @@ fn main() {
     let elapsed = start.elapsed();
     let nps = nodes as f64 / elapsed.as_secs_f64();
     println!(
-        "perft {}: {} nodes in {:.2?} ({:.0} nps)",
-        depth, nodes, elapsed, nps
+        "perft {}: {} nodes in {:.2?} ({} nps)",
+        depth,
+        format_with_underscores(nodes),
+        elapsed,
+        format_with_underscores(nps as u64)
     );
 }

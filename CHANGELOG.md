@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.2 (Unreleased)
+- Fixed a bug in the generation of Pawn drops (if the first candidate drop was an 
+illegal mate, then all Pawn drops would be skipped).
+
 ## v0.2.1
 
 - Fixed SFEN display of pieces in hand. This now conforms to the USI format.
