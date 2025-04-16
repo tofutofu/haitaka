@@ -3,7 +3,6 @@ use super::*;
 use std::collections::HashSet;
 
 // Tests the generation of board moves based on giving a subset of squares
-// TODO: There is still a bug lurking at deeper depths.
 #[test]
 fn subset_movegen_habu_position() {
     fn visit(board: &Board, depth: u8) {

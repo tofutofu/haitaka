@@ -1,7 +1,6 @@
 //! [`Piece`] representation
 use crate::*;
 
-// TODO: remove this and move the String-related parsing to haitaka_types?
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
@@ -53,15 +52,13 @@ crate::helpers::simple_enum! {
 // White/White pieces by lowerase. Promoted pieces are indicated by
 // a '+' prefix.
 
-// TODO: Should there be a "None" or "Empty" piecetype?
-
 crate::helpers::simple_error! {
     /// The value was not a valid [`Piece`].
     pub struct PieceParseError = "The value is not a valid Piece.";
 }
 
 impl Piece {
-    // Max number of pieces for a piece type to have in hand
+    /// Max number of pieces for a piece type to have in hand
     pub const MAX_HAND: [u8; Self::NUM] = [
         18, // Pawn
         4,  // Lance
@@ -71,6 +68,42 @@ impl Piece {
         2,  // Rook
         4,  // Gold
         0, 0, 0, 0, 0, 0, 0,
+    ];
+
+    // piece -> promoted piece (promoted pieces map to themselves)
+    const PROMOTED: [Self; Self::NUM] = [
+        Piece::Tokin,
+        Piece::PLance,
+        Piece::PKnight,
+        Piece::PSilver,
+        Piece::PBishop,
+        Piece::PRook,
+        Piece::Gold,
+        Piece::King,
+        Piece::Tokin,
+        Piece::PLance,
+        Piece::PKnight,
+        Piece::PSilver,
+        Piece::PBishop,
+        Piece::PRook,
+    ];
+
+    // promoted piece -> piece (unpromoted pieces map to themselves)
+    const UNPROMOTED: [Self; Self::NUM] = [
+        Piece::Pawn,
+        Piece::Lance,
+        Piece::Knight,
+        Piece::Silver,
+        Piece::Bishop,
+        Piece::Rook,
+        Piece::Gold,
+        Piece::King,
+        Piece::Pawn,
+        Piece::Lance,
+        Piece::Knight,
+        Piece::Silver,
+        Piece::Bishop,
+        Piece::Rook,
     ];
 
     /// Is this piece a promoted piece?
@@ -116,6 +149,27 @@ impl Piece {
     }
 
     /// Must this piece with given color promote on the given square?
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use haitaka_types::*;
+    /// assert!(Piece::Pawn.must_promote(Color::Black, Square::A3));
+    /// assert!(Piece::Lance.must_promote(Color::Black, Square::A3));
+    /// assert!(Piece::Knight.must_promote(Color::Black, Square::A3));
+    ///
+    /// assert!(Piece::Pawn.must_promote(Color::White, Square::I3));
+    /// assert!(Piece::Lance.must_promote(Color::White, Square::I3));
+    /// assert!(Piece::Knight.must_promote(Color::White, Square::I3));
+    ///
+    /// assert!(!Piece::Pawn.must_promote(Color::Black, Square::B3));
+    /// assert!(!Piece::Lance.must_promote(Color::Black, Square::B3));
+    /// assert!(Piece::Knight.must_promote(Color::Black, Square::B3));
+    ///
+    /// assert!(!Piece::Pawn.must_promote(Color::White, Square::H3));
+    /// assert!(!Piece::Lance.must_promote(Color::White, Square::H3));
+    /// assert!(Piece::Knight.must_promote(Color::White, Square::H3));
+    /// ```
     #[inline(always)]
     pub const fn must_promote(self, color: Color, square: Square) -> bool {
         let rank = square.rank() as usize;
@@ -147,44 +201,20 @@ impl Piece {
         !self.must_promote(color, square)
     }
 
-    // TODO: See if it makes things a lot faster to use static arrays
-    // to get the promoted or unpromoted pieces.
-
     /// Promote this piece.
-    /// # Panics
-    /// This function panics if the piece can not be promoted.
+    ///
+    /// Never panics. If the piece cannot be promoted, it the same piece is returned.
     #[inline(always)]
     pub const fn promote(self) -> Self {
-        match self {
-            Self::Pawn => Self::Tokin,
-            Self::Lance => Self::PLance,
-            Self::Knight => Self::PKnight,
-            Self::Silver => Self::PSilver,
-            Self::Bishop => Self::PBishop,
-            Self::Rook => Self::PRook,
-            _ => panic!("Piece can not promote."),
-        }
-    }
-
-    #[inline(always)]
-    pub const fn do_promote(self, yes: bool) -> Self {
-        if yes { self.promote() } else { self }
+        Self::PROMOTED[self as usize]
     }
 
     /// Unpromote this piece.
     ///
-    /// Note: This function never errors. If called on
-    /// an unpromoted piece, the same piece will be returned.
+    /// Never panics. If the piece is an unpromoted piece, the same piece is returned.
     #[inline(always)]
     pub const fn unpromote(self) -> Self {
-        match self {
-            Self::Tokin => Self::Pawn,
-            Self::PSilver => Self::Silver,
-            Self::PKnight => Self::Knight,
-            Self::PBishop => Self::Bishop,
-            Self::PRook => Self::Rook,
-            _ => self,
-        }
+        Self::UNPROMOTED[self as usize]
     }
 
     pub fn try_from_char(c: char) -> Option<(Self, Color)> {
@@ -313,61 +343,3 @@ impl core::fmt::Display for ColoredPiece {
         write!(f, "{}", self.piece.to_str(self.color))
     }
 }
-
-/*
-    // Parse a ColoredPiece from a string
-    let cp: ColoredPiece = "+p".parse().unwrap();
-    println!("{:?}", cp); // Output: ColoredPiece { piece: Tokin, color: White }
-
-    let cp: ColoredPiece = "P".parse().unwrap();
-    println!("{:?}", cp); // Output: ColoredPiece { piece: Pawn, color: Black }
-
-    // Invalid input
-    let invalid: Result<ColoredPiece, _> = "x".parse();
-    println!("{:?}", invalid); // Output: Err(PieceParseError)
-
-
-    #[test]
-    fn test_colored_piece_from_str() {
-        // Valid inputs
-        assert_eq!(
-            ColoredPiece::from_str("+p"),
-            Ok(ColoredPiece {
-                piece: Piece::Tokin,
-                color: Color::White
-            })
-        );
-
-        assert_eq!(
-            ColoredPiece::from_str("P"),
-            Ok(ColoredPiece {
-                piece: Piece::Pawn,
-                color: Color::Black
-            })
-        );
-
-        assert_eq!(
-            ColoredPiece::from_str("+R"),
-            Ok(ColoredPiece {
-                piece: Piece::PRook,
-                color: Color::Black
-            })
-        );
-
-        assert_eq!(
-            ColoredPiece::from_str("b"),
-            Ok(ColoredPiece {
-                piece: Piece::Bishop,
-                color: Color::White
-            })
-        );
-
-        // Invalid inputs
-        assert_eq!(ColoredPiece::from_str("x"), Err(PieceParseError));
-        assert_eq!(ColoredPiece::from_str("+x"), Err(PieceParseError));
-        assert_eq!(ColoredPiece::from_str(""), Err(PieceParseError));
-        assert_eq!(ColoredPiece::from_str("++p"), Err(PieceParseError));
-    }
-
-
-*/

@@ -103,7 +103,7 @@ impl Board {
                     prom = true;
                 } else if let Some((piece, color)) = Piece::try_from_char(c) {
                     file -= 1; // let it panic
-                    let piece = piece.do_promote(prom);
+                    let piece = if prom { piece.promote() } else { piece };
                     let square = Square::new(File::try_index(file).ok_or(())?, rank);
                     board.unchecked_put(color, piece, square);
                     prom = false;
@@ -172,7 +172,6 @@ impl Board {
     }
 
     fn parse_move_number(board: &mut Board, s: &str) -> Result<(), ()> {
-        // TODO: make optional
         board.move_number = s.parse().map_err(|_| ())?;
         if board.move_number == 0 {
             return Err(());

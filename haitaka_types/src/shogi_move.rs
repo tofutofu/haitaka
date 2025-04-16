@@ -160,8 +160,6 @@ impl Move {
         } else {
             &s[0..1] // "PIECE"
         };
-        // TODO: Review if we may still want to keep the piece
-        // let piece = piece_str.parse::<Piece>().map_err(|_| MoveParseError::InvalidPiece)?;
         let n = piece_str.len();
 
         let from = Self::parse_square_range(s, n..n + 2)?;

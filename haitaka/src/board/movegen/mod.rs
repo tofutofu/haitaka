@@ -73,8 +73,8 @@ impl Board {
         let targets = if IN_CHECK {
             // when in check, we must block the checker or capture it
             // (or the King must run, but this function is not used for King moves)
-            debug_assert!(self.checkers().len() == 1);
-            let checker = self.checkers().next_square().unwrap();
+            debug_assert!(self.checkers.len() == 1);
+            let checker = self.checkers.next_square().unwrap();
             let our_king = self.king(color);
             get_between_rays(checker, our_king) | checker.bitboard()
         } else {
@@ -94,10 +94,10 @@ impl Board {
 
         if IN_CHECK {
             // when in check, we must block the checker
-            let checkers = self.checkers() & self.sliders(!color);
+            let checkers = self.checkers & self.sliders(!color);
             if !checkers.is_empty() {
                 debug_assert!(checkers.len() == 1);
-                let checker = self.checkers().next_square().unwrap();
+                let checker = self.checkers.next_square().unwrap();
                 let our_king = self.king(color);
                 get_between_rays(checker, our_king) & open_squares
             } else {
@@ -453,7 +453,7 @@ impl Board {
             }
 
             // get permitted to-squares depending on checkers
-            let target_squares: BitBoard = match self.checkers().len() {
+            let target_squares: BitBoard = match self.checkers.len() {
                 0 => self.target_squares::<false>(),
                 1 => self.target_squares::<true>(),
                 _ => return false, // if there are 2 checkers, King needed to move
@@ -596,7 +596,7 @@ impl Board {
         mask: BitBoard,
         mut listener: impl FnMut(PieceMoves) -> bool,
     ) -> bool {
-        match self.checkers().len() {
+        match self.checkers.len() {
             0 => self.add_all_legals::<_, false>(mask, &mut listener),
             1 => self.add_all_legals::<_, true>(mask, &mut listener),
             _ => self.add_king_legals::<_, true>(mask, &mut listener),
@@ -632,8 +632,7 @@ impl Board {
     /// assert_eq!(num_drops, empty_squares.len());
     /// ```
     pub fn generate_drops(&self, mut listener: impl FnMut(PieceMoves) -> bool) -> bool {
-        let checkers = self.checkers();
-        match checkers.len() {
+        match self.checkers.len() {
             0 => {
                 let targets = !self.occupied();
                 self.add_all_drops::<_, false>(&mut listener, targets)
@@ -652,8 +651,7 @@ impl Board {
         piece: Piece,
         mut listener: impl FnMut(PieceMoves) -> bool,
     ) -> bool {
-        let checkers = self.checkers();
-        let num_checkers = checkers.len();
+        let num_checkers = self.checkers.len();
         if num_checkers == 0 {
             let dst = !self.occupied();
             match piece {

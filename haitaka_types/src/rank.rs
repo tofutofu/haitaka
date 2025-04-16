@@ -177,9 +177,6 @@ pub const fn must_prom_zone(color: Color, piece: Piece) -> BitBoard {
 }
 
 impl Rank {
-    // TODO: Should these array be lifted out of the impl
-    // to avoid code bloat?!
-
     /// Bitboards for the 9 ranks.
     pub const RANK: [BitBoard; Self::NUM] = [
         RANK_A, RANK_B, RANK_C, RANK_D, RANK_E, RANK_F, RANK_G, RANK_H, RANK_I,

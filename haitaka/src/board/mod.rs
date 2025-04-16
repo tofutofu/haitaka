@@ -136,9 +136,7 @@ impl Board {
         self.inner.golds_and_promoted_pieces()
     }
 
-    // TODO: Review `pseudo_golds`
-    // I think this will need to be called a _lot_, so it might be much better
-    // to cache this.
+    // TODO: Review `pseudo_golds`: is it better to cache this?
 
     /// Get a [`BitBoard`] of all pieces in current position that move like Gold.
     #[inline(always)]
@@ -416,12 +414,6 @@ impl Board {
         assert!(n > 0, "invalid move number {}", n);
         self.move_number = n;
     }
-
-    // TODO: Look into this:
-    // The `piece_on`` function seems rather inefficient (slow)?
-    // If we use an extra array, this can be replaced by simple lookup.
-    // Question is that the extra array also needs to updated during
-    // move/unmove so it's unclear if we'd gain any speed overall?
 
     /// Get the [`Piece`] on `square`, if there is one.
     ///
@@ -795,7 +787,7 @@ impl Board {
     /// assert_eq!(sfen_out, sfen2);
     /// ```
     pub fn null_move(&self) -> Option<Board> {
-        if self.checkers().is_empty() {
+        if self.checkers.is_empty() {
             let mut board = self.clone();
             let color = board.side_to_move();
 

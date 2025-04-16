@@ -1,4 +1,11 @@
-`haitaka` `ハイタカ`
+# haitaka ハイタカ &emsp; [![Latest Version]][crates.io] [![Build Status]][actions] [![Documentation]][docs]
+
+[Build Status]: https://img.shields.io/github/actions/workflow/status/tofutofu/haitaka/rust.yml?branch=main
+[actions]: https://github.com/tofutofu/haitaka/actions?query=branch%3Amain
+[Latest Version]: https://img.shields.io/crates/v/haitaka.svg
+[crates.io]: https://crates.io/crates/haitaka
+[Documentation]: https://docs.rs/haitaka/badge.svg
+[docs]: https://docs.rs/haitaka
 
 ## Rust Shogi move generation library
 
@@ -69,12 +76,16 @@ cargo run --release --example perft -- 5
 This code has been tested on an Apple M2, using the stable-aarch64-apple-darwin toolchain. In
 GitHub workflows it has also been tested on Ubuntu.
 
-The code has not yet been stress tested yet or used in an actual Shogi engine.
+The code has not yet been used in a Shogi engine, so should still be seen as experimental.
 
 To run all tests use:
 ```bash
 cargo test
 ```
+
+## Contributing
+
+Contributions are very welcome! Please open an issue or submit a pull request on GitHub.
 
 ## Acknowledgments
 Portions of this library are derived from the [`cozy-chess`](https://github.com/analog-hors/cozy-chess) project by [`analog-hors`](https://github.com/analog-hors). The `cozy-chess` project is licensed under the MIT license, and its license text is included in this repository under `third_party/cozy-chess/LICENSE`.

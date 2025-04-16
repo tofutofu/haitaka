@@ -86,9 +86,9 @@ impl Board {
 
     pub(super) fn checkers_and_pins_are_valid(&self) -> bool {
         let (checkers, pinned) = self.calculate_checkers_and_pins(self.side_to_move());
-        soft_assert!(self.checkers() == checkers);
+        soft_assert!(self.checkers == checkers);
         soft_assert!(self.pinned() == pinned);
-        soft_assert!(self.checkers().len() < 3);
+        soft_assert!(self.checkers.len() < 3);
         true
     }
 
@@ -96,14 +96,9 @@ impl Board {
         self.move_number > 0
     }
 
-    // TODO: Check how often this function is used.
-    // 1. Could this also be optimized using the Qugiy trick?
-    // 2. Could we just dispense with it alltogether -- at least during search --
-    //    so just allow the king to be captured (game over)? We can during the search
-    //    but it needs to be called at least whenever a move is finalized, so that
-    //    when a move is actually made the King is not left in check. (This means
-    //    that when no such move can be found, the program should resign.)
-    //
+    // TODO: Investigate possible optimizations.
+    // Search could dispense with this, but would then need extra monitoring
+    // of when a King is captured to prevent illegal moves.
 
     /// Calculate checkers and pins.
     ///
