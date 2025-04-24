@@ -343,6 +343,9 @@ pub const fn get_lance_moves(color: Color, square: Square, occ: BitBoard) -> Bit
     // Cost: 1 table lookup + 4 bit-operations
     // Extra cost for Black: + 3 bit reversals
     //
+    // Using this method is about 20% faster than trying to use the Rook magic move
+    // table and masking out invalid ranks.
+    //
     let mut attacks = lance_pseudo_attacks(color, square).0;
     let mut occ = occ.0;
     let aok = attacks & occ;
