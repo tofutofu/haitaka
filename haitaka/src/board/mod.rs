@@ -87,7 +87,7 @@ impl Board {
     }
 
     /// Return a reference to the hand for color.
-    pub fn hand(&self, color: Color) -> &[u8; Piece::NUM] {
+    pub fn hand(&self, color: Color) -> &[u8; Piece::HAND_NUM] {
         self.inner.hand(color)
     }
 
@@ -127,7 +127,7 @@ impl Board {
 
     /// Get a [`BitBoard`] of all the pieces of the given piece type.
     #[inline(always)]
-    pub fn pieces(&self, piece: Piece) -> BitBoard {
+    pub const fn pieces(&self, piece: Piece) -> BitBoard {
         self.inner.pieces(piece)
     }
 
@@ -138,7 +138,9 @@ impl Board {
 
     // TODO: Review `pseudo_golds`: is it better to cache this?
 
-    /// Get a [`BitBoard`] of all pieces in current position that move like Gold.
+    /// Get a [`BitBoard`] of all pieces in the current position that move like Gold.
+    ///
+    /// Note: This includes PRook (Ryuu) and PBishop (Uma).
     #[inline(always)]
     pub fn pseudo_golds(&self) -> BitBoard {
         self.inner.pieces(Piece::Gold)
@@ -148,6 +150,18 @@ impl Board {
             | self.inner.pieces(Piece::PLance)
             | self.inner.pieces(Piece::PRook)
             | self.inner.pieces(Piece::PBishop)
+    }
+
+    /// Get a [`BitBoard`] of all small pieces in the current position that move like Gold.
+    ///
+    /// This does not include PRook or PBishop. Use `pseudo_golds` to include those two also.
+    #[inline(always)]
+    pub fn pseudo_tokins(&self) -> BitBoard {
+        self.inner.pieces(Piece::Gold)
+            | self.inner.pieces(Piece::Tokin)
+            | self.inner.pieces(Piece::PSilver)
+            | self.inner.pieces(Piece::PKnight)
+            | self.inner.pieces(Piece::PLance)
     }
 
     /// Get a [`BitBoard`] of all pieces that move like Silver.
@@ -160,7 +174,7 @@ impl Board {
 
     /// Get a reference to the hands array.
     #[inline(always)]
-    pub fn hands(&self) -> &[[u8; Piece::NUM]; Color::NUM] {
+    pub fn hands(&self) -> &[[u8; Piece::HAND_NUM]; Color::NUM] {
         self.inner.hands()
     }
 
@@ -468,9 +482,12 @@ impl Board {
     /// assert_eq!(board.colored_piece_on(Square::I5), Some(piece));    
     /// ```
     pub fn colored_piece_on(&self, square: Square) -> Option<ColoredPiece> {
-        if let Some(piece) = self.piece_on(square) {
+        if let Some(ref piece) = self.piece_on(square) {
             let color = self.color_on(square).unwrap();
-            Some(ColoredPiece { piece, color })
+            Some(ColoredPiece {
+                piece: *piece,
+                color,
+            })
         } else {
             None
         }

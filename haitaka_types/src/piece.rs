@@ -58,6 +58,9 @@ crate::helpers::simple_error! {
 }
 
 impl Piece {
+    /// Number of simple, unpromoted piece types other than King.
+    pub const HAND_NUM: usize = 7;
+
     /// Max number of pieces for a piece type to have in hand
     pub const MAX_HAND: [u8; Self::NUM] = [
         18, // Pawn

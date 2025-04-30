@@ -81,7 +81,7 @@ pub struct ZobristBoard {
     //
     pieces: [BitBoard; Piece::NUM + 1], // piece type => bit map of board locations
     colors: [BitBoard; Color::NUM],     // color => bit map of board locations
-    hands: [[u8; Piece::NUM]; Color::NUM], // color => [number of pieces in hand, indexed by piece type]
+    hands: [[u8; Piece::HAND_NUM]; Color::NUM], // color => [number of pieces in hand, indexed by piece type]
     side_to_move: Color,
     hash: u64,
 }
@@ -92,40 +92,40 @@ impl ZobristBoard {
         Self {
             pieces: [BitBoard::EMPTY; Piece::NUM + 1],
             colors: [BitBoard::EMPTY; Color::NUM],
-            hands: [[0; Piece::NUM]; Color::NUM],
+            hands: [[0; Piece::HAND_NUM]; Color::NUM],
             side_to_move: Color::Black,
             hash: 0,
         }
     }
 
     #[inline(always)]
-    pub fn pieces(&self, piece: Piece) -> BitBoard {
+    pub const fn pieces(&self, piece: Piece) -> BitBoard {
         self.pieces[piece as usize]
     }
 
     #[inline(always)]
-    pub fn golds_and_promoted_pieces(&self) -> BitBoard {
+    pub const fn golds_and_promoted_pieces(&self) -> BitBoard {
         // also includes King actually, which should be fine
         self.pieces[Piece::NUM]
     }
 
     #[inline(always)]
-    pub fn colors(&self, color: Color) -> BitBoard {
+    pub const fn colors(&self, color: Color) -> BitBoard {
         self.colors[color as usize]
     }
 
     #[inline(always)]
-    pub fn side_to_move(&self) -> Color {
+    pub const fn side_to_move(&self) -> Color {
         self.side_to_move
     }
 
     #[inline(always)]
-    pub fn hand(&self, color: Color) -> &[u8; Piece::NUM] {
+    pub const fn hand(&self, color: Color) -> &[u8; Piece::HAND_NUM] {
         &self.hands[color as usize]
     }
 
     #[inline(always)]
-    pub fn hands(&self) -> &[[u8; Piece::NUM]; Color::NUM] {
+    pub const fn hands(&self) -> &[[u8; Piece::HAND_NUM]; Color::NUM] {
         &self.hands
     }
 
@@ -162,11 +162,12 @@ impl ZobristBoard {
 
     #[inline(always)]
     pub fn is_hand_empty(&self, color: Color) -> bool {
-        self.hands[color as usize].iter().all(|&count| count == 0)
+        // self.hands[color as usize].iter().all(|&count| count == 0)
+        self.hands[color as usize] == [0; Piece::HAND_NUM]
     }
 
     #[inline(always)]
-    pub fn hash(&self) -> u64 {
+    pub const fn hash(&self) -> u64 {
         self.hash
     }
 

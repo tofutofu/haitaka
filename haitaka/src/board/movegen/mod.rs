@@ -121,20 +121,25 @@ impl Board {
         mask: BitBoard,
         listener: &mut F,
     ) -> bool {
-        let color = self.side_to_move();
-        let pieces = self.colored_pieces(color, P::PIECE) & mask;
-        let pinned = self.pinned();
-        let blockers = self.occupied();
         let target_squares = self.target_squares::<IN_CHECK>();
 
-        for piece in pieces & !pinned {
-            let moves = P::pseudo_legals(color, piece, blockers) & target_squares;
-            if !moves.is_empty() {
+        if IN_CHECK && target_squares.is_empty() {
+            return false;
+        }
+
+        let color = self.side_to_move();
+        let pieces = self.colored_pieces(color, P::PIECE) & mask;
+        let pinned = self.pinned;
+        let blockers = self.occupied();
+
+        for from in pieces & !pinned {
+            let to = P::pseudo_legals(color, from, blockers) & target_squares;
+            if !to.is_empty() {
                 abort_if!(listener(PieceMoves::BoardMoves {
                     color,
                     piece: P::PIECE,
-                    from: piece,
-                    to: moves
+                    from,
+                    to
                 }));
             }
         }
@@ -143,15 +148,69 @@ impl Board {
             // Pinned pieces (apart from Knight!) can still move along the attack ray between King and checker.
             // Only consider pinned pieces when not in check, since a pinned piece can never capture a checker.
             let our_king = self.king(color);
-            for piece in pieces & pinned {
-                let target_squares = target_squares & line_ray(our_king, piece);
-                let moves = P::pseudo_legals(color, piece, blockers) & target_squares;
-                if !moves.is_empty() {
+            for from in pieces & pinned {
+                let to = P::pseudo_legals(color, from, blockers)
+                    & line_ray(our_king, from)
+                    & target_squares;
+
+                if !to.is_empty() {
                     abort_if!(listener(PieceMoves::BoardMoves {
                         color,
                         piece: P::PIECE,
-                        from: piece,
-                        to: moves
+                        from,
+                        to
+                    }));
+                }
+            }
+        }
+        false
+    }
+
+    #[allow(dead_code)]
+    fn add_goldlike_legals<F: FnMut(PieceMoves) -> bool, const IN_CHECK: bool>(
+        &self,
+        mask: BitBoard,
+        listener: &mut F,
+    ) -> bool {
+        let target_squares = self.target_squares::<IN_CHECK>();
+
+        if IN_CHECK && target_squares.is_empty() {
+            return false;
+        }
+
+        let color = self.side_to_move();
+        let pieces = self.pseudo_tokins() & self.colors(color) & mask;
+        let pinned = self.pinned;
+
+        for from in pieces & !pinned {
+            // Only goldlike pieces that are not pinned
+            let to = gold_attacks(color, from) & target_squares;
+            if !to.is_empty() {
+                let piece = self.piece_on(from).unwrap();
+                abort_if!(listener(PieceMoves::BoardMoves {
+                    color,
+                    piece,
+                    from,
+                    to
+                }));
+            }
+        }
+
+        if !IN_CHECK {
+            // Pinned gold-like pieces can still move along the attack ray between King and checker.
+            // Only consider pinned pieces when not in check, since a pinned piece can never capture a checker!
+            let our_king = self.king(color);
+            for from in pieces & pinned {
+                let to = gold_attacks(color, from) & line_ray(our_king, from) & target_squares;
+
+                if !to.is_empty() {
+                    let piece = self.piece_on(from).unwrap();
+                    assert!((to & self.colors(color)).is_empty());
+                    abort_if!(listener(PieceMoves::BoardMoves {
+                        color,
+                        piece,
+                        from,
+                        to
                     }));
                 }
             }
@@ -302,11 +361,15 @@ impl Board {
             self.add_common_legals::<commoner::Lance, _, IN_CHECK>(mask, listener),
             self.add_common_legals::<commoner::Knight, _, IN_CHECK>(mask, listener),
             self.add_common_legals::<commoner::Silver, _, IN_CHECK>(mask, listener),
+
+            // doing all of the small gold-like pieces in one step consistently hurts
+            // the speed of move generation, so I keep the separate calls:
             self.add_common_legals::<commoner::Gold, _, IN_CHECK>(mask, listener),
             self.add_common_legals::<commoner::Tokin, _, IN_CHECK>(mask, listener),
             self.add_common_legals::<commoner::PLance, _, IN_CHECK>(mask, listener),
             self.add_common_legals::<commoner::PKnight, _, IN_CHECK>(mask, listener),
             self.add_common_legals::<commoner::PSilver, _, IN_CHECK>(mask, listener),
+
             self.add_common_legals::<commoner::Bishop, _, IN_CHECK>(mask, listener),
             self.add_common_legals::<commoner::Rook, _, IN_CHECK>(mask, listener),
             self.add_common_legals::<commoner::PBishop, _, IN_CHECK>(mask, listener),
@@ -426,7 +489,7 @@ impl Board {
 
             let piece = match self.piece_on(from) {
                 Some(piece) => piece,
-                None => return false, // should be unreachable, but returning false seems safer
+                None => return false,
             };
 
             if piece == Piece::King {

@@ -550,6 +550,8 @@ pub const fn get_between_rays(from: Square, to: Square) -> BitBoard {
 ///     . . X . . . . . .
 ///     . X . . . . . . .
 /// });
+/// assert_eq!(line_ray(Square::F5, Square::E4), line_ray(Square::B1, Square::I8));
+/// assert_eq!(line_ray(Square::A3, Square::I3), line_ray(Square::C3, Square::F3));
 /// ```
 #[inline(always)]
 pub const fn line_ray(from: Square, to: Square) -> BitBoard {
