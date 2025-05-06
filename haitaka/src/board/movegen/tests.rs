@@ -127,7 +127,6 @@ fn test_nifu(board: &Board) {
 
 #[test]
 fn legality_simple() {
-    // test_is_legal(Board::default()); // This is an empty board - will assert in debug, otherwise panice
     test_is_legal(Board::startpos());
     test_is_legal(
         "ln1g5/1r2S1k2/p2pppn2/2ps2p2/1p7/2P6/PPSPPPPLP/2G2K1pr/LN4G1b w BGSLPnp 62"
@@ -192,7 +191,7 @@ fn discount_pawn_drop_mate_in_perft() {
     // When generating Pawn drops, all drops would be skipped if the first drop we looked
     // at happened to be an illegal checkmate.
     let sfen: &str = "7lk/9/8S/9/9/9/9/7L1/8K b P 1";
-    let board: Board = sfen.parse().unwrap();
+    let board: Board = Board::tsume(sfen).unwrap();
     assert_eq!(board.side_to_move(), Color::Black);
     assert!(board.has_in_hand(Color::Black, Piece::Pawn));
 
@@ -208,7 +207,7 @@ fn discount_pawn_drop_mate_in_perft() {
 #[test]
 fn donot_move_into_check() {
     let sfen: &str = "7lk/9/8S/9/9/9/9/7L1/8K b P 1";
-    let mut board: Board = sfen.parse().unwrap();
+    let mut board: Board = Board::tsume(sfen).unwrap();
     assert_eq!(board.side_to_move(), Color::Black);
 
     // Ki1-h1
@@ -273,7 +272,7 @@ fn no_drop_on_top() {
 #[test]
 fn checkers_are_updated() {
     let sfen: &str = "7lk/9/8S/9/9/9/9/7L1/8K b P 1";
-    let mut board: Board = sfen.parse().unwrap();
+    let mut board: Board = Board::tsume(sfen).unwrap();
 
     // After K1i2i L2ax2h the Black King should be in check
     // and only King moves should be legal
@@ -303,4 +302,20 @@ fn checkers_are_updated() {
     assert_eq!(board.checkers().len(), 1);
     assert!(board.checkers.has(Square::H2));
     assert!(!board.is_legal(mv3));
+}
+
+#[test]
+fn tsume() {
+    let sfen = "lpg6/3s2R2/1kpppp3/p8/9/P8/2N6/9/9 b BGN 1";
+    // from_sfen will fail - since there is only one King on board
+    assert!(matches!(
+        Board::from_sfen(sfen),
+        Err(SFENParseError::InvalidBoard)
+    ));
+    // tsume will succeed
+    let board = Board::tsume(sfen).unwrap();
+    assert!(board.has(Color::White, Piece::King));
+    assert!(!board.has(Color::Black, Piece::King));
+    assert_eq!(board.num_in_hand(Color::White, Piece::Gold), 2);
+    assert_eq!(board.num_in_hand(Color::White, Piece::Silver), 3);
 }

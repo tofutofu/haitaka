@@ -144,7 +144,7 @@ impl Board {
             }
         }
 
-        if !IN_CHECK && P::PIECE != Piece::Knight {
+        if !IN_CHECK && P::PIECE != Piece::Knight && self.has(color, Piece::King) {
             // Pinned pieces (apart from Knight!) can still move along the attack ray between King and checker.
             // Only consider pinned pieces when not in check, since a pinned piece can never capture a checker.
             let our_king = self.king(color);
@@ -196,7 +196,7 @@ impl Board {
             }
         }
 
-        if !IN_CHECK {
+        if !IN_CHECK && self.has(color, Piece::King) {
             // Pinned gold-like pieces can still move along the attack ray between King and checker.
             // Only consider pinned pieces when not in check, since a pinned piece can never capture a checker!
             let our_king = self.king(color);
@@ -220,15 +220,17 @@ impl Board {
 
     // Is the King (of the side-to-move) safe on this square?
     //
-    // This function seems a bit inefficient since it basically recomputes the
-    // opponent's attacks. But all those attacks have already been computed
-    // on the preceding move (and could be precalculated for the first move),
-    // so if they were cached this function could perhaps be optimized a lot.
-    // Problem is that when the opponent does a move, those attacks will no
-    // longer be valid for the moved piece, and also no longer for any sliders
-    // that is blocking. It might be cost-effective, just to update the attacks
-    // for the piece that moved again. But sliders are then still a bit of a
-    // problem.
+    // This function seems inefficient since it recomputes the opponent's attacks.
+    // But all those attacks have been computed on the preceding move, so if they
+    // were cached this function could perhaps be optimized.
+    // But there are two problems: (1) Move generation (generation of attacks) is
+    // lazy. It can be interrupted by a listener, so that we don't generate all
+    // possible moves. (2) Even if all moves (and attacks) are generated, those
+    // become partially invalidated by actually making a move. Playing a move
+    // invalidates the attacks of the moving piece and may either block sliders
+    // or open up slider rays. So, it's not at all trivial to determine King
+    // safety by efficient caching since this would require more work in
+    // maintaining some cached data struct of 'attacks'. However...
 
     #[inline]
     fn king_safe_on(&self, square: Square) -> bool {
@@ -253,20 +255,21 @@ impl Board {
 
         let color = self.side_to_move();
         let their_pieces = self.colors(!color);
+        let kings = self.pieces(Piece::King);
+
+        // simulate moving the King to the square (for slider attack generation)
         let blockers =
             (self.occupied() ^ self.colored_pieces(color, Piece::King)) | square.bitboard();
 
         // testing the sliders takes up about half of the test time;
         // using lazy_and improves throughput by about 17%
         short_circuit! {
-            // attacks by the opponent's King are covered by the gold and silver attacks
-            gold_attacks(color, square) & their_pieces & self.golds_and_promoted_pieces(),
-            silver_attacks(color, square) & their_pieces & (self.pieces(Piece::Silver) | self.pieces(Piece::King)),
+            gold_attacks(color, square) & their_pieces & (self.pseudo_golds() | kings),
+            silver_attacks(color, square) & their_pieces & (self.pseudo_silvers() | kings),
             knight_attacks(color, square) & their_pieces & self.pieces(Piece::Knight),
             pawn_attacks(color, square) & their_pieces & self.pieces(Piece::Pawn),
             lazy_and! {
                 // by first filtering on pseudo attacks, this whole function becomes almost twice as fast
-                // (which also suggests that switching to magic bitboards would generally be much more performant)
                 bishop_pseudo_attacks(square) & (self.pieces(Piece::Bishop) | self.pieces(Piece::PBishop)) & their_pieces,
                 get_bishop_moves(color, square, blockers)
             },
@@ -326,6 +329,10 @@ impl Board {
         const PIECE: Piece = Piece::King;
 
         let color = self.side_to_move();
+        if !self.has(color, Piece::King) {
+            return false;
+        }
+
         let our_pieces = self.colors(color);
         let our_king = self.king(color);
         if !mask.has(our_king) {
@@ -334,8 +341,7 @@ impl Board {
         let mut moves = king_attacks(color, our_king) & !our_pieces;
         for to in moves {
             // removing unsafe squares should generally be more efficient than
-            // adding safe squares to an originally empty bitboard, since
-            // until the endgame most squares will be safe
+            // adding safe squares since (until the endgame) most squares are safe
             if !self.king_safe_on(to) {
                 moves ^= to.bitboard();
             }
@@ -401,10 +407,12 @@ impl Board {
                     return false;
                 }
                 // check that the drop doesn't cause illegal checkmate
-                // note: if we're in check, this situation cannot occur
-                let to_square = to.next_square().unwrap();
-                if !IN_CHECK && self.is_illegal_mate_by_pawn_drop(to_square) {
-                    to = to.rm(to_square);
+                // note: if we're in check, this situation cannot occur!
+                if !IN_CHECK {
+                    let to_square = to.next_square().unwrap();
+                    if self.is_illegal_mate_by_pawn_drop(to_square) {
+                        to = to.rm(to_square);
+                    }
                 }
             }
             if to.is_empty() {
