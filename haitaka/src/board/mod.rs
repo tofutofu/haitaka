@@ -87,7 +87,7 @@ impl Board {
     }
 
     /// Return a reference to the hand for color.
-    pub fn hand(&self, color: Color) -> &[u8; Piece::HAND_NUM] {
+    pub fn hand(&self, color: Color) -> &[u8; Piece::NUM] {
         self.inner.hand(color)
     }
 
@@ -101,6 +101,12 @@ impl Board {
     #[inline(always)]
     pub fn has_in_hand(&self, color: Color, piece: Piece) -> bool {
         self.inner.hand(color)[piece as usize] > 0
+    }
+
+    /// Return the number of pieces of the given piece type that color has in hand.
+    #[inline(always)]
+    pub fn num_in_hand(&self, color: Color, piece: Piece) -> u8 {
+        self.inner.num_in_hand(color, piece)
     }
 
     /// Set the count of a piece in hand for color.
@@ -131,30 +137,24 @@ impl Board {
         self.inner.pieces(piece)
     }
 
+    /// Returns true if color has this particular piece on the board.
     #[inline(always)]
-    pub fn golds_and_promoted_pieces(&self) -> BitBoard {
-        self.inner.golds_and_promoted_pieces()
+    pub fn has(&self, color: Color, piece: Piece) -> bool {
+        !self.colored_pieces(color, piece).is_empty()
     }
-
-    // TODO: Review `pseudo_golds`: is it better to cache this?
 
     /// Get a [`BitBoard`] of all pieces in the current position that move like Gold.
     ///
-    /// Note: This includes PRook (Ryuu) and PBishop (Uma).
+    /// Note: This includes the Golds and all promoted pieces, including PRook and PBishop.
+    /// Kings are not included.
     #[inline(always)]
     pub fn pseudo_golds(&self) -> BitBoard {
-        self.inner.pieces(Piece::Gold)
-            | self.inner.pieces(Piece::Tokin)
-            | self.inner.pieces(Piece::PSilver)
-            | self.inner.pieces(Piece::PKnight)
-            | self.inner.pieces(Piece::PLance)
-            | self.inner.pieces(Piece::PRook)
-            | self.inner.pieces(Piece::PBishop)
+        self.inner.golds_and_promoted_pieces()
     }
 
     /// Get a [`BitBoard`] of all small pieces in the current position that move like Gold.
     ///
-    /// This does not include PRook or PBishop. Use `pseudo_golds` to include those two also.
+    /// This includes the Golds and all small promoted pieces, excluding PRook and PBishop.
     #[inline(always)]
     pub fn pseudo_tokins(&self) -> BitBoard {
         self.inner.pieces(Piece::Gold)
@@ -165,6 +165,8 @@ impl Board {
     }
 
     /// Get a [`BitBoard`] of all pieces that move like Silver.
+    ///
+    /// This includes the PRook and PBishop. Kings are not included.
     #[inline(always)]
     pub fn pseudo_silvers(&self) -> BitBoard {
         self.inner.pieces(Piece::Silver)
@@ -174,7 +176,7 @@ impl Board {
 
     /// Get a reference to the hands array.
     #[inline(always)]
-    pub fn hands(&self) -> &[[u8; Piece::HAND_NUM]; Color::NUM] {
+    pub fn hands(&self) -> &[[u8; Piece::NUM]; Color::NUM] {
         self.inner.hands()
     }
 
@@ -644,12 +646,11 @@ impl Board {
     ///
     /// Use this method with caution. Only legal moves should ever be passed.
     /// Playing illegal moves may corrupt the board state and cause panics.
-    /// (Even if it doesn't caused undefined behavior.)
     ///
     /// # Panics
     /// This may panic eventually if the move is illegal.
     ///
-    /// Playing illegal moves may also corrupt the board state, which may cause further panics.
+    /// Playing illegal moves corrupts the board state, which may cause further panics.
     /// See [`Board::play`] for a variant _guaranteed_ to panic immediately on illegal moves.
     ///
     /// # Examples
@@ -679,7 +680,12 @@ impl Board {
             }
 
             // update checkers and pins
-            self.update_checkers_and_pins(color, piece, to);
+            if self.has(!color, Piece::King) {
+                self.update_checkers_and_pins(color, piece, to);
+            } else {
+                self.checkers = BitBoard::EMPTY;
+                self.pinned = BitBoard::EMPTY;
+            }
         } else if let Move::BoardMove {
             from,
             to,
@@ -716,8 +722,13 @@ impl Board {
                 self.no_pawn_on_file[color as usize] |= to.file().bitboard();
             }
 
-            // update checkers and pins
-            self.update_checkers_and_pins(color, final_piece, to);
+            // update checkers and pins (if the other side has a King)
+            if self.has(!color, Piece::King) {
+                self.update_checkers_and_pins(color, final_piece, to);
+            } else {
+                self.checkers = BitBoard::EMPTY;
+                self.pinned = BitBoard::EMPTY;
+            }
         }
 
         // update move_number
@@ -734,7 +745,8 @@ impl Board {
 
         // update for non-sliders
         let them = !color;
-        let their_king = self.king(them); // may panic
+        debug_assert!(self.has(them, Piece::King));
+        let their_king = self.king(them);
 
         match piece {
             Piece::Pawn => {

@@ -27,6 +27,67 @@ impl Board {
     /// assert_eq!(format!("{}", board), STARTPOS);
     /// ```
     pub fn from_sfen(sfen: &str) -> Result<Self, SFENParseError> {
+        let mut board = Self::parse(sfen)?;
+        board.validate_after_parse(false)?;
+        Ok(board)
+    }
+
+    fn validate_after_parse(&mut self, tsume: bool) -> Result<(), SFENParseError> {
+        use SFENParseError::*;
+        if !self.move_number_is_valid() {
+            return Err(InvalidMoveNumber);
+        }
+        if !self.is_valid(tsume) {
+            return Err(InvalidBoard);
+        }
+        let (checkers, pinned) = self.calculate_checkers_and_pins(self.side_to_move());
+        self.checkers = checkers;
+        self.pinned = pinned;
+        if !self.checkers_and_pins_are_valid() {
+            return Err(InvalidBoard);
+        }
+        if !self.piece_counts_are_valid() {
+            return Err(InvalidBoard);
+        }
+        Ok(())
+    }
+
+    /// Parse a SFEN string representing a Tsume Shogi problem.
+    ///
+    /// This function supports a custom SFEN format in which (1) the Black King is
+    /// not required to be present and (2) all remaining pieces that are
+    /// not on the board and not in Black's hand are automatically assigned to White's
+    /// hand.
+    ///
+    /// By convention we require Black to be the side-to-move, otherwise it returns a
+    /// SFENParseError::InvalidSideToMove.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use haitaka::*;
+    /// let sfen = "lpg6/3s2R2/1kpppp3/p8/9/P8/2N6/9/9 b BGN 1";
+    /// // from_sfen will fail - since there is only one King on board
+    /// assert!(matches!(Board::from_sfen(sfen), Err(SFENParseError::InvalidBoard)));
+    /// // tsume will succeed
+    /// let board = Board::tsume(sfen).unwrap();
+    /// assert!(board.has(Color::White, Piece::King));
+    /// assert!(!board.has(Color::Black, Piece::King));
+    /// assert_eq!(board.num_in_hand(Color::White, Piece::Gold), 2);
+    /// assert_eq!(board.num_in_hand(Color::White, Piece::Silver), 3);
+    /// ```
+    pub fn tsume(sfen: &str) -> Result<Self, SFENParseError> {
+        let mut board = Self::parse(sfen)?;
+        if board.side_to_move() != Color::Black {
+            Err(SFENParseError::InvalidSideToMove)
+        } else {
+            board.piece_counts_make_valid();
+            board.validate_after_parse(true)?;
+            Ok(board)
+        }
+    }
+
+    fn parse(sfen: &str) -> Result<Self, SFENParseError> {
         use SFENParseError::*;
 
         let mut board = Self {
@@ -58,26 +119,6 @@ impl Board {
 
         if parts.next().is_some() {
             return Err(TooManyFields);
-        }
-
-        if !board.move_number_is_valid() {
-            return Err(InvalidMoveNumber);
-        }
-
-        if !board.is_valid() {
-            return Err(InvalidBoard);
-        }
-
-        let (checkers, pinned) = board.calculate_checkers_and_pins(board.side_to_move());
-        board.checkers = checkers;
-        board.pinned = pinned;
-
-        if !board.checkers_and_pins_are_valid() {
-            return Err(InvalidBoard);
-        }
-
-        if !board.hands_are_valid() {
-            return Err(InvalidBoard);
         }
 
         Ok(board)
@@ -291,7 +332,7 @@ mod tests {
     fn handles_valid_sfens() {
         for sfen in include_str!("test_data/valid.sfens").lines() {
             let board = Board::from_sfen(sfen).unwrap();
-            assert!(board.validity_check());
+            assert!(board.validity_check(false));
         }
     }
 

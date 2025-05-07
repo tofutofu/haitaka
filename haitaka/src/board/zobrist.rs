@@ -78,10 +78,10 @@ const ZOBRIST: ZobristConstants = {
 // This is Copy for performance reasons, since Copy guarantees a bit-for-bit copy.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ZobristBoard {
-    //
-    pieces: [BitBoard; Piece::NUM + 1], // piece type => bit map of board locations
+    // Note that `pieces[Piece::NUM]` is used as bitmap of all promoted pieces
+    pieces: [BitBoard; Piece::NUM + 1], // piece type => bitmap of board locations
     colors: [BitBoard; Color::NUM],     // color => bit map of board locations
-    hands: [[u8; Piece::HAND_NUM]; Color::NUM], // color => [number of pieces in hand, indexed by piece type]
+    hands: [[u8; Piece::NUM]; Color::NUM], // color => [number of pieces in hand, indexed by piece type]
     side_to_move: Color,
     hash: u64,
 }
@@ -92,7 +92,7 @@ impl ZobristBoard {
         Self {
             pieces: [BitBoard::EMPTY; Piece::NUM + 1],
             colors: [BitBoard::EMPTY; Color::NUM],
-            hands: [[0; Piece::HAND_NUM]; Color::NUM],
+            hands: [[0; Piece::NUM]; Color::NUM],
             side_to_move: Color::Black,
             hash: 0,
         }
@@ -105,7 +105,6 @@ impl ZobristBoard {
 
     #[inline(always)]
     pub const fn golds_and_promoted_pieces(&self) -> BitBoard {
-        // also includes King actually, which should be fine
         self.pieces[Piece::NUM]
     }
 
@@ -120,13 +119,18 @@ impl ZobristBoard {
     }
 
     #[inline(always)]
-    pub const fn hand(&self, color: Color) -> &[u8; Piece::HAND_NUM] {
+    pub const fn hand(&self, color: Color) -> &[u8; Piece::NUM] {
         &self.hands[color as usize]
     }
 
     #[inline(always)]
-    pub const fn hands(&self) -> &[[u8; Piece::HAND_NUM]; Color::NUM] {
+    pub const fn hands(&self) -> &[[u8; Piece::NUM]; Color::NUM] {
         &self.hands
+    }
+
+    #[inline(always)]
+    pub const fn num_in_hand(&self, color: Color, piece: Piece) -> u8 {
+        self.hands[color as usize][piece as usize]
     }
 
     #[inline(always)]
@@ -163,7 +167,7 @@ impl ZobristBoard {
     #[inline(always)]
     pub fn is_hand_empty(&self, color: Color) -> bool {
         // self.hands[color as usize].iter().all(|&count| count == 0)
-        self.hands[color as usize] == [0; Piece::HAND_NUM]
+        self.hands[color as usize] == [0; Piece::NUM]
     }
 
     #[inline(always)]
@@ -184,7 +188,7 @@ impl ZobristBoard {
         let square_bb = square.bitboard();
         self.pieces[piece as usize] ^= square_bb; // toggles
         self.colors[color as usize] ^= square_bb; // toggles
-        if piece as usize >= Piece::Gold as usize {
+        if piece as usize > Piece::King as usize || piece as usize == Piece::Gold as usize {
             self.pieces[Piece::NUM] ^= square_bb;
         }
         self.hash ^= ZOBRIST.color[color as usize].pieces[piece as usize][square as usize];
