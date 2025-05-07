@@ -46,7 +46,16 @@ fn perft_tsume(board: &Board, depth: u8) -> u32 {
                     false
                 });
             }
-            Color::Black => {}
+            Color::Black => {
+                board.generate_checks(|moves| {
+                    for mv in moves {
+                        let mut board = board.clone();
+                        board.play_unchecked(mv);
+                        nodes += perft_tsume(&board, depth - 1);
+                    }
+                    false
+                });
+            }
         }
 
         nodes
