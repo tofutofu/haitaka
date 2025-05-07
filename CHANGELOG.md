@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.2.3
+
+## Added (**breaking**)
+- Added support for reading SFEN strings for Tsume Shogi positions. In those
+positions we only require the White King to be present. Also, we automatically
+assign all remaining pieces (pieces not included in the SFEN string) to White's
+hand.
+- Added support for generating checks. This required changing the PieceMoves struct.
+
 ## v0.2.2
 - Fixed a bug in the generation of Pawn drops (if the first candidate drop was an 
 illegal mate, then all Pawn drops would be skipped).
