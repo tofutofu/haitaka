@@ -13,10 +13,10 @@ keywords = ["shogi", "chess", "no_std"]
 categories = ["games", "no-std"]
 
 [dependencies]
-haitaka-types = { path = "../haitaka_types", version = "0.1.3" }
+haitaka-types = "0.1.3"
 
 [build-dependencies]
-haitaka-types = { path = "../haitaka_types", version = "0.1.3" }
+haitaka-types = "0.1.3"
 
 [dev-dependencies]
 criterion = { version = "0.3.5", features = ["html_reports"] }
