@@ -109,7 +109,7 @@ impl PieceMoves {
                     PromotionStatus::CannotPromote => !promotion,
                     PromotionStatus::MustPromote => promotion,
                     PromotionStatus::MayPromote => true,
-                    _ => unreachable!(),
+                    _ => unreachable!(), // by design of `&` and `new` this is really unreachable
                 }
             }
             // Handle Drops

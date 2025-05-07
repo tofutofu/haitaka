@@ -95,7 +95,7 @@ impl Board {
     /// only check that the piece count does not exceed the expected maximum.
     pub(super) fn piece_counts_are_valid(&self) -> bool {
         let &hands = self.hands();
-        for index in 0..7 {
+        for index in 0..Piece::HAND_NUM {
             let piece = Piece::index_const(index);
             debug_assert!(piece != Piece::King);
 
