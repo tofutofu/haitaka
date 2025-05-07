@@ -646,7 +646,6 @@ impl Board {
     ///
     /// Use this method with caution. Only legal moves should ever be passed.
     /// Playing illegal moves may corrupt the board state and cause panics.
-    /// (Even if it doesn't cause undefined behavior.)
     ///
     /// # Panics
     /// This may panic eventually if the move is illegal.
@@ -683,6 +682,9 @@ impl Board {
             // update checkers and pins
             if self.has(!color, Piece::King) {
                 self.update_checkers_and_pins(color, piece, to);
+            } else {
+                self.checkers = BitBoard::EMPTY;
+                self.pinned = BitBoard::EMPTY;
             }
         } else if let Move::BoardMove {
             from,
@@ -723,6 +725,9 @@ impl Board {
             // update checkers and pins (if the other side has a King)
             if self.has(!color, Piece::King) {
                 self.update_checkers_and_pins(color, final_piece, to);
+            } else {
+                self.checkers = BitBoard::EMPTY;
+                self.pinned = BitBoard::EMPTY;
             }
         }
 

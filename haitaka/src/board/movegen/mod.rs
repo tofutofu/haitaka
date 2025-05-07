@@ -65,8 +65,8 @@ impl Board {
     //
     // This function is only called when there is _at most one_ checker.
     // Its main purpose is to reduce the number of target squares when the
-    // King is in check (and also to prevent illegal capture of one's own pieces
-    // ...which actually sometimes has been observed in amateur tournaments...).
+    // King is in check (and to prevent illegal capture of one's own pieces
+    // ...which actually sometimes is observed in amateur tournaments...).
     //
     fn target_squares<const IN_CHECK: bool>(&self) -> BitBoard {
         let color = self.side_to_move();
@@ -112,6 +112,7 @@ impl Board {
     // Board moves
 
     // Generate legal moves for all the "commoners" (all pieces except King).
+    // `mask` is used to select from-squares
     fn add_common_legals<
         P: commoner::Commoner,
         F: FnMut(PieceMoves) -> bool,
@@ -119,6 +120,7 @@ impl Board {
     >(
         &self,
         mask: BitBoard,
+        prom_status: PromotionStatus,
         listener: &mut F,
     ) -> bool {
         let target_squares = self.target_squares::<IN_CHECK>();
@@ -139,7 +141,8 @@ impl Board {
                     color,
                     piece: P::PIECE,
                     from,
-                    to
+                    to,
+                    prom_status,
                 }));
             }
         }
@@ -158,7 +161,8 @@ impl Board {
                         color,
                         piece: P::PIECE,
                         from,
-                        to
+                        to,
+                        prom_status,
                     }));
                 }
             }
@@ -191,7 +195,8 @@ impl Board {
                     color,
                     piece,
                     from,
-                    to
+                    to,
+                    prom_status: PromotionStatus::CannotPromote,
                 }));
             }
         }
@@ -210,7 +215,8 @@ impl Board {
                         color,
                         piece,
                         from,
-                        to
+                        to,
+                        prom_status: PromotionStatus::CannotPromote,
                     }));
                 }
             }
@@ -351,7 +357,8 @@ impl Board {
                 color,
                 piece: PIECE,
                 from: our_king,
-                to: moves
+                to: moves,
+                prom_status: PromotionStatus::CannotPromote,
             }));
         }
         false
@@ -363,23 +370,23 @@ impl Board {
         listener: &mut F,
     ) -> bool {
         abort_if! {
-            self.add_common_legals::<commoner::Pawn, _, IN_CHECK>(mask, listener),
-            self.add_common_legals::<commoner::Lance, _, IN_CHECK>(mask, listener),
-            self.add_common_legals::<commoner::Knight, _, IN_CHECK>(mask, listener),
-            self.add_common_legals::<commoner::Silver, _, IN_CHECK>(mask, listener),
+            self.add_common_legals::<commoner::Pawn, _, IN_CHECK>(mask, PromotionStatus::Undecided, listener),
+            self.add_common_legals::<commoner::Lance, _, IN_CHECK>(mask, PromotionStatus::Undecided, listener),
+            self.add_common_legals::<commoner::Knight, _, IN_CHECK>(mask, PromotionStatus::Undecided, listener),
+            self.add_common_legals::<commoner::Silver, _, IN_CHECK>(mask, PromotionStatus::Undecided, listener),
 
-            // doing all of the small gold-like pieces in one step consistently hurts
-            // the speed of move generation, so I keep the separate calls:
-            self.add_common_legals::<commoner::Gold, _, IN_CHECK>(mask, listener),
-            self.add_common_legals::<commoner::Tokin, _, IN_CHECK>(mask, listener),
-            self.add_common_legals::<commoner::PLance, _, IN_CHECK>(mask, listener),
-            self.add_common_legals::<commoner::PKnight, _, IN_CHECK>(mask, listener),
-            self.add_common_legals::<commoner::PSilver, _, IN_CHECK>(mask, listener),
+            // doing all of the small gold-like pieces in one step consistently hurts the speed of move generation,
+            // so for now I keep separate calls
+            self.add_common_legals::<commoner::Gold, _, IN_CHECK>(mask, PromotionStatus::CannotPromote, listener),
+            self.add_common_legals::<commoner::Tokin, _, IN_CHECK>(mask, PromotionStatus::CannotPromote, listener),
+            self.add_common_legals::<commoner::PLance, _, IN_CHECK>(mask, PromotionStatus::CannotPromote, listener),
+            self.add_common_legals::<commoner::PKnight, _, IN_CHECK>(mask, PromotionStatus::CannotPromote, listener),
+            self.add_common_legals::<commoner::PSilver, _, IN_CHECK>(mask, PromotionStatus::CannotPromote, listener),
 
-            self.add_common_legals::<commoner::Bishop, _, IN_CHECK>(mask, listener),
-            self.add_common_legals::<commoner::Rook, _, IN_CHECK>(mask, listener),
-            self.add_common_legals::<commoner::PBishop, _, IN_CHECK>(mask, listener),
-            self.add_common_legals::<commoner::PRook, _, IN_CHECK>(mask, listener),
+            self.add_common_legals::<commoner::Bishop, _, IN_CHECK>(mask, PromotionStatus::Undecided, listener),
+            self.add_common_legals::<commoner::Rook, _, IN_CHECK>(mask, PromotionStatus::Undecided, listener),
+            self.add_common_legals::<commoner::PBishop, _, IN_CHECK>(mask, PromotionStatus::CannotPromote, listener),
+            self.add_common_legals::<commoner::PRook, _, IN_CHECK>(mask, PromotionStatus::CannotPromote, listener),
             self.add_king_legals::<_, IN_CHECK>(mask, listener)
         }
         false
@@ -751,5 +758,139 @@ impl Board {
             // there is more than one checker, so no drops are legal
             false
         }
+    }
+
+    /// Generate checks for side-to-move.
+    pub fn generate_checks(&self, mut listener: impl FnMut(PieceMoves) -> bool) -> bool {
+        let color = self.side_to_move();
+        let their_color = !color;
+        if !self.has(their_color, Piece::King) {
+            return false;
+        }
+
+        let occ = self.occupied();
+        let empty = !occ;
+
+        let their_king = self.king(their_color);
+        let their_ring = king_attacks(color, their_king);
+
+        let rook_attacks = get_rook_moves(their_color, their_king, occ);
+        let bishop_attacks = get_bishop_moves(their_color, their_king, occ);
+
+        //
+        // get all squares from which their King could be put in check
+        //
+        let mut attacks = [BitBoard::EMPTY; Piece::ALL.len()];
+        for piece in Piece::ALL {
+            attacks[piece as usize] = match piece {
+                Piece::Pawn => pawn_attacks(their_color, their_king),
+                Piece::Knight => knight_attacks(their_color, their_king),
+                Piece::Silver => silver_attacks(their_color, their_king),
+                Piece::Gold | Piece::Tokin | Piece::PLance | Piece::PKnight | Piece::PSilver => {
+                    gold_attacks(their_color, their_king)
+                }
+                Piece::Lance => get_lance_moves(their_color, their_king, occ),
+                Piece::Rook => rook_attacks,
+                Piece::Bishop => bishop_attacks,
+                Piece::PRook => rook_attacks | their_ring,
+                Piece::PBishop => bishop_attacks | their_ring,
+                _ => BitBoard::EMPTY,
+            }
+        }
+
+        //
+        // generate drops
+        //
+        let hand = self.hand(color);
+        for index in 0..Piece::HAND_NUM {
+            if hand[index] > 0 {
+                let piece = Piece::index_const(index);
+                let mut to = attacks[index] & empty;
+
+                if piece == Piece::Pawn {
+                    // avoid nifu
+                    to &= self.no_pawn_on_file[color as usize];
+
+                    // avoid illegal mate by pawn drop
+                    let to_square = to.next_square().unwrap();
+                    if self.is_illegal_mate_by_pawn_drop(to_square) {
+                        to = to.rm(to_square);
+                    }
+                }
+
+                if !to.is_empty() && listener(PieceMoves::Drops { color, piece, to }) {
+                    return true;
+                }
+            }
+        }
+
+        //
+        // generate checks with board moves
+        //
+        self.generate_board_moves(|mvs| {
+            if let PieceMoves::BoardMoves {
+                color,
+                piece,
+                from,
+                to,
+                prom_status,
+            } = mvs
+            {
+                if prom_status == PromotionStatus::CannotPromote {
+                    // only keep moves that attack the King
+                    let to = to & attacks[piece as usize];
+                    if !to.is_empty()
+                        && listener(PieceMoves::BoardMoves {
+                            color,
+                            piece,
+                            from,
+                            to,
+                            prom_status,
+                        })
+                    {
+                        return true;
+                    }
+                } else {
+                    debug_assert_eq!(prom_status, PromotionStatus::Undecided);
+                    let checks = to & attacks[piece as usize];
+                    // If we have moves with the unpromoted piece give check,
+                    // return them, but make sure we do not promote.
+                    // (These checks will never include squares on which piece MUST promote.
+                    // since those square would not be in the attacks vector.)
+                    if !to.is_empty()
+                        && listener(PieceMoves::BoardMoves {
+                            color,
+                            piece,
+                            from,
+                            to: checks,
+                            prom_status: PromotionStatus::CannotPromote,
+                        })
+                    {
+                        return true;
+                    }
+                    // See if we also have promotions that give check
+                    let zone = prom_zone(color);
+                    let checks = if zone.has(from) {
+                        to & attacks[piece.promote() as usize]
+                    } else {
+                        to & attacks[piece.promote() as usize] & zone
+                    };
+                    if checks.is_empty() {
+                        return false;
+                    }
+                    // Returning the valid promotions that give check
+                    return listener(PieceMoves::BoardMoves {
+                        color,
+                        piece,
+                        from,
+                        to: checks,
+                        prom_status: PromotionStatus::MustPromote,
+                    });
+                }
+            }
+            false
+        });
+
+        false
     }
 }

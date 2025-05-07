@@ -1,10 +1,13 @@
+use std::ops::BitAnd;
+
 use crate::*;
 
 /// Simple structure to represent the promotability of a piece.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PromotionStatus {
-    CannotPromote,
+    Undecided,
     MayPromote,
+    CannotPromote,
     MustPromote,
 }
 
@@ -21,8 +24,24 @@ impl PromotionStatus {
     }
 }
 
-/// A compact enum representing all the moves for one particular piece
-/// either on the board or in hand.
+impl BitAnd for PromotionStatus {
+    type Output = Self;
+
+    // Implicit assumptions is that self and rhs are at compatible
+    // so we don't try to add CannotPromote & MustPromote.
+    // I'm not checking for this, but simply giving priority to `self`!
+    fn bitand(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (PromotionStatus::Undecided, _) => rhs,
+            (PromotionStatus::CannotPromote, _) => self,
+            (PromotionStatus::MustPromote, _) => self,
+            (PromotionStatus::MayPromote, PromotionStatus::Undecided) => self,
+            (PromotionStatus::MayPromote, _) => rhs,
+        }
+    }
+}
+
+/// A compact enum representing all the moves for one particular piece.
 ///
 /// Iterate over the PieceMoves instance to unpack the moves.
 /// Note that the iterator will either return only [`Move::Drop`] or only
@@ -40,6 +59,7 @@ pub enum PieceMoves {
         piece: Piece,
         from: Square,
         to: BitBoard,
+        prom_status: PromotionStatus,
     },
 }
 
@@ -47,8 +67,8 @@ impl PieceMoves {
     /// Get the number of generated to-squares.
     ///
     /// The PieceMovesIter will generate _at least_ this number of moves,
-    /// but may generate up to twice as many, depending on whether a piece can promote or not.
-    /// To get the accurate number of moves, do not use this function, but use
+    /// but may generate up to twice as many, depending on whether a piece may promote, must promote or can
+    /// not promote. To get the accurate number of moves, do not use this function, but use
     /// `moves.into_iter()` on a PieceMoves instance.
     pub fn len(&self) -> usize {
         match self {
@@ -74,6 +94,7 @@ impl PieceMoves {
                     piece,
                     from,
                     to,
+                    prom_status,
                 },
                 Move::BoardMove {
                     from: mv_from,
@@ -84,10 +105,11 @@ impl PieceMoves {
                 if *from != mv_from || !to.has(mv_to) {
                     return false;
                 }
-                match PromotionStatus::new(*color, *piece, *from, mv_to) {
+                match *prom_status & PromotionStatus::new(*color, *piece, *from, mv_to) {
                     PromotionStatus::CannotPromote => !promotion,
                     PromotionStatus::MustPromote => promotion,
-                    PromotionStatus::MayPromote => true, // Either is valid!
+                    PromotionStatus::MayPromote => true,
+                    _ => unreachable!(),
                 }
             }
             // Handle Drops
@@ -222,13 +244,14 @@ impl Iterator for PieceMovesIter {
             // Handle board moves
             // When the piece can promote on a square, the promotion move is returned first.
             // In this case we cache the `to` square in `self.to` to generate the corresponding
-            // non-promotion move on the next step. When a promotion is required, we do not
-            // set `self.to`. So, `set.to` signals a pending non-promotion.
+            // non-promotion move on the next step. When a promotion is _required_, we do not
+            // set `self.to`. So, `set.to` signals a pending non-promotion after a promotion.
             PieceMoves::BoardMoves {
                 color,
                 piece,
                 from,
                 to,
+                prom_status,
             } => {
                 let from = *from;
 
@@ -247,7 +270,9 @@ impl Iterator for PieceMovesIter {
                     let to_square = to.next_square()?;
                     *to ^= to_square.bitboard(); // eat `to` bit
 
-                    let promotion = match PromotionStatus::new(*color, *piece, from, to_square) {
+                    let promotion = match *prom_status
+                        & PromotionStatus::new(*color, *piece, from, to_square)
+                    {
                         PromotionStatus::CannotPromote => false,
                         PromotionStatus::MayPromote => {
                             // set `self.to` to generate non-promotion in next step
@@ -255,6 +280,7 @@ impl Iterator for PieceMovesIter {
                             true
                         }
                         PromotionStatus::MustPromote => true,
+                        _ => unreachable!(),
                     };
 
                     Some(Move::BoardMove {
@@ -294,15 +320,18 @@ impl ExactSizeIterator for PieceMovesIter {
                 piece,
                 from,
                 to,
+                prom_status,
             } => {
                 let num_targets = to.len() as usize;
                 let pending_non_promotion = if self.to.is_some() { 1 } else { 0 };
 
-                if !piece.is_promotable() {
-                    // piece is either King, Gold, or already promoted
-                    num_targets + pending_non_promotion
+                if prom_status == PromotionStatus::CannotPromote
+                    || prom_status == PromotionStatus::MustPromote
+                {
+                    debug_assert!(pending_non_promotion == 0);
+                    num_targets
                 } else {
-                    // perhaps piece may still promote
+                    // Undecided or MayPromote
                     let remaining_moves = match piece {
                         Piece::Pawn => self.len_for_pawn(color, from, to, num_targets),
                         Piece::Lance => self.len_for_lance(color, to, num_targets),
@@ -339,6 +368,7 @@ mod tests {
             piece: Piece::Gold,
             from: Square::E5,
             to: gold_attacks(Color::Black, Square::E5),
+            prom_status: PromotionStatus::CannotPromote,
         };
         assert_eq!(mv.len(), 6);
         let mut iter = mv.into_iter();
@@ -360,6 +390,7 @@ mod tests {
             piece: Piece::Lance,
             from: Square::I1,
             to: File::One.bitboard() ^ Square::I1.bitboard(),
+            prom_status: PromotionStatus::Undecided,
         };
         assert_eq!(mv.len(), 8);
 
@@ -376,6 +407,7 @@ mod tests {
             piece: Piece::Lance,
             from: Square::I1,
             to: File::One.bitboard() ^ Square::I1.bitboard() ^ Square::A1.bitboard(),
+            prom_status: PromotionStatus::Undecided,
         };
         assert_eq!(mv.len(), 7);
 
@@ -395,6 +427,7 @@ mod tests {
             piece: Piece::Lance,
             from: Square::A1,
             to: File::One.bitboard() ^ Square::A1.bitboard(),
+            prom_status: PromotionStatus::Undecided,
         };
         assert_eq!(mv.len(), 8);
 
@@ -411,6 +444,7 @@ mod tests {
             piece: Piece::Lance,
             from: Square::A1,
             to: File::One.bitboard() ^ Square::A1.bitboard() ^ Square::I1.bitboard(),
+            prom_status: PromotionStatus::Undecided,
         };
         assert_eq!(mv.len(), 7);
 
@@ -431,6 +465,7 @@ mod tests {
             piece: Piece::Lance,
             from: Square::I1,
             to: BitBoard::EMPTY, // No valid moves
+            prom_status: PromotionStatus::Undecided,
         };
         assert_eq!(mv.len(), 0);
         let iter = mv.into_iter();
@@ -442,6 +477,7 @@ mod tests {
             piece: Piece::Lance,
             from: Square::B1,
             to: Square::A1.bitboard(), // Must-promote square
+            prom_status: PromotionStatus::Undecided,
         };
         assert_eq!(mv.len(), 1);
         let mut iter = mv.into_iter();
@@ -455,6 +491,7 @@ mod tests {
             piece: Piece::Lance,
             from: Square::C1,
             to: Square::B1.bitboard() | Square::A1.bitboard(), // B1: may-promote, A1: must-promote
+            prom_status: PromotionStatus::Undecided,
         };
         assert!(prom_zone(Color::Black).has(Square::C1));
         assert_eq!(mv.len(), 2);
@@ -474,6 +511,7 @@ mod tests {
             piece: Piece::Rook,
             from: Square::E1,
             to: File::One.bitboard() ^ Square::E1.bitboard(),
+            prom_status: PromotionStatus::Undecided,
         };
         assert_eq!(mv.len(), 8);
 
@@ -490,6 +528,7 @@ mod tests {
             piece: Piece::Rook,
             from: Square::C1,
             to: File::One.bitboard() ^ Square::C1.bitboard(),
+            prom_status: PromotionStatus::Undecided,
         };
         assert_eq!(mv.len(), 8);
 
@@ -509,6 +548,7 @@ mod tests {
             piece: Piece::Pawn,
             from: Square::F1,
             to: Square::G1.bitboard(),
+            prom_status: PromotionStatus::Undecided,
         };
         assert_eq!(mv.len(), 1);
 
@@ -525,6 +565,7 @@ mod tests {
             piece: Piece::Lance,
             from: Square::H1,
             to: Square::I1.bitboard(),
+            prom_status: PromotionStatus::Undecided,
         };
         assert_eq!(mv.len(), 1);
 
@@ -542,6 +583,7 @@ mod tests {
             piece: Piece::King,
             from: Square::A5,
             to: king_attacks(Color::White, Square::A5),
+            prom_status: PromotionStatus::CannotPromote,
         };
         assert_eq!(mv.len(), 5); // remember, this is on an empty board
 
@@ -571,6 +613,7 @@ mod tests {
             piece: Piece::Pawn,
             from: Square::F6,
             to: Square::G6.bitboard(),
+            prom_status: PromotionStatus::Undecided,
         };
         assert_eq!(mv.len(), 1);
 
@@ -603,5 +646,171 @@ mod tests {
                 to: square
             }));
         }
+    }
+
+    #[test]
+    fn iter_undecided() {
+        // promotion possible for every to square
+        let mvs = PieceMoves::BoardMoves {
+            color: Color::Black,
+            piece: Piece::Silver,
+            from: Square::C5,
+            to: silver_attacks(Color::Black, Square::C5),
+            prom_status: PromotionStatus::Undecided,
+        };
+        assert_eq!(mvs.len(), 5);
+        assert_eq!(mvs.into_iter().len(), 10);
+
+        // double-check in actual iteration
+        let mut num_proms = 0;
+        let mut num_non_proms = 0;
+        for mv in mvs {
+            if let Move::BoardMove {
+                promotion: true, ..
+            } = mv
+            {
+                num_proms += 1;
+            } else {
+                num_non_proms += 1;
+            }
+        }
+        assert_eq!(num_non_proms, 5);
+        assert_eq!(num_proms, 5);
+
+        // promotion possible only on 3 squares
+        let mvs = PieceMoves::BoardMoves {
+            color: Color::Black,
+            piece: Piece::Silver,
+            from: Square::D5,
+            to: silver_attacks(Color::Black, Square::D5),
+            prom_status: PromotionStatus::Undecided,
+        };
+        assert_eq!(mvs.len(), 5);
+        assert_eq!(mvs.into_iter().len(), 8);
+
+        num_proms = 0;
+        num_non_proms = 0;
+        for mv in mvs {
+            if let Move::BoardMove {
+                promotion: true, ..
+            } = mv
+            {
+                num_proms += 1;
+            } else {
+                num_non_proms += 1;
+            }
+        }
+        assert_eq!(num_non_proms, 5);
+        assert_eq!(num_proms, 3);
+    }
+
+    #[test]
+    fn iter_cannot_promote() {
+        // promotion  blocked by CannotPromote flag
+        let mvs = PieceMoves::BoardMoves {
+            color: Color::Black,
+            piece: Piece::Silver,
+            from: Square::C5,
+            to: silver_attacks(Color::Black, Square::C5),
+            prom_status: PromotionStatus::CannotPromote,
+        };
+        assert_eq!(mvs.len(), 5);
+        assert_eq!(mvs.into_iter().len(), 5);
+
+        let mut num_proms = 0;
+        let mut num_non_proms = 0;
+        for mv in mvs {
+            if let Move::BoardMove {
+                promotion: true, ..
+            } = mv
+            {
+                num_proms += 1;
+            } else {
+                num_non_proms += 1;
+            }
+        }
+        assert_eq!(num_non_proms, 5);
+        assert_eq!(num_proms, 0);
+
+        let mvs = PieceMoves::BoardMoves {
+            color: Color::Black,
+            piece: Piece::Silver,
+            from: Square::D5,
+            to: silver_attacks(Color::Black, Square::D5),
+            prom_status: PromotionStatus::CannotPromote,
+        };
+        assert_eq!(mvs.len(), 5);
+        assert_eq!(mvs.into_iter().len(), 5);
+
+        let mut num_proms = 0;
+        let mut num_non_proms = 0;
+        for mv in mvs {
+            if let Move::BoardMove {
+                promotion: true, ..
+            } = mv
+            {
+                num_proms += 1;
+            } else {
+                num_non_proms += 1;
+            }
+        }
+        assert_eq!(num_non_proms, 5);
+        assert_eq!(num_proms, 0);
+    }
+
+    #[test]
+    fn iter_must_promote() {
+        // promotion enforced by MustPromote flag
+        let mvs = PieceMoves::BoardMoves {
+            color: Color::Black,
+            piece: Piece::Silver,
+            from: Square::C5,
+            to: silver_attacks(Color::Black, Square::C5),
+            prom_status: PromotionStatus::MustPromote,
+        };
+        assert_eq!(mvs.len(), 5);
+        assert_eq!(mvs.into_iter().len(), 5);
+
+        let mut num_proms = 0;
+        let mut num_non_proms = 0;
+        for mv in mvs {
+            if let Move::BoardMove {
+                promotion: true, ..
+            } = mv
+            {
+                num_proms += 1;
+            } else {
+                num_non_proms += 1;
+            }
+        }
+        assert_eq!(num_non_proms, 0);
+        assert_eq!(num_proms, 5);
+
+        // only 3 promotion moves, and enforced by MustPromote flag
+        let zone = prom_zone(Color::Black);
+        let mvs = PieceMoves::BoardMoves {
+            color: Color::Black,
+            piece: Piece::Silver,
+            from: Square::D5,
+            to: silver_attacks(Color::Black, Square::D5) & zone,
+            prom_status: PromotionStatus::MustPromote,
+        };
+        assert_eq!(mvs.len(), 3);
+        assert_eq!(mvs.into_iter().len(), 3);
+
+        num_proms = 0;
+        num_non_proms = 0;
+        for mv in mvs {
+            if let Move::BoardMove {
+                promotion: true, ..
+            } = mv
+            {
+                num_proms += 1;
+            } else {
+                num_non_proms += 1;
+            }
+        }
+        assert_eq!(num_non_proms, 0);
+        assert_eq!(num_proms, 3);
     }
 }

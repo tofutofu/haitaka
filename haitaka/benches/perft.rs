@@ -4,7 +4,7 @@
 use std::time::Duration;
 
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
-use haitaka::Board;
+use haitaka::{Board, Color};
 
 const POSITIONS: &[&str] = &[
     "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1",
@@ -30,12 +30,37 @@ fn perft(board: &Board, depth: u8) -> u32 {
     }
 }
 
+fn perft_tsume(board: &Board, depth: u8) -> u32 {
+    if depth == 0 {
+        1
+    } else {
+        let mut nodes = 0;
+        match board.side_to_move() {
+            Color::White => {
+                board.generate_moves(|moves| {
+                    for mv in moves {
+                        let mut board = board.clone();
+                        board.play_unchecked(mv);
+                        nodes += perft_tsume(&board, depth - 1);
+                    }
+                    false
+                });
+            }
+            Color::Black => {}
+        }
+
+        nodes
+    }
+}
+
 pub fn criterion_benchmark(criterion: &mut Criterion) {
     let startpos = Board::startpos();
     let endgamepos: Board =
         "ln1g5/1r4k2/p2pppn2/2ps2p2/1p7/2P6/PPSPPPPLP/2G2K1pr/LN4G1b b BG2SLPnp 61"
             .parse()
             .unwrap();
+    let tsume: &str = "lpg6/3s2R2/1kpppp3/p8/9/P8/2N6/9/9 b BGN 1";
+    let tsumepos: Board = Board::tsume(tsume).unwrap();
 
     let positions = POSITIONS
         .iter()
@@ -99,12 +124,19 @@ pub fn criterion_benchmark(criterion: &mut Criterion) {
                 let depth = black_box(3);
                 black_box(perft(pos, depth));
             });
+        })
+        .bench_function("Tsume perft 3", |b| {
+            b.iter(|| {
+                let pos = black_box(&tsumepos);
+                let depth = black_box(3);
+                black_box(perft_tsume(pos, depth));
+            });
         });
 }
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(300).measurement_time(Duration::from_secs(30));
+    config = Criterion::default().sample_size(300).measurement_time(Duration::from_secs(36));
     targets = criterion_benchmark
 }
 criterion_main!(benches);

@@ -319,3 +319,90 @@ fn tsume() {
     assert_eq!(board.num_in_hand(Color::White, Piece::Gold), 2);
     assert_eq!(board.num_in_hand(Color::White, Piece::Silver), 3);
 }
+
+#[test]
+fn generate_checks() {
+    let sfen = "lpg6/3s2R2/1kpppp3/p8/9/P8/2N6/9/9 b BGN 1";
+    let board = Board::tsume(sfen).unwrap();
+
+    let mut nmoves: usize = 0;
+    let mut nmoves_iter: usize = 0;
+    let mut nmoves_into_iter: usize = 0;
+
+    board.generate_board_moves(|mvs| {
+        for mv in mvs {
+            assert!(mv.is_board_move());
+            nmoves += 1;
+        }
+        nmoves_iter += mvs.len();
+        nmoves_into_iter += mvs.into_iter().len();
+        false
+    });
+    assert_eq!(nmoves, 29);
+    assert_eq!(nmoves_iter, 16); // this doesn't count promotions
+    assert_eq!(nmoves_into_iter, 29); // should match nmoves
+
+    let mut nchecks: usize = 0;
+    let mut nchecks_iter: usize = 0;
+    let mut nchecks_into_iter: usize = 0;
+
+    board.generate_checks(|mvs| {
+        for mv in mvs {
+            assert!(mv.is_drop());
+            nchecks += 1;
+        }
+        nchecks_iter += mvs.len();
+        nchecks_into_iter += mvs.len();
+        false
+    });
+    assert_eq!(nchecks, 15);
+    assert_eq!(nchecks_iter, 15);
+    assert_eq!(nchecks_into_iter, 15);
+}
+
+#[test]
+fn play_tsume() {
+    // first tsume in Zoku Tsumu-ya-Tsumuzaru-ya
+    // by the First Meijin, Ohashi Sokei
+    let sfen = "lpg6/3s2R2/1kpppp3/p8/9/P8/2N6/9/9 b BGN 1";
+    let mut board = Board::tsume(sfen).unwrap();
+
+    assert_eq!(board.side_to_move(), Color::Black);
+    assert_eq!(board.status(), GameStatus::Ongoing);
+
+    let moves = "\
+        N*7e K8c-7b 
+        B*8c K7b-8b 
+        B8c-9b+ L9ax9b 
+        R3bx6b= G7ax6b 
+        S*8c K8b-9c 
+        S8c-9b+ K9cx9b 
+        G*8c K9b-9a L*9b";
+    let moves: Vec<Move> = moves
+        .split_ascii_whitespace()
+        .map(|s| Move::parse(s).unwrap())
+        .collect();
+
+    for mv in moves {
+        let mut v: Vec<Move> = Vec::new();
+
+        if board.side_to_move() == Color::Black {
+            board.generate_checks(|mvs| {
+                v.extend(mvs);
+                false
+            });
+        } else {
+            assert_eq!(board.checkers.len(), 1);
+            board.generate_moves(|mvs| {
+                v.extend(mvs);
+                false
+            });
+        }
+
+        assert!(v.contains(&mv), "Move {mv} not found");
+        board.play(mv);
+    }
+
+    assert_eq!(board.side_to_move(), Color::White);
+    assert_eq!(board.status(), GameStatus::Won); // meaning: won for Black
+}
