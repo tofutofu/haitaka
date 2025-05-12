@@ -4,6 +4,13 @@ use std::time::Instant;
 // Copied from `cozy-chess` with only trivial modifications.
 // Note that bulk counting on leave nodes significantly speeds up the run.
 
+// The function `perft(ply)` returns the total number of _nodes_ visited by
+// generating all nodes of the game tree up to (including) a given depth (ply).
+// It counts all visited nodes and does not discount duplicated positions.
+// So, the returned count is the count of all unique move sequences. And this
+// is an upperbound on the number of distinct, unique legal positions in the
+// game tree of the given depth.
+
 use haitaka::*;
 
 fn perft<const DROPS: bool>(board: &Board, depth: u8) -> u64 {

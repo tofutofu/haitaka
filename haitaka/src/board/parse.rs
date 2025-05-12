@@ -101,7 +101,7 @@ impl Board {
         let mut parts = sfen.split(' ');
         let mut next = || parts.next().ok_or(MissingField);
 
-        Self::parse_board(&mut board, next()?).map_err(|_| InvalidBoard)?;
+        Self::parse_board(&mut board, next()?, true).map_err(|_| InvalidBoard)?;
         Self::parse_side_to_move(&mut board, next()?).map_err(|_| InvalidSideToMove)?;
         Self::parse_hands(&mut board, next()?).map_err(|_| InvalidHands)?;
 
@@ -125,8 +125,10 @@ impl Board {
     }
 
     /// Parse the board representation of a SFEN string.
-    fn parse_board(board: &mut Board, s: &str) -> Result<(), ()> {
+    fn parse_board(board: &mut Board, s: &str, strict: bool) -> Result<(), ()> {
+        let mut last_rank: Option<usize> = None;
         for (rank, row) in s.split('/').enumerate() {
+            last_rank = Some(rank);
             let rank = Rank::try_index(rank).ok_or(())?;
             let mut file = File::NUM;
             let mut prom: bool = false;
@@ -156,7 +158,13 @@ impl Board {
                 return Err(());
             }
         }
-        Ok(())
+        if let Some(last_rank) = last_rank {
+            if last_rank == 8 || !strict {
+                return Ok(());
+            }
+        }
+        // If we didn't see any ranks, it's unconditionally an error
+        Err(())
     }
 
     /// Parse the SFEN hands.

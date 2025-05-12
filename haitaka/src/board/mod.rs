@@ -48,6 +48,10 @@ pub const SFEN_2PIECE_HANDICAP: &str =
 /// More in particular it also does not track the repetition status of positions.
 /// Keeping track of that is a concern of a game-playing engine; the Board is only
 /// concerned with representing, validating and modifying a position.
+///
+/// Before playing a move, `checkers` is the bitboard of all the opponent's pieces that
+/// give check to our (side-to-move) King. The `pinned` bitboard has all our (side-to-move)
+/// pieces that are pinned and can only move along an opponent slider's attack ray.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Board {
     inner: ZobristBoard,
@@ -681,8 +685,10 @@ impl Board {
 
             // update checkers and pins
             if self.has(!color, Piece::King) {
+                // opponent has a King - see which of our pieces are giving check
                 self.update_checkers_and_pins(color, piece, to);
             } else {
+                // opponent has no King (Tsume Shogi)
                 self.checkers = BitBoard::EMPTY;
                 self.pinned = BitBoard::EMPTY;
             }
@@ -724,8 +730,10 @@ impl Board {
 
             // update checkers and pins (if the other side has a King)
             if self.has(!color, Piece::King) {
+                // opponent has a King
                 self.update_checkers_and_pins(color, final_piece, to);
             } else {
+                // opponent has no King (Tsume Shogi)
                 self.checkers = BitBoard::EMPTY;
                 self.pinned = BitBoard::EMPTY;
             }
@@ -787,7 +795,7 @@ impl Board {
             let between = get_between_rays(attacker, their_king) & occupied;
             match between.len() {
                 0 => self.checkers |= attacker.bitboard(),
-                1 => self.pinned |= between, // note: this includes pieces of both colors!
+                1 => self.pinned |= between,
                 _ => {}
             }
         }
@@ -803,6 +811,10 @@ impl Board {
     /// (which is extremely rare in Shogi).
     /// If the King is in check, this function returns None. In that case a null
     /// move would make no sense (it would immediately lose).
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if side-to-move has no King (Tsume Shogi).
     ///
     /// # Examples
     ///
