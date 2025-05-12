@@ -138,7 +138,7 @@ impl Board {
                     if prom {
                         return Err(());
                     };
-                    file -= offset as usize; // let it panic
+                    file -= offset as usize; // let it panic!
                 } else if c == '+' {
                     if prom {
                         return Err(());

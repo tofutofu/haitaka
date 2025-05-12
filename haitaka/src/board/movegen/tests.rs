@@ -415,7 +415,7 @@ fn invalid_tsume() {
 }
 
 #[test]
-fn discovered_check() {
+fn discovered_checks1() {
     let sfen = "8l/5gB2/7G1/7pk/7sp/9/9/9/9 b R";
     let board = Board::tsume(sfen).unwrap();
 
@@ -455,7 +455,7 @@ fn discovered_check() {
 }
 
 #[test]
-fn invalid_pins() {
+fn pinners() {
     let sfen = "8l/5gB2/8k/7p1/7sp/9/9/9/8K b RG";
     let mut board = Board::tsume(sfen).unwrap();
 
@@ -475,4 +475,138 @@ fn invalid_pins() {
 
     assert!(board.checkers.len() == 0);
     assert!(board.pinned.is_empty());
+}
+
+#[test]
+fn undiscovered_checks() {
+    /*
+        R . . . . . G . k
+        . . . . . . P . .
+        . . . . . . . . .
+        . . . . . . . . .
+        . . . . . . . . .
+        . . . . . . . . .
+        . . . . . . . . .
+        . . . . . . . . .
+        . . . . . . . . .
+    */
+
+    let sfen = "R5G1k/6P2/9/9/9/9/9/9/9 b - 1";
+    let board = Board::tsume(sfen).unwrap();
+
+    let mv: Move = "3a2a".parse::<Move>().unwrap();
+    assert_eq!(
+        mv,
+        Move::BoardMove {
+            from: Square::A3,
+            to: Square::A2,
+            promotion: false
+        }
+    );
+    assert!(board.is_legal(mv));
+
+    let mut moves: Vec<Move> = Vec::new();
+    let mut checks: Vec<Move> = Vec::new();
+
+    board.generate_moves(|mvs| {
+        moves.extend(mvs);
+        false
+    });
+
+    board.generate_checks(|mvs| {
+        checks.extend(mvs);
+        false
+    });
+
+    assert!(moves.contains(&mv));
+    assert!(checks.contains(&mv));
+    assert_eq!(checks.len(), 1);
+}
+
+#[test]
+fn discovered_checks2() {
+    /*
+    . . . . . . . . .
+    . . . . . . . k .
+    . . . . . . . . .
+    . . . . . S . . .
+    . . . . . . . . .
+    . . . B . . . . .
+    . . . . . . . . .
+    . . . . . . . . .
+    . . . . . . . . .
+    */
+
+    let sfen = "9/7k1/9/5S3/9/3B5/9/9/9 b - 1";
+    let board = Board::tsume(sfen).unwrap();
+
+    let mv = "4d3c".parse::<Move>().unwrap();
+    assert!(board.is_legal(mv));
+
+    let mv: Move = "4d3c+".parse::<Move>().unwrap();
+    assert!(board.is_legal(mv));
+
+    let silver = Square::D4.bitboard();
+
+    let mut moves: Vec<Move> = Vec::new();
+    let mut checks: Vec<Move> = Vec::new();
+
+    board.generate_board_moves_for(silver, |mvs| {
+        moves.extend(mvs);
+        false
+    });
+
+    board.generate_checks(|mvs| {
+        checks.extend(mvs);
+        false
+    });
+
+    assert_eq!(moves.len(), 8);
+    assert_eq!(checks.len(), 7);
+
+    let mv = "4d3c".parse::<Move>().unwrap();
+    assert!(moves.contains(&mv));
+    assert!(checks.contains(&mv));
+
+    let mv = "4d3c+".parse::<Move>().unwrap();
+    assert!(moves.contains(&mv));
+    assert!(checks.contains(&mv));
+
+    let mv = "4d5e".parse::<Move>().unwrap();
+    assert!(moves.contains(&mv));
+    assert!(!checks.contains(&mv));
+}
+
+#[test]
+fn discovered_checks3() {
+    /*
+    . . . . . . . . .
+    . . . . . . . k .
+    . . . . . . . . .
+    . . . . . . . S .
+    . . . . . . . . .
+    . . . . . . . . .
+    . . . . . . . . .
+    . . . . . . . L .
+    . . . . . . . . .
+    */
+
+    let sfen = "9/7k1/9/7S1/9/9/9/7L1/9 b -";
+    let board = Board::tsume(sfen).unwrap();
+
+    let mut moves: Vec<Move> = Vec::new();
+    let mut checks: Vec<Move> = Vec::new();
+
+    board.generate_moves(|mvs| {
+        moves.extend(mvs);
+        false
+    });
+
+    board.generate_checks(|mvs| {
+        checks.extend(mvs);
+        false
+    });
+
+    assert_eq!(moves.len(), 11);
+    assert_eq!(checks.len(), 8);
 }

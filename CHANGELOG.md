@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.3.0.2
+- Fixed yet another bug related to discovered checks: If a single piece is blocking a slider
+then all moves off the x-ray will be check, but there may also be one move on the x-ray,
+towards the King that gives check.
+
 ## v0.3.1
 
 ## Bugfixes
