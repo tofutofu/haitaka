@@ -761,6 +761,10 @@ impl Board {
     }
 
     /// Generate checks for side-to-move.
+    /// 
+    /// This function will call the `listener` callback multiple times. The listener can interrupt
+    /// further processing by returning true. Otherwise, the function will generate all remaining
+    /// checks and eventually return false.
     pub fn generate_checks(&self, mut listener: impl FnMut(PieceMoves) -> bool) -> bool {
         let color = self.side_to_move();
         let their_color = !color;
@@ -827,18 +831,22 @@ impl Board {
             }
         }
 
+        //
+        // prep work for "discovered checks"
+        //
         let rooks = self.pieces(Piece::Rook) | self.pieces(Piece::PRook);
         let bishops = self.pieces(Piece::Bishop) | self.pieces(Piece::PBishop);
         let lances = self.pieces(Piece::Lance);
         let our_sliders = ours & (rooks | bishops | lances);
 
-        let mut new_directions: [Option<BitBoard>; 81] = [None; 81];
+        let mut off_the_x_ray: [Option<BitBoard>; 81] = [None; 81];
 
         for slider in our_sliders {
-            let between = get_between_rays(slider, their_king) & ours;
-            if between.len() == 1 {
-                let from = between.next_square().unwrap();
-                new_directions[from as usize] = Some(!between);
+            let between = get_between_rays(slider, their_king);
+            let pinners = between & ours;
+            if pinners.len() == 1 {
+                let from = pinners.next_square().unwrap();
+                off_the_x_ray[from as usize] = Some(!between);
             }
         }
 
@@ -854,74 +862,122 @@ impl Board {
                 prom_status,
             } = mvs
             {
-                if let Some(checks) = new_directions[from as usize] {
-                    let to = to & checks;
-                    if !to.is_empty()
+                // Discovered checks
+                if let Some(checks) = off_the_x_ray[from as usize] {
+                    let xray_checks = to & checks;
+                    if !xray_checks.is_empty()
                         && listener(PieceMoves::BoardMoves {
                             color,
                             piece,
                             from,
-                            to,
-                            prom_status,
-                        })
-                    {
-                        return true;
-                    };
-                } else if prom_status == PromotionStatus::CannotPromote {
-                    // only keep moves that attack the King
-                    let to = to & attacks[piece as usize];
-                    if !to.is_empty()
-                        && listener(PieceMoves::BoardMoves {
-                            color,
-                            piece,
-                            from,
-                            to,
+                            to: xray_checks,
                             prom_status,
                         })
                     {
                         return true;
                     }
-                } else {
-                    debug_assert_eq!(prom_status, PromotionStatus::Undecided);
-                    let checks = to & attacks[piece as usize];
-                    // If we have moves with the unpromoted piece give check,
-                    // return them, but make sure we do not promote.
-                    // (These checks will never include squares on which the piece MUST promote.
-                    // since those square would not be in the attacks vector.)
-                    if !to.is_empty()
-                        && listener(PieceMoves::BoardMoves {
-                            color,
-                            piece,
-                            from,
-                            to: checks,
-                            prom_status: PromotionStatus::CannotPromote,
-                        })
-                    {
-                        return true;
-                    }
-                    // See if we also can give check with a promotion
-                    let zone = prom_zone(color);
-                    let checks = if zone.has(from) {
-                        to & attacks[piece.promote() as usize]
-                    } else {
-                        to & attacks[piece.promote() as usize] & zone
-                    };
-                    if checks.is_empty() {
+                    let to = to ^ xray_checks;
+                    if to.is_empty() {
                         return false;
                     }
-                    // Returning the valid promotions that give check
-                    return listener(PieceMoves::BoardMoves {
+                    // Continue with the remaining checks
+                    return Self::filter_checks_by_promotion_status(
+                        color,
+                        piece,
+                        from,
+                        to,
+                        prom_status,
+                        &attacks,
+                        &mut listener,
+                    );
+                }
+                // Normal checks
+                return Self::filter_checks_by_promotion_status(
+                    color,
+                    piece,
+                    from,
+                    to,
+                    prom_status,
+                    &attacks,
+                    &mut listener,
+                );
+            }
+            false
+        });
+        false
+    }
+
+    // Helper function to handle all PromotionStatus variants
+    fn filter_checks_by_promotion_status(
+        color: Color,
+        piece: Piece,
+        from: Square,
+        to: BitBoard,
+        prom_status: PromotionStatus,
+        attacks: &[BitBoard],
+        listener: &mut impl FnMut(PieceMoves) -> bool,
+    ) -> bool {
+        match prom_status {
+            PromotionStatus::CannotPromote => {
+                let checks = to & attacks[piece as usize];
+                if !checks.is_empty()
+                    && listener(PieceMoves::BoardMoves {
                         color,
                         piece,
                         from,
                         to: checks,
+                        prom_status,
+                    })
+                {
+                    return true;
+                }
+            }
+            PromotionStatus::Undecided | PromotionStatus::MayPromote => {
+                let checks = to & attacks[piece as usize];
+                if !checks.is_empty()
+                    && listener(PieceMoves::BoardMoves {
+                        color,
+                        piece,
+                        from,
+                        to: checks,
+                        prom_status: PromotionStatus::CannotPromote,
+                    })
+                {
+                    return true;
+                }
+                // See if we also can give check with a promotion.
+                // If `from` is in the promotion zone, promotion is valid on all moves.
+                let zone = prom_zone(color);
+                let promo_checks = if zone.has(from) {
+                    to & attacks[piece.promote() as usize]
+                } else {
+                    to & attacks[piece.promote() as usize] & zone
+                };
+                if !promo_checks.is_empty() {
+                    return listener(PieceMoves::BoardMoves {
+                        color,
+                        piece,
+                        from,
+                        to: promo_checks,
                         prom_status: PromotionStatus::MustPromote,
                     });
                 }
             }
-            false
-        });
-
+            PromotionStatus::MustPromote => {
+                let checks = to & attacks[piece.promote() as usize];
+                if !checks.is_empty()
+                    && listener(PieceMoves::BoardMoves {
+                        color,
+                        piece,
+                        from,
+                        to: checks,
+                        prom_status,
+                    })
+                {
+                    return true;
+                }
+            }
+        }
         false
     }
 }
