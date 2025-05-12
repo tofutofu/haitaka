@@ -769,6 +769,7 @@ impl Board {
         }
 
         let occ = self.occupied();
+        let ours = self.colors(color);
         let empty = !occ;
 
         let their_king = self.king(their_color);
@@ -812,15 +813,32 @@ impl Board {
                     to &= self.no_pawn_on_file[color as usize];
 
                     // avoid illegal mate by pawn drop
-                    let to_square = to.next_square().unwrap();
-                    if self.is_illegal_mate_by_pawn_drop(to_square) {
-                        to = to.rm(to_square);
+                    if !to.is_empty() {
+                        let to_square = to.next_square().unwrap();
+                        if self.is_illegal_mate_by_pawn_drop(to_square) {
+                            to = to.rm(to_square);
+                        }
                     }
                 }
 
                 if !to.is_empty() && listener(PieceMoves::Drops { color, piece, to }) {
                     return true;
                 }
+            }
+        }
+
+        let rooks = self.pieces(Piece::Rook) | self.pieces(Piece::PRook);
+        let bishops = self.pieces(Piece::Bishop) | self.pieces(Piece::PBishop);
+        let lances = self.pieces(Piece::Lance);
+        let our_sliders = ours & (rooks | bishops | lances);
+
+        let mut new_directions: [Option<BitBoard>; 81] = [None; 81];
+
+        for slider in our_sliders {
+            let between = get_between_rays(slider, their_king) & ours;
+            if between.len() == 1 {
+                let from = between.next_square().unwrap();
+                new_directions[from as usize] = Some(!between);
             }
         }
 
@@ -836,7 +854,20 @@ impl Board {
                 prom_status,
             } = mvs
             {
-                if prom_status == PromotionStatus::CannotPromote {
+                if let Some(checks) = new_directions[from as usize] {
+                    let to = to & checks;
+                    if !to.is_empty()
+                        && listener(PieceMoves::BoardMoves {
+                            color,
+                            piece,
+                            from,
+                            to,
+                            prom_status,
+                        })
+                    {
+                        return true;
+                    };
+                } else if prom_status == PromotionStatus::CannotPromote {
                     // only keep moves that attack the King
                     let to = to & attacks[piece as usize];
                     if !to.is_empty()
@@ -855,7 +886,7 @@ impl Board {
                     let checks = to & attacks[piece as usize];
                     // If we have moves with the unpromoted piece give check,
                     // return them, but make sure we do not promote.
-                    // (These checks will never include squares on which piece MUST promote.
+                    // (These checks will never include squares on which the piece MUST promote.
                     // since those square would not be in the attacks vector.)
                     if !to.is_empty()
                         && listener(PieceMoves::BoardMoves {
@@ -868,7 +899,7 @@ impl Board {
                     {
                         return true;
                     }
-                    // See if we also have promotions that give check
+                    // See if we also can give check with a promotion
                     let zone = prom_zone(color);
                     let checks = if zone.has(from) {
                         to & attacks[piece.promote() as usize]

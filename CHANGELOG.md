@@ -1,6 +1,12 @@
 # Changelog
 
-## v0.2.3
+## v0.3.1
+
+## Bugfixes
+- Prevent a panic in generating checks when dropping Pawns.
+- Board::generate_checks was not generating discovered checks. Now it does.
+
+## v0.3.0
 
 ## Added (**breaking**)
 - Added support for reading SFEN strings for Tsume Shogi positions. In those

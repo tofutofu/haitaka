@@ -406,3 +406,73 @@ fn play_tsume() {
     assert_eq!(board.side_to_move(), Color::White);
     assert_eq!(board.status(), GameStatus::Won); // meaning: won for Black
 }
+
+#[test]
+fn invalid_tsume() {
+    // invalid position: White King is in check
+    let sfen = "8l/5gB2/7Gk/7p1/7sp/9/9/9/9 b R";
+    assert!(Board::tsume(sfen).is_err());
+}
+
+#[test]
+fn discovered_check() {
+    let sfen = "8l/5gB2/7G1/7pk/7sp/9/9/9/9 b R";
+    let board = Board::tsume(sfen).unwrap();
+
+    let checkers = board.checkers();
+    let pinned = board.pinned();
+    assert!(checkers.is_empty());
+    assert!(pinned.is_empty());
+
+    let mut moves: Vec<Move> = Vec::new();
+    let mut checks: Vec<Move> = Vec::new();
+
+    let gold = board.pieces(Piece::Gold);
+    board.generate_board_moves_for(gold, |mvs| {
+        moves.extend(mvs);
+        false
+    });
+    assert_eq!(moves.len(), 5);
+
+    board.generate_checks(|mvs| {
+        for mv in mvs {
+            if mv.is_board_move() {
+                checks.push(mv);
+            }
+        }
+        false
+    });
+    assert_eq!(checks.len(), 5);
+    let mv: Move = "2c1b".parse::<Move>().unwrap();
+    assert!(checks.contains(&mv));
+
+    checks.clear();
+    board.generate_checks(|mvs| {
+        checks.extend(mvs);
+        false
+    });
+    assert_eq!(checks.len(), 7);
+}
+
+#[test]
+fn invalid_pins() {
+    let sfen = "8l/5gB2/8k/7p1/7sp/9/9/9/8K b RG";
+    let mut board = Board::tsume(sfen).unwrap();
+
+    assert!(board.checkers.is_empty());
+    assert!(board.pinned.is_empty());
+
+    let mv: Move = "G*2c".parse::<Move>().unwrap();
+    assert!(board.is_legal(mv));
+    board.play_unchecked(mv);
+
+    assert!(board.checkers.len() == 1);
+    assert!(board.pinned.is_empty());
+
+    let mv: Move = "1c1d".parse::<Move>().unwrap();
+    assert!(board.is_legal(mv));
+    board.play_unchecked(mv);
+
+    assert!(board.checkers.len() == 0);
+    assert!(board.pinned.is_empty());
+}

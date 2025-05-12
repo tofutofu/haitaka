@@ -20,14 +20,13 @@ impl Board {
         true
     }
 
-    /// Check if the board position is valid without considering checkers and pins.
+    /// Check if the board position is valid.
     ///
-    /// This does not validate the checkers and pins, but does verify that the King
-    /// of the side_to_move is not in check.
+    /// This does not validate checkers and pins, but does verify that the opponent's
+    /// King is not in check.
+    ///
     /// If the `for_tsume` flag is set, we check the validity the position for a
-    /// Tsume Shogi problem. In this case, we do not require the presence of the Black King.
-    /// (Since there are Double-king Tsume a Black King may still be present but usually
-    /// is not.)
+    /// Tsume Shogi problem. In this case, we do not require the presence of Sente's King.
     pub(super) fn is_valid(&self, for_tsume: bool) -> bool {
         // Piece bitboards should not overlap.
         let mut occupied = BitBoard::EMPTY;
@@ -67,6 +66,8 @@ impl Board {
         // make sure we have two Kings on board, unless this is a Tsume position
         if !for_tsume {
             soft_assert!(self.pieces(Piece::King).len() == 2);
+        } else {
+            soft_assert!(self.pieces(Piece::King).len() <= 2);
         }
 
         // make sure that the Kings are not touching each other
@@ -77,11 +78,10 @@ impl Board {
             soft_assert!(!white_king_moves.has(black_king_square));
         }
 
-        // our_checkers are all our pieces giving check to the opponents King
-        let (our_checkers, _) = self.calculate_checkers_and_pins(!self.side_to_move());
-
-        // Opponent should not be in check while it's our turn (self.side_to_move)
-        soft_assert!(our_checkers.is_empty());
+        // opponent should not be in check
+        // their_checkers is set to the BitBoard of all opponent's pieces attacking our King
+        let (their_checkers, _) = self.calculate_checkers_and_pins(!self.side_to_move());
+        soft_assert!(their_checkers.is_empty());
 
         true
     }
