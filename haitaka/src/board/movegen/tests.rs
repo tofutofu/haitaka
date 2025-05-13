@@ -1,7 +1,6 @@
+use rand::rng;
 use rand::rngs::ThreadRng;
 use rand::seq::IndexedRandom;
-use rand::rng;
-
 
 // Movegenerator tests
 use super::*;
@@ -629,7 +628,7 @@ fn fuzzing_generate_moves() {
             v.extend(mvs);
             false
         });
-        
+
         if v.is_empty() {
             return true;
         }
@@ -642,7 +641,6 @@ fn fuzzing_generate_moves() {
         assert!(rollout(&mut board, 100, &mut rng));
     }
 }
-
 
 #[test]
 fn fuzzing_checks() {
@@ -668,7 +666,7 @@ fn fuzzing_checks() {
                 false
             });
         }
-        
+
         if v.is_empty() {
             return true;
         }

@@ -765,7 +765,7 @@ impl Board {
     }
 
     /// Generate checks for side-to-move.
-    /// 
+    ///
     /// This function will call the `listener` callback multiple times. The listener can interrupt
     /// further processing by returning true. Otherwise, the function will generate all remaining
     /// checks and eventually return false.
