@@ -294,6 +294,10 @@ impl Board {
         debug_assert!(self.checkers.is_empty());
 
         let them = !self.side_to_move();
+        if !self.has(them, Piece::King) {
+            return false;
+        }
+
         let our_pawn_rank = to.rank() as usize;
         let their_king_rank = self.king(them).rank() as usize;
 

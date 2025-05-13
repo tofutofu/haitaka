@@ -1,3 +1,8 @@
+use rand::rngs::ThreadRng;
+use rand::seq::IndexedRandom;
+use rand::rng;
+
+
 // Movegenerator tests
 use super::*;
 use std::collections::HashSet;
@@ -609,4 +614,70 @@ fn discovered_checks3() {
 
     assert_eq!(moves.len(), 11);
     assert_eq!(checks.len(), 8);
+}
+
+#[test]
+fn fuzzing_generate_moves() {
+    let mut rng = rng();
+
+    fn rollout(board: &mut Board, depth: usize, rng: &mut ThreadRng) -> bool {
+        if depth == 0 {
+            return true;
+        }
+        let mut v: Vec<Move> = Vec::new();
+        board.generate_moves(|mvs| {
+            v.extend(mvs);
+            false
+        });
+        
+        if v.is_empty() {
+            return true;
+        }
+        let mv = v.choose(rng).unwrap();
+        board.play_unchecked(*mv);
+        rollout(board, depth - 1, rng)
+    }
+    for _ in 0..100 {
+        let mut board = Board::startpos();
+        assert!(rollout(&mut board, 100, &mut rng));
+    }
+}
+
+
+#[test]
+fn fuzzing_checks() {
+    let mut rng = rng();
+
+    // Zoku Tsumuya Tsumazaruya #198
+    let sfen = "+P+n1g1+Pp+P1/2gg+p+s+pLn/1gppP1S+Pp/1+s+PPSPPPk/N1L2N+PL1/6L1+P/9/9/9 b - 1";
+
+    fn rollout(board: &mut Board, depth: usize, rng: &mut ThreadRng) -> bool {
+        if depth == 0 {
+            return true;
+        }
+        let color = board.side_to_move();
+        let mut v: Vec<Move> = Vec::new();
+        if color == Color::Black {
+            board.generate_checks(|mvs| {
+                v.extend(mvs);
+                false
+            });
+        } else {
+            board.generate_moves(|mvs| {
+                v.extend(mvs);
+                false
+            });
+        }
+        
+        if v.is_empty() {
+            return true;
+        }
+        let mv = v.choose(rng).unwrap();
+        board.play(*mv);
+        rollout(board, depth - 1, rng)
+    }
+    for _ in 0..200 {
+        let mut board = Board::tsume(sfen).unwrap();
+        assert!(rollout(&mut board, 100, &mut rng));
+    }
 }
