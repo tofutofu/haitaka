@@ -413,7 +413,7 @@ impl Board {
 
             if piece == Piece::Pawn {
                 // prevent creating a double-pawn (nifu)
-                to &= self.no_pawn_on_file[color as usize];
+                to &= self.pawnless_files[color as usize];
                 if to.is_empty() {
                     return false;
                 }
@@ -818,7 +818,7 @@ impl Board {
 
                 if piece == Piece::Pawn {
                     // avoid nifu
-                    to &= self.no_pawn_on_file[color as usize];
+                    to &= self.pawnless_files[color as usize];
 
                     // avoid illegal mate by pawn drop
                     if !to.is_empty() {

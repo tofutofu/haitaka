@@ -57,7 +57,7 @@ pub struct Board {
     inner: ZobristBoard,
     pinned: BitBoard,
     checkers: BitBoard,
-    no_pawn_on_file: [BitBoard; Color::NUM],
+    pawnless_files: [BitBoard; Color::NUM],
     move_number: u16,
 }
 
@@ -71,7 +71,7 @@ impl Default for Board {
             inner: ZobristBoard::empty(),
             pinned: BitBoard::EMPTY,
             checkers: BitBoard::EMPTY,
-            no_pawn_on_file: [BitBoard::FULL; Color::NUM],
+            pawnless_files: [BitBoard::FULL; Color::NUM],
             move_number: 0,
         }
     }
@@ -131,7 +131,7 @@ impl Board {
     pub fn unchecked_put(&mut self, color: Color, piece: Piece, square: Square) {
         self.inner.xor_square(piece, color, square);
         if piece == Piece::Pawn {
-            self.no_pawn_on_file[color as usize] &= !square.file().bitboard();
+            self.pawnless_files[color as usize] &= !square.file().bitboard();
         }
     }
 
@@ -680,7 +680,7 @@ impl Board {
 
             // update pawn_on_file
             if piece == Piece::Pawn {
-                self.no_pawn_on_file[color as usize] &= !to.file().bitboard();
+                self.pawnless_files[color as usize] &= !to.file().bitboard();
             }
 
             // update checkers and pins
@@ -712,7 +712,7 @@ impl Board {
 
                 // update pawn_on_file
                 if capture == Piece::Pawn {
-                    self.no_pawn_on_file[!color as usize] |= to.file().bitboard();
+                    self.pawnless_files[!color as usize] |= to.file().bitboard();
                 }
             }
 
@@ -725,7 +725,7 @@ impl Board {
 
             // update pawn_on_file
             if piece == Piece::Pawn && promotion {
-                self.no_pawn_on_file[color as usize] |= to.file().bitboard();
+                self.pawnless_files[color as usize] |= to.file().bitboard();
             }
 
             // update checkers and pins (if the other side has a King)

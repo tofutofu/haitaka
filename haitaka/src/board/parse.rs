@@ -94,7 +94,7 @@ impl Board {
             inner: ZobristBoard::empty(),
             pinned: BitBoard::EMPTY,
             checkers: BitBoard::EMPTY,
-            no_pawn_on_file: [BitBoard::FULL; Color::NUM],
+            pawnless_files: [BitBoard::FULL; Color::NUM],
             move_number: 0,
         };
 
