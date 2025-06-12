@@ -1,5 +1,14 @@
 use crate::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Dominance {
+    Incomparable,
+    Equal,
+    Sente,
+    Dominates,
+    DominatedBy,
+}
+
 #[derive(Debug)]
 struct ColorZobristConstants {
     pieces: [[u64; Square::NUM + 1]; Piece::NUM],
@@ -211,6 +220,51 @@ impl ZobristBoard {
     pub fn toggle_side_to_move(&mut self) {
         self.side_to_move = !self.side_to_move;
         self.hash ^= ZOBRIST.move_toggle;
+    }
+
+    /// A position dominates another position in a Shogi endgame if it is provably better
+    /// than the other position. This is the case when the board position is equal, but
+    /// the player has more pieces in hand. This relation is especially important in Tsume
+    /// Shogi where it allows us to skip searching some subtrees of the game tree.
+    ///
+    /// If board positions and hands are equal, but side-to-move is not,
+    /// then the side to move in this position has Sente (first move). This can also
+    /// be seen as a form of dominance. In Tsume Shogi we generally only look at dominance
+    /// relations between different positions of a given player however.
+    ///
+    /// Note that "more pieces in hand" is a bit ambiguous. Dominance requires the player to
+    /// have at least as many pieces in hand _for each piece type_. It would be possible to
+    /// implement a more fine-grained concept of dominance, but that may become rather costly.
+    ///
+    pub fn dominates(&self, other: &Self) -> Dominance {
+        // Note that simply having _more_ pieces would not always be an advantage
+        // since those might be hindering each other (and especially might be blocking the King)
+
+        let j: usize = self.side_to_move as usize;
+
+        if self.colors != other.colors || self.pieces != other.pieces {
+            Dominance::Incomparable
+        } else if self.hands[0] == other.hands[0] {
+            if self.side_to_move == other.side_to_move {
+                Dominance::Equal
+            } else {
+                Dominance::Sente
+            }
+        } else if self.hands[j]
+            .iter()
+            .zip(other.hands[j].iter())
+            .all(|(n, m)| n >= m)
+        {
+            Dominance::Dominates
+        } else if self.hands[j]
+            .iter()
+            .zip(other.hands[j].iter())
+            .all(|(n, m)| n <= m)
+        {
+            Dominance::DominatedBy
+        } else {
+            Dominance::Incomparable
+        }
     }
 }
 
