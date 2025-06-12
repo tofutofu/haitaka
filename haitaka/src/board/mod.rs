@@ -1,5 +1,6 @@
 //! The Shogi [`Board`] representation and move generation functions
 use crate::*;
+use core::hash::{Hash, Hasher};
 mod movegen;
 mod parse;
 mod validate;
@@ -52,7 +53,9 @@ pub const SFEN_2PIECE_HANDICAP: &str =
 /// Before playing a move, `checkers` is the bitboard of all the opponent's pieces that
 /// give check to our (side-to-move) King. The `pinned` bitboard has all our (side-to-move)
 /// pieces that are pinned and can only move along an opponent slider's attack ray.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+///
+/// The Hash trait is supported by a custom hash function that uses the Zobrist board hash.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Board {
     inner: ZobristBoard,
     pinned: BitBoard,
@@ -566,13 +569,13 @@ impl Board {
     /// - A player loses if they have no legal moves. This is either caused
     ///   by checkmate or (never seen in actual games) by not being able to
     ///   move any board piece without exposing the King to check (combined
-    ///   with not having any pieces in hand).
-    /// - A player also loses by causing the same position to reoccur for the
-    ///   fourth time by playing a sequence of continuous checks. The player
+    ///   with not having any pieces in hand). There is no "stalemate" in Shogi.
+    /// - A player also loses if the same position reoccurs for the
+    ///   fourth time while playing a sequence of consecutive checks. The player
     ///   who plays the checks loses.
-    /// - A player loses in Jishogi (double entering Kings) if the player has
-    ///   less than 24 points, both players have entered the King, and the
-    ///   inferior player has no chance of either checkmating the opponent or
+    /// - A player loses in Jishogi (Double Entering King) if (1) the player has
+    ///   less than 24 points, (2) both players have entered the King, and (3)
+    ///   the inferior player has no chance of either checkmating the opponent or
     ///   increasing their number of points.
     /// - The game is a draw in Jishogi, if both players have at least 24 points.
     /// - The game is a draw by Sennichite, if the same position occurs for the
@@ -586,7 +589,8 @@ impl Board {
             // (it doesn't matter if the position is checkmate)
             // ... unless ...
             // we were checkmated with an illegal Pawn drop,
-            // in which case it's also a Win, but a Win for us!
+            // in which case it's also a Win, but a Win for us
+            // (this case can not be handled by `Board`)
             GameStatus::Won
         }
     }
@@ -607,6 +611,28 @@ impl Board {
     /// ```
     pub fn same_position(&self, other: &Self) -> bool {
         self.hash() == other.hash() && self.inner.board_is_equal(&other.inner)
+    }
+
+    /// Check if this Board position dominates the other.
+    ///
+    /// A position dominates another position if the board positions are equal,
+    /// but side-to-move has more pieces in hand (for each piece type) than in the
+    /// other position. This is especially relevant in the endgame and in Tsume Shogi.
+    /// If position P dominates Q and P does not have a forced win
+    /// (for side-to-move), then Q will also not have a forced win. If Q can be solved
+    /// in n moves, then P can be solved in at most n moves. If Q cannot be solved,
+    /// then neither can P. So if P dominates Q, only Q needs to be searched to determine
+    /// the status of both positions.
+    ///
+    /// When this Board dominates the other, this function returns Dominance::Dominates.
+    /// When the reverse is the case, it returns Dominance::DominatedBy. If
+    /// the positions are completely identical it returns Dominance::Equal. If they are
+    /// incomparable, Dominance::Incomparable. Finally, when both board positions and
+    /// hands are identical, but side-to-move is not, it returns Dominance::Sente which
+    /// indicates that whoever is side-to-to-move has the advantage of the first move.
+    ///
+    pub fn dominates(&self, other: &Self) -> Dominance {
+        self.inner.dominates(&other.inner)
     }
 
     /// Play a move while checking its legality.
@@ -857,5 +883,12 @@ impl Board {
         } else {
             None
         }
+    }
+}
+
+/// The Hash implementation for Board is using the Board Zobrist hash function.
+impl Hash for Board {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.hash().hash(state)
     }
 }
