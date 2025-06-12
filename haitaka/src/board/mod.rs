@@ -631,6 +631,21 @@ impl Board {
     /// hands are identical, but side-to-move is not, it returns Dominance::Sente which
     /// indicates that whoever is side-to-to-move has the advantage of the first move.
     ///
+    /// # Examples
+    /// 
+    /// # use haitaka::*;
+    /// let sfen1 = "9/7k1/9/7S1/9/9/9/7L1/9 b -";
+    /// let board1 = Board::tsume(sfen1).unwrap();
+    /// let sfen2 = "9/7k1/9/7S1/9/9/9/7L1/9 b - P";
+    /// let board2 = Board::tsume(sfen2).unwrap();
+    /// let sfen3 = "9/7k1/9/7S1/9/9/9/7R1/9 b - P";
+    /// let board3 = Board::tsume(sfen3).unwrap();
+    /// assert_eq!(board1.dominates(board1), Dominance::Equal);
+    /// assert_eq!(board1.dominates(board2), Dominance::Dominates);
+    /// assert_eq!(board2.dominates(board1), Dominance::DominatedBy);
+    /// assert_eq!(board2.dominates(board3), Dominance::Incomparable);
+    /// assert_eq!(board3.dominates(board2), Dominance::Incomparable);
+    /// 
     pub fn dominates(&self, other: &Self) -> Dominance {
         self.inner.dominates(&other.inner)
     }

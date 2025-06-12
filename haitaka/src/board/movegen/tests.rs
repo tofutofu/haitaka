@@ -4,7 +4,6 @@ use rand::seq::IndexedRandom;
 
 // Movegenerator tests
 use super::*;
-use std::collections::HashSet;
 
 // Tests the generation of board moves based on giving a subset of squares
 #[test]
@@ -51,6 +50,8 @@ fn subset_movegen_habu_position() {
 }
 
 fn test_is_legal(board: Board) {
+    use std::collections::HashSet;
+
     // both board_moves and drops are included
     let mut legals = HashSet::new();
     board.generate_moves(|mvs| {
@@ -73,6 +74,8 @@ fn test_is_legal(board: Board) {
 }
 
 fn test_forbidden_drops(board: &Board) {
+    use std::collections::HashSet;
+
     let mut legals = HashSet::new();
     board.generate_drops(|mvs| {
         legals.extend(mvs);
@@ -678,4 +681,30 @@ fn fuzzing_checks() {
         let mut board = Board::tsume(sfen).unwrap();
         assert!(rollout(&mut board, 100, &mut rng));
     }
+}
+
+#[test]
+fn board_hash_trait_works() {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    let board1 = Board::startpos();
+    let board2 = Board::startpos();
+    let mut board3 = Board::startpos();
+    board3.play_unchecked("2g2f".parse().unwrap());
+
+    let mut hasher1 = DefaultHasher::new();
+    Hash::hash(&board1, &mut hasher1);
+    let hash1 = hasher1.finish();
+
+    let mut hasher2 = DefaultHasher::new();
+    Hash::hash(&board2, &mut hasher2);
+    let hash2 = hasher2.finish();
+
+    let mut hasher3 = DefaultHasher::new();
+    Hash::hash(&board3, &mut hasher3);
+    let hash3 = hasher3.finish();
+
+    assert_eq!(hash1, hash2, "Hashes of identical boards should match");
+    assert_ne!(hash1, hash3, "Hashes of different boards should differ");
 }
