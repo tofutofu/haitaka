@@ -1,10 +1,10 @@
 use crate::*;
 
+/// Dominance relation between positions. See `Board::dominates`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Dominance {
     Incomparable,
     Equal,
-    Sente,
     Dominates,
     DominatedBy,
 }
@@ -228,29 +228,31 @@ impl ZobristBoard {
     /// Shogi where it allows us to skip searching some subtrees of the game tree.
     ///
     /// If board positions and hands are equal, but side-to-move is not,
-    /// then the side to move in this position has Sente (first move). This can also
-    /// be seen as a form of dominance. In Tsume Shogi we generally only look at dominance
-    /// relations between different positions of a given player however.
+    /// then the side to move in this position has Sente (first move). This could also
+    /// be seen as a form of dominance. But this is not handled as a separate form of Dominance.
+    /// In Tsume Shogi we generally only look at dominance relations between different positions of
+    /// a given player.
     ///
     /// Note that "more pieces in hand" is a bit ambiguous. Dominance requires the player to
     /// have at least as many pieces in hand _for each piece type_. It would be possible to
-    /// implement a more fine-grained concept of dominance, but that may become rather costly.
+    /// implement a more fine-grained concept of dominance, or to cap the number of pieces
+    /// in hand to the maximum effective number (so 9 for the Pawns), but that would be somewhat
+    /// less performant and would not really matter when comparing positions. 
     ///
     pub fn dominates(&self, other: &Self) -> Dominance {
-        // Note that simply having _more_ pieces would not always be an advantage
-        // since those might be hindering each other (and especially might be blocking the King)
+
+        // Note that simply having _more_ pieces is not always an advantage
+        // since those may be hindering each other (they may be blocking the King). 
 
         let j: usize = self.side_to_move as usize;
 
-        if self.colors != other.colors || self.pieces != other.pieces {
+        if self.colors != other.colors || self.pieces != other.pieces { 
             Dominance::Incomparable
-        } else if self.hands[0] == other.hands[0] {
-            if self.side_to_move == other.side_to_move {
-                Dominance::Equal
-            } else {
-                Dominance::Sente
-            }
-        } else if self.hands[j]
+        } 
+        else if self.hands[j] == other.hands[j] {
+            Dominance::Equal
+        } 
+        else if self.hands[j]
             .iter()
             .zip(other.hands[j].iter())
             .all(|(n, m)| n >= m)
@@ -263,7 +265,7 @@ impl ZobristBoard {
         {
             Dominance::DominatedBy
         } else {
-            Dominance::Incomparable
+            Dominance::Incomparable  
         }
     }
 }

@@ -1,9 +1,23 @@
 # Changelog
 
+## v0.3.3
+
+- Removed the `Board::status` function. It's impossible to unambiguously determine the game 
+status based only on the board position. (The earlier function was modeled on the one in
+cozy-chess, but even for international chess that function seems a somewhat half-baked one.) To
+determine the correct game status, we need to know (1) whether or not the player has legal moves,
+(2) whether or not the position was repeated, (3) whether or not the last move in the position was 
+legal (which cannot be determined simply by looking at the position but requires knowledge
+of the history) and (4) whether or not both players have an entering King. All this requires
+much more machinery than the Board struct provides.
+- Added Board::get_attacks as separate function. This returns an array of BitBoards from which
+a given square can be attacked.
+- Added Board::dominates to test whether a position strictly dominates another one.
+
 ## v0.3.2
 - Fixed yet another bug related to discovered checks: If a single piece is blocking a slider
 then all moves off the x-ray will be check, but there may also be one move on the x-ray,
-towards the King that gives check.
+towards the King, that gives check.
 - Fixed an uncaught panic in the test for illegal_mate_with_pawn_drop.
 
 ## v0.3.1

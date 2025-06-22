@@ -375,7 +375,6 @@ fn play_tsume() {
     let mut board = Board::tsume(sfen).unwrap();
 
     assert_eq!(board.side_to_move(), Color::Black);
-    assert_eq!(board.status(), GameStatus::Ongoing);
 
     let moves = "\
         N*7e K8c-7b 
@@ -411,7 +410,6 @@ fn play_tsume() {
     }
 
     assert_eq!(board.side_to_move(), Color::White);
-    assert_eq!(board.status(), GameStatus::Won); // meaning: won for Black
 }
 
 #[test]

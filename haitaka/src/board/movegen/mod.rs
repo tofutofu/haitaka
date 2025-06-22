@@ -60,6 +60,10 @@ macro_rules! abort_if {
     }
 }
 
+/// An array of BitBoards indexed by piece type.
+type Attacks = [BitBoard; Piece::NUM + 1];
+
+
 impl Board {
     // Target destination squares of board moves (other than by King).
     //
@@ -107,6 +111,46 @@ impl Board {
         } else {
             open_squares
         }
+    }
+
+    /// Calculate attacks.
+    /// 
+    /// Returns an array of BitBoards, indexed by piece type.
+    /// 
+    /// The returned `attacks[piece as usize]` is the BitBoard of all squares from
+    /// which the target square can be attacked by the piece with the given `color`.
+    /// The value of `attacks[Piece::NUM]` is the BitBoard of all squares from which
+    /// the target square can be attacked by _any_ piece of the given `color`.
+    ///  
+    pub fn get_attacks(&self, color: Color, target: Square) -> Attacks {
+        let mut attacks = [BitBoard::EMPTY; Piece::NUM + 1];
+        let mut any_attack = BitBoard::EMPTY;
+
+        let their_color = !color;
+        let occ = self.occupied();
+        let ring_attacks = king_attacks(their_color, target);
+        let rook_attacks = get_rook_moves(their_color, target, occ);
+        let bishop_attacks = get_bishop_moves(their_color, target, occ);
+
+        for piece in Piece::ALL {
+            attacks[piece as usize] = match piece {
+                Piece::Pawn => pawn_attacks(their_color, target),
+                Piece::Knight => knight_attacks(their_color, target),
+                Piece::Silver => silver_attacks(their_color, target),
+                Piece::Gold | Piece::Tokin | Piece::PLance | Piece::PKnight | Piece::PSilver => {
+                    gold_attacks(their_color, target)
+                }
+                Piece::Lance => get_lance_moves(their_color, target, occ),
+                Piece::Rook => rook_attacks,
+                Piece::Bishop => bishop_attacks,
+                Piece::PRook => rook_attacks | ring_attacks,
+                Piece::PBishop => bishop_attacks | ring_attacks,
+                _ => BitBoard::EMPTY,
+            };
+            any_attack |= attacks[piece as usize];
+        }
+        attacks[Piece::NUM] = any_attack;
+        attacks
     }
 
     // Board moves
@@ -780,32 +824,9 @@ impl Board {
         let ours = self.colors(color);
         let empty = !occ;
 
+         // get all squares from which their King could be put in check
         let their_king = self.king(their_color);
-        let their_ring = king_attacks(color, their_king);
-
-        let rook_attacks = get_rook_moves(their_color, their_king, occ);
-        let bishop_attacks = get_bishop_moves(their_color, their_king, occ);
-
-        //
-        // get all squares from which their King could be put in check
-        //
-        let mut attacks = [BitBoard::EMPTY; Piece::ALL.len()];
-        for piece in Piece::ALL {
-            attacks[piece as usize] = match piece {
-                Piece::Pawn => pawn_attacks(their_color, their_king),
-                Piece::Knight => knight_attacks(their_color, their_king),
-                Piece::Silver => silver_attacks(their_color, their_king),
-                Piece::Gold | Piece::Tokin | Piece::PLance | Piece::PKnight | Piece::PSilver => {
-                    gold_attacks(their_color, their_king)
-                }
-                Piece::Lance => get_lance_moves(their_color, their_king, occ),
-                Piece::Rook => rook_attacks,
-                Piece::Bishop => bishop_attacks,
-                Piece::PRook => rook_attacks | their_ring,
-                Piece::PBishop => bishop_attacks | their_ring,
-                _ => BitBoard::EMPTY,
-            }
-        }
+        let attacks = self.get_attacks(color, their_king);
 
         //
         // generate drops

@@ -10,18 +10,6 @@ pub use movegen::*;
 pub use parse::*;
 use zobrist::*;
 
-/// The current state of the game.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum GameStatus {
-    /// The game ended in a win for *the other side*
-    /// (not the current side_to_move, but see also [`Board::status`])
-    Won,
-    /// The game ended in a draw
-    Drawn,
-    /// The game is still ongoing.
-    Ongoing,
-}
-
 helpers::simple_error! {
     /// An error returned when the move played was illegal.
     pub struct IllegalMoveError = "The move played was illegal.";
@@ -551,50 +539,6 @@ impl Board {
             .expect("No king was found.")
     }
 
-    /// Get the status of the game.
-    ///
-    /// This returns the current status of the game. If `GameStatus::Ongoing`
-    /// then the game may still actually be a draw by Sennichite or Jishogi.
-    /// If `GameStatus::Won` then the game is won by *the other side*, lost by
-    /// the current `side_to_move`... unless the last move was an illegal
-    /// checkmate by Pawn drop.
-    ///
-    /// Due to the rather complicated rules related to Sennichite and Jishogi
-    /// the Board cannot always determine what the actual game status is. So
-    /// this function has a pretty limited use. The final determination needs
-    /// to be made by a game playing engine.
-    ///
-    /// The rules for winning and losing in Shogi are:
-    ///
-    /// - A player loses if they have no legal moves. This is either caused
-    ///   by checkmate or (never seen in actual games) by not being able to
-    ///   move any board piece without exposing the King to check (combined
-    ///   with not having any pieces in hand). There is no "stalemate" in Shogi.
-    /// - A player also loses if the same position reoccurs for the
-    ///   fourth time while playing a sequence of consecutive checks. The player
-    ///   who plays the checks loses.
-    /// - A player loses in Jishogi (Double Entering King) if (1) the player has
-    ///   less than 24 points, (2) both players have entered the King, and (3)
-    ///   the inferior player has no chance of either checkmating the opponent or
-    ///   increasing their number of points.
-    /// - The game is a draw in Jishogi, if both players have at least 24 points.
-    /// - The game is a draw by Sennichite, if the same position occurs for the
-    ///   fourth time, and this was not caused by a sequence of continuous checks.
-    ///
-    pub fn status(&self) -> GameStatus {
-        if self.generate_moves(|_| true) {
-            GameStatus::Ongoing
-        } else {
-            // if we don't have any moves, it's a loss for us
-            // (it doesn't matter if the position is checkmate)
-            // ... unless ...
-            // we were checkmated with an illegal Pawn drop,
-            // in which case it's also a Win, but a Win for us
-            // (this case can not be handled by `Board`)
-            GameStatus::Won
-        }
-    }
-
     /// Check if two positions are equivalent.
     ///
     /// This differs from the [`Eq`] implementation in that it does not check the move number.
@@ -618,9 +562,9 @@ impl Board {
     /// A position dominates another position if the board positions are equal,
     /// but side-to-move has more pieces in hand (for each piece type) than in the
     /// other position. This is especially relevant in the endgame and in Tsume Shogi.
-    /// If position P dominates Q and P does not have a forced win
-    /// (for side-to-move), then Q will also not have a forced win. If Q can be solved
-    /// in n moves, then P can be solved in at most n moves. If Q cannot be solved,
+    /// If position P dominates Q and side-to-move does not have a forced win in P,
+    /// then Q will also not have a forced win. If Q can be solved
+    /// in n moves, then P can also be solved in at most n moves. If Q cannot be solved,
     /// then neither can P. So if P dominates Q, only Q needs to be searched to determine
     /// the status of both positions.
     ///
